@@ -1,0 +1,46 @@
+# Builds the app and publishes the static files to the public repo rodrigourech/fitness-app-web,
+# which serves them with GitHub Pages at https://rodrigourech.github.io/fitness-app-web/
+# Only built files are published; source code and docs stay in this private repo.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm test
+
+      - name: Build
+        run: npm run build
+        env:
+          BASE_PATH: /fitness-app-web/
+          # Public endpoints only (repository variables, not secrets). Never DATABASE_URL.
+          NEON_AUTH_BASE_URL: ${{ vars.NEON_AUTH_BASE_URL }}
+          NEON_DATA_API_URL: ${{ vars.NEON_DATA_API_URL }}
+
+      - name: Publish to fitness-app-web
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          personal_token: ${{ secrets.PAGES_DEPLOY_TOKEN }}
+          external_repository: rodrigourech/fitness-app-web
+          publish_branch: main
+          publish_dir: ./dist
+          force_orphan: true
+          commit_message: Deploy ${{ github.sha }}

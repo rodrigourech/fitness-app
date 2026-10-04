@@ -50,3 +50,5 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
 - Katalogsuche beim Anlegen einer Übung: Vorschläge aus src/data/catalog.json (876 Übungen, Free Exercise DB, Unlicense); Auswahl übernimmt Name, Erfassungsart, Equipment, Muskelgruppen und schlägt den Muskelfokus vor. Migration 0005 entfernt exercise_catalog und den Fremdschlüssel
 - Inkrement 2 vorgezogen: Historie mit Detail, Löschen und Export (CSV der Sätze, JSON aller Tabellen); Bestleistungen (Gewicht, geschätztes 1RM nach Epley; bei einseitigen Sätzen zählt die schwächere Seite) werden beim Abhaken markiert; Progressionshinweis gemäss Regel; Körpergewicht mit 7-Tage-Durchschnitt
 - In Vorlagen ist die verwendete Variante pro Übung umschaltbar; ein Tipp auf den Namen öffnet das Übungsblatt
+- Hosting über GitHub Pages mit separatem öffentlichem Repo fitness-app-web (nur Build-Dateien), Build per GitHub Actions; die App lädt keine Startdaten mehr, neue Geräte holen alles von Neon. Siehe docs/hosting.md
+- Neon Auth kann die Registrierung inzwischen sperren (--disable-sign-up); die Owner-Liste bleibt als zweite Sicherung

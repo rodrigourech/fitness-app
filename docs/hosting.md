@@ -1,28 +1,26 @@
 # **Hosting**
 
-Ziel: Die App ist unter einer festen HTTPS-Adresse erreichbar und lässt sich auf dem iPhone über «Zum Home-Bildschirm» installieren. Kosten: Gratistarif.
+Entscheid (4. Oktober 2026): GitHub Pages über ein zweites, öffentliches Repo. Kein zusätzlicher Anbieter, gratis.
 
-## **Variante A: Cloudflare Pages (empfohlen)**
+- Privates Repo `rodrigourech/fitness-app`: Code, Dokumentation, Migrationen
+- Öffentliches Repo `rodrigourech/fitness-app-web`: nur die gebauten Dateien (`dist`), von GitHub Pages ausgeliefert
+- Adresse: https://rodrigourech.github.io/fitness-app-web/
+- Bei jedem Push auf `main` baut `.github/workflows/deploy.yml` die App, führt die Tests aus und veröffentlicht `dist` im öffentlichen Repo
 
-1. dash.cloudflare.com öffnen, Konto anlegen (ohne Kreditkarte)
-2. Workers & Pages > Create > Pages > Connect to Git > Repository `rodrigourech/fitness-app` wählen
-3. Build-Einstellungen:
-   - Framework preset: Vite (oder None)
-   - Build command: `npm run build`
-   - Build output directory: `dist`
-   - Environment variables: `NODE_VERSION` = `22`, `NEON_AUTH_BASE_URL` und `NEON_DATA_API_URL` mit den Werten aus `.env.local`
-4. Deploy. Die Adresse lautet `https://<projektname>.pages.dev`; jeder Push auf `main` baut automatisch neu
+## **Einrichtung (einmalig)**
 
-## **Variante B: Vercel**
+1. Öffentliches, leeres Repo `fitness-app-web` anlegen
+2. Fine-grained Personal Access Token: nur Repo `fitness-app-web`, Berechtigung Contents: Read and write
+3. Im privaten Repo unter Settings > Secrets and variables > Actions:
+   - Secret `PAGES_DEPLOY_TOKEN`: der Token
+   - Variables `NEON_AUTH_BASE_URL` und `NEON_DATA_API_URL`: Werte aus `.env.local`
+4. Push auf `main`, Workflow «Deploy to GitHub Pages» abwarten
+5. Im Repo `fitness-app-web` unter Settings > Pages: Deploy from a branch, `main`, `/ (root)`
+6. Neon Auth: `neon neon-auth domain add https://rodrigourech.github.io`
+7. Registrierung schliessen: `neon neon-auth config email-password update --disable-sign-up`
 
-Gleiche Werte: Import des GitHub-Repos, Framework Vite, Build `npm run build`, Output `dist`, dieselben zwei Umgebungsvariablen.
+## **Grundsätze**
 
-## **Nach dem ersten Deploy**
-
-- In Neon Auth die neue Adresse als erlaubte Herkunft (trusted domain) eintragen, sonst lehnt die Anmeldung Anfragen von dort ab
-- Auf dem iPhone in Safari öffnen, anmelden, Teilen > Zum Home-Bildschirm
-- Prüfen, ob die Sitzung nach dem Schliessen der App erhalten bleibt (Cookie von Neon Auth auf fremder Domain)
-
-## **Wichtig**
-
-- Nur `NEON_AUTH_BASE_URL` und `NEON_DATA_API_URL` beim Hoster hinterlegen, niemals `DATABASE_URL`
+- In der ausgelieferten App stehen keine persönlichen Daten; die Startdaten in `seed/` werden nur noch für Tests verwendet
+- Beim Build nur `NEON_AUTH_BASE_URL` und `NEON_DATA_API_URL` setzen, niemals `DATABASE_URL`
+- Wechsel des Hosters ist jederzeit möglich: es sind nur statische Dateien

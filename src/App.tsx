@@ -1,7 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
 import { getLocalUser, signOut, type LocalUser } from './lib/auth'
-import { importSeedIfNeeded } from './lib/seed'
 import { startBackgroundSync } from './lib/sync'
 import { getActiveWorkout } from './lib/workout'
 import Home from './pages/Home'
@@ -19,18 +18,8 @@ export default function App() {
 
   useEffect(() => {
     if (!user) return
-    let stop: (() => void) | undefined
-    let cancelled = false
-    // Seed first, then sync, so the seed rows are pushed in the first cycle
-    importSeedIfNeeded(user.id)
-      .catch((err: unknown) => console.error('Seed import failed', err))
-      .finally(() => {
-        if (!cancelled) stop = startBackgroundSync()
-      })
-    return () => {
-      cancelled = true
-      stop?.()
-    }
+    // All data comes from Neon on the first sync; the seed files are no longer shipped with the app
+    return startBackgroundSync()
   }, [user])
 
   async function reauth() {

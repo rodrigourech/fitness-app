@@ -3,7 +3,11 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// BASE_PATH is set by the GitHub Pages build (e.g. /fitness-app-web/); locally the app runs at /
+const base = process.env.BASE_PATH ?? '/'
+
 export default defineConfig({
+  base,
   plugins: [
     react(),
     tailwindcss(),
@@ -12,10 +16,11 @@ export default defineConfig({
       includeAssets: ['icon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'Fitness App',
-        short_name: 'Fitness App',
+        short_name: 'Fitness',
         description: 'Personal workout log',
         lang: 'en',
-        start_url: '/',
+        start_url: base,
+        scope: base,
         display: 'standalone',
         background_color: '#0a0a0a',
         theme_color: '#0a0a0a',
