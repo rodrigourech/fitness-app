@@ -22,7 +22,7 @@ Persönliche Fitness-App als Ersatz für die Strong App: Trainingsvorlagen, Trai
 - Übungen sind Stammdaten mit fester ID; Varianten über parent_id
 - Links und rechts sind keine Varianten, sondern is_unilateral mit reps_left und reps_right
 - Alle Tabellen haben user_id und sind über Row Level Security geschützt
-- DATABASE_URL (Besitzerzugang, umgeht RLS) nur lokal für Migrationen und Auswertungen; nie im Frontend. Das Frontend erhält über envPrefix in vite.config.ts ausschliesslich NEON_AUTH_BASE_URL und NEON_DATA_API_URL
+- DATABASE_URL (Besitzerzugang, umgeht RLS) nur lokal für Migrationen und Auswertungen; nie im Frontend. Das Frontend erhält über envPrefix in vite.config.ts ausschliesslich NEON_AUTH_BASE_URL, NEON_DATA_API_URL und VITE_AUTH_PROXY_URL (URL der Neon Function authproxy, siehe functions/authproxy.ts)
 - Neon Auth erlaubt derzeit jedem die Registrierung; deshalb verlangt jede Policy zusätzlich private.is_app_owner() (Owner-Liste private.app_owner)
 
 ## Konventionen

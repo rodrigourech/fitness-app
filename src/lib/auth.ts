@@ -1,5 +1,5 @@
 import { db, getMeta, setMeta } from './db'
-import { neon } from './neon'
+import { ProxyError, proxySignIn, proxySignOut, storeSession, type ProxySession } from './session'
 
 // Neon Auth only knows e-mail addresses; usernames are mapped to an internal address.
 const INTERNAL_DOMAIN = 'fitness-app.local'
@@ -25,19 +25,20 @@ export async function getLocalUser(): Promise<LocalUser | null> {
 
 export class SignInError extends Error {}
 
-/** Signs in against Neon Auth and remembers the user locally. */
+/** Signs in against Neon Auth (via the auth proxy) and remembers the user locally. */
 export async function signIn(username: string, password: string): Promise<LocalUser> {
   if (!navigator.onLine) {
     throw new SignInError('No connection. The first sign-in needs internet.')
   }
-  const { error } = await neon.auth.signIn.email({ email: usernameToEmail(username), password })
-  if (error) {
-    throw new SignInError(
-      error.status === 401 ? 'Wrong username or password.' : `Sign-in failed: ${error.message ?? 'unknown error'}`,
-    )
+  let session: ProxySession
+  try {
+    session = await proxySignIn(usernameToEmail(username), password)
+  } catch (err) {
+    if (err instanceof ProxyError && err.status === 401) throw new SignInError('Wrong username or password.')
+    if (err instanceof ProxyError && err.status === 429) throw new SignInError('Too many attempts. Please wait a moment.')
+    throw new SignInError(`Sign-in failed: ${err instanceof Error ? err.message : 'unknown error'}`)
   }
-  const { data } = await neon.auth.getSession()
-  const id = data?.user.id
+  const id = session.user?.id
   if (!id) throw new SignInError('Sign-in failed: no session received.')
 
   // user_id is kept after sign-out and identifies the owner of the local data
@@ -47,6 +48,7 @@ export async function signIn(username: string, password: string): Promise<LocalU
     await db.delete()
     await db.open()
   }
+  await storeSession(session)
   await setMeta('user_id', id)
   await setMeta('username', username.trim().toLowerCase())
   await setMeta('signed_in', '1')
@@ -56,7 +58,7 @@ export async function signIn(username: string, password: string): Promise<LocalU
 /** Signs out remotely (if online). Local data and its owner id are kept. */
 export async function signOut(): Promise<void> {
   try {
-    if (navigator.onLine) await neon.auth.signOut()
+    await proxySignOut()
   } finally {
     await db.meta.delete('signed_in')
   }

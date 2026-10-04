@@ -31,6 +31,7 @@ jobs:
         run: |
           npm run build
           grep -q "apirest" dist/assets/index-*.js || { echo "::error::Neon Data API URL missing in build"; exit 1; }
+          grep -q "authproxy" dist/assets/index-*.js || { echo "::error::Auth proxy URL missing in build"; exit 1; }
         env:
           BASE_PATH: /fitness-app-web/
           # The public Neon URLs come from .env.production (committed, not secret).
