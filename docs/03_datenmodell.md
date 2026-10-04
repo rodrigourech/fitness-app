@@ -315,6 +315,17 @@ create index workout_set_we_idx           on public.workout_set (workout_exercis
 create index body_weight_date_idx         on public.body_weight (user_id, measured_on);
 ```
 
+### **Owner-Liste (Migration 0002)**
+
+Neon Auth erlaubt derzeit jedem die Registrierung. Damit fremde Konten wirkungslos sind, prüft jede Policy zusätzlich, ob der Anfragende in `private.app_owner` eingetragen ist:
+
+- `private.app_owner (user_id text primary key)`: ohne Rechte für `authenticated`, das Schema `private` wird von der Data API nicht veröffentlicht
+- `private.is_app_owner()`: `security definer`, liefert `true`, wenn `auth.user_id()` in der Liste steht
+- Policies der Datentabellen: `user_id = auth.user_id() and private.is_app_owner()`
+- Policy des Katalogs: `private.is_app_owner()`
+
+Details in db/migrations/0002_app_owner.sql.
+
 ### **Sicht für Auswertungen**
 
 ```sql

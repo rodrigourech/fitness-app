@@ -25,7 +25,7 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
   - Startdaten mit festem Zeitstempel seed_timestamp
 - Anmeldung mit Benutzername und Passwort (ersetzt E-Mail und Passwort):
   - Die Anmeldung basiert auf E-Mail; die App bildet den Benutzernamen intern auf <benutzername>@fitness-app.local ab (falls Neon Auth Benutzernamen direkt unterstützt, wird das beim Einrichten geprüft)
-  - Benutzer wird einmalig angelegt; danach werden öffentliche Registrierung und E-Mail-Bestätigung deaktiviert
+  - Benutzer rodrigo (intern rodrigo@fitness-app.local) wird in der Neon-Konsole angelegt
   - Kein Passwort-Reset per E-Mail; Reset nur über die Neon-Konsole
   - Keine Magic Links, da diese auf dem iPhone die installierte PWA umgehen
 - Backend Neon statt Supabase (Free-Plan, ohne Kreditkarte, Region AWS Frankfurt):
@@ -35,3 +35,4 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
   - In Kauf genommen: Neon Auth und Data API sind jünger als die Gegenstücke bei Supabase; kein Standort Zürich
 - Projektstruktur: Die App liegt direkt im Hauptordner (Vite-Projekt neben neon.ts, eine gemeinsame package.json); der Ordner app/ entfällt
 - Neon CLI ohne Agent-Integrationen: neon skills und neon mcp werden vorerst nicht installiert (kein kontoweiter API-Schlüssel)
+- Absicherung gegen fremde Registrierungen: Neon Auth kann die Registrierung derzeit nicht sperren. Migration 0002 führt die Owner-Liste private.app_owner ein; alle Policies verlangen zusätzlich private.is_app_owner(). Fremde Konten können damit weder lesen noch schreiben

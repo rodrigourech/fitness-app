@@ -23,7 +23,7 @@ Persönliche Fitness-App als Ersatz für die Strong App: Trainingsvorlagen, Trai
 - Links und rechts sind keine Varianten, sondern is_unilateral mit reps_left und reps_right
 - Alle Tabellen haben user_id und sind über Row Level Security geschützt
 - DATABASE_URL (Besitzerzugang, umgeht RLS) nur lokal für Migrationen und Auswertungen; nie im Frontend, nie mit Präfix VITE_
-- Öffentliche Registrierung in Neon Auth bleibt nach dem Anlegen des eigenen Benutzers geschlossen
+- Neon Auth erlaubt derzeit jedem die Registrierung; deshalb verlangt jede Policy zusätzlich private.is_app_owner() (Owner-Liste private.app_owner)
 
 ## Konventionen
 
