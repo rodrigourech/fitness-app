@@ -23,4 +23,8 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
   - Zusätzliche Spalte synced_at (vom Server gesetzt) für das Abholen; updated_at entscheidet Konflikte
   - Varianten erben Equipment, Muskelgruppen, Erfassungstyp, unilateral und Links von der Hauptübung (Felder in der Variante leer)
   - Startdaten mit festem Zeitstempel seed_timestamp
-- Anmeldung mit E-Mail und Passwort (Supabase Auth); keine Magic Links, da diese auf dem iPhone die installierte PWA umgehen
+- Anmeldung mit Benutzername und Passwort (ersetzt E-Mail und Passwort):
+  - Supabase Auth kennt nur E-Mail; die App bildet den Benutzernamen intern auf <benutzername>@fitness-app.local ab
+  - Benutzer wird einmalig im Supabase-Dashboard angelegt (Add user, Auto Confirm); öffentliche Registrierung und E-Mail-Bestätigung sind deaktiviert
+  - Kein Passwort-Reset per E-Mail; Reset nur im Supabase-Dashboard
+  - Keine Magic Links, da diese auf dem iPhone die installierte PWA umgehen
