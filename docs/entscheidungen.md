@@ -33,3 +33,5 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
   - Neon Auth (Managed Better Auth) für die Anmeldung, Neon Data API für den Zugriff aus der App, Row Level Security über auth.user_id()
   - user_id als text (Claim sub des JWT), ohne Fremdschlüssel auf eine Benutzertabelle
   - In Kauf genommen: Neon Auth und Data API sind jünger als die Gegenstücke bei Supabase; kein Standort Zürich
+- Projektstruktur: Die App liegt direkt im Hauptordner (Vite-Projekt neben neon.ts, eine gemeinsame package.json); der Ordner app/ entfällt
+- Neon CLI ohne Agent-Integrationen: neon skills und neon mcp werden vorerst nicht installiert (kein kontoweiter API-Schlüssel)
