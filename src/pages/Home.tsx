@@ -6,7 +6,9 @@ import SyncBadge from '../components/SyncBadge'
 import ExercisesTab from './ExercisesTab'
 import { signOut, type LocalUser } from '../lib/auth'
 import { db, displayName, type Exercise } from '../lib/db'
+import { createTemplate } from '../lib/template'
 import { startWorkout } from '../lib/workout'
+import TemplateEditor from './TemplateEditor'
 
 interface Props {
   user: LocalUser
@@ -54,11 +56,14 @@ export default function Home({ user, onSignedOut }: Props) {
   const cards = useLiveQuery(loadTemplates, [])
   const [sheet, setSheet] = useState<string | null>(null)
   const [tab, setTab] = useState<'templates' | 'exercises'>('templates')
+  const [editing, setEditing] = useState<string | null>(null)
 
   async function handleSignOut() {
     await signOut()
     onSignedOut()
   }
+
+  if (editing) return <TemplateEditor templateId={editing} onDone={() => setEditing(null)} />
 
   return (
     <main className="mx-auto max-w-xl px-4 pb-10">
@@ -101,9 +106,17 @@ export default function Home({ user, onSignedOut }: Props) {
             <li key={c.id} className="rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
               <div className="mb-2 flex items-baseline justify-between gap-3">
                 <h2 className="text-lg font-semibold">{c.name}</h2>
-                <span className="text-sm text-neutral-500 dark:text-neutral-400">
-                  {c.lastDone ? `last ${dateFormat.format(new Date(c.lastDone))}` : 'never'}
-                </span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                    {c.lastDone ? `last ${dateFormat.format(new Date(c.lastDone))}` : 'never'}
+                  </span>
+                  <button
+                    onClick={() => setEditing(c.id)}
+                    className="rounded-md bg-neutral-100 px-2.5 py-1 text-sm font-medium dark:bg-neutral-800"
+                  >
+                    Edit
+                  </button>
+                </div>
               </div>
               <ol className="text-sm leading-7 text-neutral-600 dark:text-neutral-300">
                 {c.exercises.map((ex, i) => (
@@ -123,6 +136,15 @@ export default function Home({ user, onSignedOut }: Props) {
             </li>
           ))}
         </ul>
+      )}
+
+      {tab === 'templates' && cards !== undefined && (
+        <button
+          onClick={() => void createTemplate(user.id, 'New template').then(setEditing)}
+          className="mt-3 w-full rounded-xl border border-dashed border-neutral-300 py-3 text-sm font-semibold text-neutral-600 dark:border-neutral-700 dark:text-neutral-300"
+        >
+          + New template
+        </button>
       )}
 
       {sheet && <ExerciseSheet exerciseId={sheet} onClose={() => setSheet(null)} />}
