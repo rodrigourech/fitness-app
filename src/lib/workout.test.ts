@@ -140,3 +140,14 @@ describe('parsing', () => {
     expect(parseDuration('x:1')).toBeUndefined()
   })
 })
+
+describe('pace', () => {
+  it('computes pace and derives the missing value', async () => {
+    const { paceSeconds, applyPace } = await import('./workout')
+    expect(paceSeconds(2300, 7)).toBe(329) // 38:20 for 7 km = 5:29 /km
+    expect(paceSeconds(null, 7)).toBeNull()
+    expect(applyPace(330, 7, null)).toEqual({ duration_s: 2310 })
+    expect(applyPace(330, null, 2310)).toEqual({ distance_km: 7 })
+    expect(applyPace(330, null, null)).toEqual({})
+  })
+})

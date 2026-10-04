@@ -265,6 +265,27 @@ export function formatDuration(seconds: number | null): string {
   return `${h ? `${h}:` : ''}${mm}:${String(sec).padStart(2, '0')}`
 }
 
+/** Pace in seconds per km, or null if distance or duration is missing. */
+export function paceSeconds(durationS: number | null, distanceKm: number | null): number | null {
+  if (durationS === null || distanceKm === null || distanceKm <= 0) return null
+  return Math.round(durationS / distanceKm)
+}
+
+/**
+ * Applies a manually entered pace: with a distance the duration is derived,
+ * otherwise with a duration the distance is derived.
+ */
+export function applyPace(
+  paceS: number,
+  distanceKm: number | null,
+  durationS: number | null,
+): { duration_s?: number; distance_km?: number } {
+  if (paceS <= 0) return {}
+  if (distanceKm !== null && distanceKm > 0) return { duration_s: Math.round(paceS * distanceKm) }
+  if (durationS !== null && durationS > 0) return { distance_km: Math.round((durationS / paceS) * 100) / 100 }
+  return {}
+}
+
 export function formatNumber(n: number | null): string {
   return n === null ? '' : String(n)
 }

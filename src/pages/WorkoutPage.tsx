@@ -11,6 +11,7 @@ import { db, displayName, type Exercise, type ExerciseLink, type Workout, type W
 import { linkLabel, linksFor } from '../lib/exercise'
 import {
   addSet,
+  applyPace,
   cancelWorkout,
   describeSet,
   effective,
@@ -18,6 +19,7 @@ import {
   formatDuration,
   formatNumber,
   openSetCount,
+  paceSeconds,
   parseDuration,
   parseNumber,
   previousSets,
@@ -199,7 +201,7 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
     tt === 'duration'
       ? 'grid-cols-[1.5rem_1fr_6rem_2.75rem]'
       : tt === 'distance_duration'
-        ? 'grid-cols-[1.5rem_1fr_4.5rem_5rem_2.75rem]'
+        ? 'grid-cols-[1.5rem_1fr_3.25rem_4rem_4rem_2.5rem]'
         : eff.isUnilateral
           ? 'grid-cols-[1.5rem_1fr_3.25rem_2.75rem_2.75rem_2.75rem_2.5rem]'
           : 'grid-cols-[1.5rem_1fr_3.75rem_3.25rem_3rem_2.75rem]'
@@ -237,6 +239,7 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
           <>
             <span className="text-center">km</span>
             <span className="text-center">Time</span>
+            <span className="text-center">Pace /km</span>
           </>
         )}
         {tt === 'weight_reps' && (
@@ -318,6 +321,15 @@ function SetRow({ set, label, previous, trackingType, unilateral, restSeconds, s
     }
   }
 
+  function paceCommit(input: string) {
+    const pace = parseDuration(input)
+    if (pace === undefined) return false
+    if (pace === null) return true
+    const patch = applyPace(pace, set.distance_km, set.duration_s)
+    if (Object.keys(patch).length) void updateSet(set, patch)
+    return true
+  }
+
   function durationCommit(input: string) {
     const n = parseDuration(input)
     if (n === undefined) return false
@@ -348,6 +360,13 @@ function SetRow({ set, label, previous, trackingType, unilateral, restSeconds, s
         <>
           <Field label="Distance km" inputMode="decimal" value={formatNumber(set.distance_km)} onCommit={numberCommit('distance_km', false)} />
           <Field label="Time" inputMode="text" placeholder="mm:ss" value={formatDuration(set.duration_s)} onCommit={durationCommit} />
+          <Field
+            label="Pace per km"
+            inputMode="text"
+            placeholder="mm:ss"
+            value={formatDuration(paceSeconds(set.duration_s, set.distance_km))}
+            onCommit={paceCommit}
+          />
         </>
       )}
       {trackingType === 'weight_reps' && (
