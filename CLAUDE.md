@@ -22,6 +22,8 @@ Persönliche Fitness-App als Ersatz für die Strong App: Trainingsvorlagen, Trai
 - Übungen sind Stammdaten mit fester ID; Varianten über parent_id
 - Links und rechts sind keine Varianten, sondern is_unilateral mit reps_left und reps_right
 - Alle Tabellen haben user_id und sind über Row Level Security geschützt
+- DATABASE_URL (Besitzerzugang, umgeht RLS) nur lokal für Migrationen und Auswertungen; nie im Frontend, nie mit Präfix VITE_
+- Öffentliche Registrierung in Neon Auth bleibt nach dem Anlegen des eigenen Benutzers geschlossen
 
 ## Konventionen
 
