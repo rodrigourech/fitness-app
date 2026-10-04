@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import SyncBadge from '../components/SyncBadge'
 import { signOut, type LocalUser } from '../lib/auth'
 import { db, displayName, type Exercise } from '../lib/db'
+import { startWorkout } from '../lib/workout'
 
 interface Props {
   user: LocalUser
@@ -88,6 +89,12 @@ export default function Home({ user, onSignedOut }: Props) {
                   <li key={i}>{name}</li>
                 ))}
               </ol>
+              <button
+                onClick={() => void startWorkout(c.id, user.id)}
+                className="mt-3 w-full rounded-lg bg-neutral-900 py-3 text-base font-semibold text-white dark:bg-neutral-100 dark:text-neutral-900"
+              >
+                Training starten
+              </button>
             </li>
           ))}
         </ul>

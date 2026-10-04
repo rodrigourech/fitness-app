@@ -18,14 +18,14 @@ export default function SyncBadge({ onReauth }: Props) {
       text = 'Synchronisiere …'
       break
     case 'offline':
-      text = pending ? `Offline, ${pending} ausstehend` : 'Offline'
+      text = pending ? `Offline (${pending})` : 'Offline'
       break
     case 'signed_out':
       text = 'Anmeldung nötig'
       tone = 'text-amber-600 dark:text-amber-400'
       break
     case 'error':
-      text = pending ? `Fehler, ${pending} ausstehend` : 'Fehler'
+      text = pending ? `Fehler (${pending})` : 'Fehler'
       tone = 'text-red-600 dark:text-red-400'
       break
     default:
@@ -37,7 +37,7 @@ export default function SyncBadge({ onReauth }: Props) {
     <button
       onClick={action}
       title={status.error ?? (status.lastSuccess ? `Zuletzt synchronisiert: ${new Date(status.lastSuccess).toLocaleString('de-CH')}` : undefined)}
-      className={`rounded-md px-2 py-1 text-sm ${tone}`}
+      className={`rounded-md px-2 py-1 text-sm whitespace-nowrap ${tone}`}
     >
       {text}
     </button>

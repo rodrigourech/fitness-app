@@ -23,7 +23,7 @@ export interface SyncStatus {
 type SyncRow = { id: string; updated_at: string }
 
 /** Saves rows locally and queues them for sync. Sets updated_at to now. */
-export async function saveRows(table: SyncTable, rows: SyncRow[]): Promise<void> {
+export async function saveRows<T extends SyncRow>(table: SyncTable, rows: T[]): Promise<void> {
   const now = new Date().toISOString()
   await db.transaction('rw', db.table(table), db.outbox, async () => {
     for (const row of rows) row.updated_at = now
