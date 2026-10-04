@@ -4,7 +4,7 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
 
 ## **4. Oktober 2026**
 
-- Technologie-Stack wie im Handover empfohlen bestätigt
+- Technologie-Stack wie im Handover empfohlen bestätigt; Backend später durch Neon ersetzt (siehe unten)
 - Kein Import des Strong-Verlaufs; stattdessen werden die Trainings vom 28. September und 2. Oktober 2026 als Starthistorie übernommen (seed/history.json)
 - Trainingsplan gemäss den Strong-Protokollen vom 28. September und 2. Oktober 2026 (seed/trainingsplan.json):
   - DAY1 ohne Decline Crunch
@@ -24,7 +24,12 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
   - Varianten erben Equipment, Muskelgruppen, Erfassungstyp, unilateral und Links von der Hauptübung (Felder in der Variante leer)
   - Startdaten mit festem Zeitstempel seed_timestamp
 - Anmeldung mit Benutzername und Passwort (ersetzt E-Mail und Passwort):
-  - Supabase Auth kennt nur E-Mail; die App bildet den Benutzernamen intern auf <benutzername>@fitness-app.local ab
-  - Benutzer wird einmalig im Supabase-Dashboard angelegt (Add user, Auto Confirm); öffentliche Registrierung und E-Mail-Bestätigung sind deaktiviert
-  - Kein Passwort-Reset per E-Mail; Reset nur im Supabase-Dashboard
+  - Die Anmeldung basiert auf E-Mail; die App bildet den Benutzernamen intern auf <benutzername>@fitness-app.local ab (falls Neon Auth Benutzernamen direkt unterstützt, wird das beim Einrichten geprüft)
+  - Benutzer wird einmalig angelegt; danach werden öffentliche Registrierung und E-Mail-Bestätigung deaktiviert
+  - Kein Passwort-Reset per E-Mail; Reset nur über die Neon-Konsole
   - Keine Magic Links, da diese auf dem iPhone die installierte PWA umgehen
+- Backend Neon statt Supabase (Free-Plan, ohne Kreditkarte, Region AWS Frankfurt):
+  - Grund: Supabase pausiert Gratisprojekte nach 7 Tagen Inaktivität; Neon schläft nach 5 Minuten und startet bei der nächsten Anfrage automatisch
+  - Neon Auth (Managed Better Auth) für die Anmeldung, Neon Data API für den Zugriff aus der App, Row Level Security über auth.user_id()
+  - user_id als text (Claim sub des JWT), ohne Fremdschlüssel auf eine Benutzertabelle
+  - In Kauf genommen: Neon Auth und Data API sind jünger als die Gegenstücke bei Supabase; kein Standort Zürich

@@ -10,7 +10,7 @@ Persönliche Fitness-App als Ersatz für die Strong App: Trainingsvorlagen, Trai
 ## Stack (bestätigt am 4. Oktober 2026)
 
 - React, TypeScript (strict), Vite, PWA
-- Lokal: Dexie (IndexedDB); Backend: Supabase (Postgres, Auth, Row Level Security)
+- Lokal: Dexie (IndexedDB); Backend: Neon (Postgres, Neon Auth, Data API, Row Level Security)
 - Hosting: Vercel oder Cloudflare Pages, nur Gratistarife
 
 ## Architekturregeln

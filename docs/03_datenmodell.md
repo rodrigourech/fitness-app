@@ -36,7 +36,7 @@ Jede synchronisierte Tabelle hat diese Spalten:
 | Spalte | Typ | Gesetzt durch | Zweck |
 |---|---|---|---|
 | `id` | `uuid` | Gerät | Primärschlüssel, offline erzeugt |
-| `user_id` | `uuid` | Server (`auth.uid()`) | Besitzer, Grundlage der Row Level Security |
+| `user_id` | `text` | Server (`auth.user_id()`, Claim `sub` des JWT) | Besitzer, Grundlage der Row Level Security |
 | `created_at` | `timestamptz` | Gerät | Erstellung |
 | `updated_at` | `timestamptz` | Gerät | letzte Änderung; entscheidet Konflikte (neuerer gewinnt) |
 | `deleted_at` | `timestamptz` | Gerät | Soft Delete; Zeilen werden nie physisch gelöscht |
@@ -62,7 +62,9 @@ Warum `updated_at` und `synced_at` getrennt sind: Ein offline erfasster Satz tr�
 
 Die Muskelgruppen werden in der Oberfläche auf Deutsch angezeigt (Zuordnung im Code). Wertebereiche sind Text mit Check-Constraint statt Postgres-Enum, damit Erweiterungen ohne Typänderung möglich sind.
 
-## **Postgres-Schema (Supabase)**
+## **Postgres-Schema (Neon)**
+
+Anmeldung über Neon Auth; die App greift über die Neon Data API (PostgREST-kompatibel) mit dem JWT des Benutzers zu. `auth.user_id()` stammt aus der Erweiterung `pg_session_jwt` und liefert den Claim `sub` als Text. Es gibt keinen Fremdschlüssel auf eine Benutzertabelle; der Zugriff wird allein über `user_id` und Row Level Security geregelt.
 
 ### **Hilfsfunktion: Konfliktregel und synced_at**
 
@@ -113,7 +115,7 @@ create policy exercise_catalog_read on public.exercise_catalog
 ```sql
 create table public.exercise (
   id                uuid primary key,
-  user_id           uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  user_id           text not null default (auth.user_id()),
   parent_id         uuid references public.exercise (id) deferrable initially deferred,
   name              text not null,
   equipment         text,
@@ -142,7 +144,7 @@ create table public.exercise (
 
 create table public.exercise_link (
   id          uuid primary key,
-  user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  user_id     text not null default (auth.user_id()),
   exercise_id uuid not null references public.exercise (id) deferrable initially deferred,
   url         text not null,
   title       text,
@@ -158,7 +160,7 @@ create table public.exercise_link (
 ```sql
 create table public.template (
   id         uuid primary key,
-  user_id    uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  user_id    text not null default (auth.user_id()),
   name       text not null,
   note       text,
   created_at timestamptz not null,
@@ -169,7 +171,7 @@ create table public.template (
 
 create table public.template_exercise (
   id          uuid primary key,
-  user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  user_id     text not null default (auth.user_id()),
   template_id uuid not null references public.template (id) deferrable initially deferred,
   exercise_id uuid not null references public.exercise (id) deferrable initially deferred,
   position    integer not null check (position > 0),
@@ -183,7 +185,7 @@ create table public.template_exercise (
 
 create table public.template_set (
   id                   uuid primary key,
-  user_id              uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  user_id              text not null default (auth.user_id()),
   template_exercise_id uuid not null references public.template_exercise (id) deferrable initially deferred,
   position             integer not null check (position > 0),
   set_type             text not null check (set_type in ('warmup', 'working')),
@@ -204,7 +206,7 @@ create table public.template_set (
 ```sql
 create table public.workout (
   id                     uuid primary key,
-  user_id                uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  user_id                text not null default (auth.user_id()),
   template_id            uuid references public.template (id) deferrable initially deferred,
   template_name_snapshot text,
   started_at             timestamptz not null,
@@ -218,7 +220,7 @@ create table public.workout (
 
 create table public.workout_exercise (
   id          uuid primary key,
-  user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  user_id     text not null default (auth.user_id()),
   workout_id  uuid not null references public.workout (id) deferrable initially deferred,
   exercise_id uuid not null references public.exercise (id) deferrable initially deferred,
   position    integer not null check (position > 0),
@@ -232,7 +234,7 @@ create table public.workout_exercise (
 
 create table public.workout_set (
   id                  uuid primary key,
-  user_id             uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  user_id             text not null default (auth.user_id()),
   workout_exercise_id uuid not null references public.workout_exercise (id) deferrable initially deferred,
   position            integer not null check (position > 0),
   set_type            text not null check (set_type in ('warmup', 'working')),
@@ -252,7 +254,7 @@ create table public.workout_set (
 
 create table public.body_weight (
   id          uuid primary key,
-  user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  user_id     text not null default (auth.user_id()),
   measured_on date not null,
   weight_kg   numeric(5,2) not null check (weight_kg between 20 and 300),
   created_at  timestamptz not null,
@@ -279,13 +281,13 @@ begin
 
     -- Lesen, Anlegen, Ändern nur eigene Zeilen; kein Delete (Soft Delete)
     execute format(
-      'create policy %I on public.%I for select to authenticated using (user_id = (select auth.uid()))',
+      'create policy %I on public.%I for select to authenticated using (user_id = (select auth.user_id()))',
       t || '_select', t);
     execute format(
-      'create policy %I on public.%I for insert to authenticated with check (user_id = (select auth.uid()))',
+      'create policy %I on public.%I for insert to authenticated with check (user_id = (select auth.user_id()))',
       t || '_insert', t);
     execute format(
-      'create policy %I on public.%I for update to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()))',
+      'create policy %I on public.%I for update to authenticated using (user_id = (select auth.user_id())) with check (user_id = (select auth.user_id()))',
       t || '_update', t);
 
     execute format(
@@ -296,6 +298,11 @@ begin
   end loop;
 end
 $$;
+
+-- Rechte für die Rolle der Data API; kein DELETE (Soft Delete)
+grant usage on schema public to authenticated;
+grant select, insert, update on all tables in schema public to authenticated;
+revoke insert, update on public.exercise_catalog from authenticated;
 
 create index exercise_parent_idx          on public.exercise (parent_id);
 create index exercise_link_exercise_idx   on public.exercise_link (exercise_id);
@@ -332,6 +339,8 @@ select
 from public.exercise e
 left join public.exercise p on p.id = e.parent_id
 where e.deleted_at is null;
+
+grant select on public.exercise_effective to authenticated;
 ```
 
 `security_invoker` sorgt dafür, dass die Row Level Security der Basistabellen auch in der Sicht greift.
