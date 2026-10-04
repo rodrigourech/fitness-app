@@ -68,3 +68,20 @@ describe('links', () => {
     expect(normalizeUrl('')).toBeNull()
   })
 })
+
+describe('create', () => {
+  it('creates a main exercise and a variant that inherits', async () => {
+    const { createExercise, createVariant, exerciseOptions } = await import('./exercise')
+    const id = await createExercise('u1', { name: 'Pec Deck (Machine)', trackingType: 'weight_reps', isUnilateral: false, restS: 75, note: 'Oben' })
+    const main = (await db.exercise.get(id))!
+    expect(main).toMatchObject({ tracking_type: 'weight_reps', is_unilateral: false, muscles_primary: [], default_rest_s: 75 })
+    const vid = await createVariant(main, 'Griffe hoch', null)
+    const all = await db.exercise.toArray()
+    const byId = new Map(all.map((e) => [e.id, e]))
+    expect(effective(byId.get(vid)!, byId)).toMatchObject({ trackingType: 'weight_reps', restS: 75 })
+    const opts = await exerciseOptions()
+    const i = opts.findIndex((o) => o.id === id)
+    expect(opts[i + 1]).toMatchObject({ id: vid, label: 'Pec Deck (Machine) – Griffe hoch', isVariant: true })
+    expect(await db.outbox.where('table').equals('exercise').count()).toBeGreaterThanOrEqual(2)
+  })
+})

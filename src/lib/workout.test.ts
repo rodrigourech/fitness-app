@@ -151,3 +151,19 @@ describe('pace', () => {
     expect(applyPace(330, null, null)).toEqual({})
   })
 })
+
+describe('add exercise to running workout', () => {
+  it('appends with prefilled sets and the central rest', async () => {
+    const { addExerciseToWorkout } = await import('./workout')
+    const w = await startWorkout(day1, USER)
+    const legCurl = (await db.exercise.toArray()).find((e) => e.name === 'Lying Leg Curl (Machine)')!
+    await db.exercise.update(legCurl.id, { default_rest_s: 120 })
+    await addExerciseToWorkout(w, legCurl.id)
+    const s = await setsOf(w.id)
+    const added = s['Lying Leg Curl (Machine)']!
+    expect(added.we.position).toBe(8)
+    expect(added.we.rest_s).toBe(120)
+    // prefilled from DAY2 history: 35/35/30 kg
+    expect(added.sets.map((x) => x.weight)).toEqual([35, 35, 30])
+  })
+})

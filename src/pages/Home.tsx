@@ -3,6 +3,7 @@ import { useState } from 'react'
 import AppBar from '../components/AppBar'
 import ExerciseSheet from '../components/ExerciseSheet'
 import SyncBadge from '../components/SyncBadge'
+import ExercisesTab from './ExercisesTab'
 import { signOut, type LocalUser } from '../lib/auth'
 import { db, displayName, type Exercise } from '../lib/db'
 import { startWorkout } from '../lib/workout'
@@ -52,6 +53,7 @@ async function loadTemplates(): Promise<TemplateCard[]> {
 export default function Home({ user, onSignedOut }: Props) {
   const cards = useLiveQuery(loadTemplates, [])
   const [sheet, setSheet] = useState<string | null>(null)
+  const [tab, setTab] = useState<'templates' | 'exercises'>('templates')
 
   async function handleSignOut() {
     await signOut()
@@ -71,9 +73,25 @@ export default function Home({ user, onSignedOut }: Props) {
         </button>
       </AppBar>
 
-      <h1 className="mb-4 text-2xl font-semibold tracking-tight">Templates</h1>
+      <div role="tablist" className="mb-4 grid grid-cols-2 gap-1 rounded-lg bg-neutral-100 p-1 dark:bg-neutral-900">
+        {(['templates', 'exercises'] as const).map((t) => (
+          <button
+            key={t}
+            role="tab"
+            aria-selected={tab === t}
+            onClick={() => setTab(t)}
+            className={`rounded-md py-2 text-sm font-semibold ${
+              tab === t ? 'bg-white shadow-sm dark:bg-neutral-700' : 'text-neutral-500 dark:text-neutral-400'
+            }`}
+          >
+            {t === 'templates' ? 'Templates' : 'Exercises'}
+          </button>
+        ))}
+      </div>
 
-      {cards === undefined ? (
+      {tab === 'exercises' ? (
+        <ExercisesTab userId={user.id} />
+      ) : cards === undefined ? (
         <p className="text-neutral-500">Loading …</p>
       ) : cards.length === 0 ? (
         <p className="text-neutral-500">No templates yet.</p>

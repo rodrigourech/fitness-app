@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import AppBar from '../components/AppBar'
 import ExerciseSheet from '../components/ExerciseSheet'
+import ExercisePicker from '../components/ExercisePicker'
 import Field from '../components/Field'
 import RestTimer from '../components/RestTimer'
 import SyncBadge from '../components/SyncBadge'
@@ -10,6 +11,7 @@ import { startRest, stopRest } from '../lib/rest'
 import { db, displayName, type Exercise, type ExerciseLink, type Workout, type WorkoutExercise, type WorkoutSet } from '../lib/db'
 import { linkLabel, linksFor } from '../lib/exercise'
 import {
+  addExerciseToWorkout,
   addSet,
   applyPace,
   cancelWorkout,
@@ -73,6 +75,7 @@ export default function WorkoutPage({ workout, onReauth }: Props) {
   const exercises = useLiveQuery(() => db.exercise.toArray(), [])
   const now = useNow(1000)
   const [sheet, setSheet] = useState<string | null>(null)
+  const [picking, setPicking] = useState(false)
   const [confirm, setConfirm] = useState<null | { kind: 'finish'; open: number } | { kind: 'cancel' }>(null)
   const byId = new Map((exercises ?? []).map((e) => [e.id, e]))
 
@@ -117,6 +120,13 @@ export default function WorkoutPage({ workout, onReauth }: Props) {
           ))}
         </div>
       )}
+
+      <button
+        onClick={() => setPicking(true)}
+        className="mt-4 w-full rounded-xl border border-dashed border-neutral-300 py-3 text-sm font-semibold text-neutral-600 dark:border-neutral-700 dark:text-neutral-300"
+      >
+        + Add exercise
+      </button>
 
       <label className="mt-6 flex flex-col gap-1">
         <span className="text-sm text-neutral-500 dark:text-neutral-400">Workout note</span>
@@ -170,6 +180,16 @@ export default function WorkoutPage({ workout, onReauth }: Props) {
       )}
 
       {sheet && <ExerciseSheet exerciseId={sheet} onClose={() => setSheet(null)} />}
+      {picking && (
+        <ExercisePicker
+          userId={workout.user_id}
+          onClose={() => setPicking(false)}
+          onPick={(id) => {
+            setPicking(false)
+            void addExerciseToWorkout(workout, id)
+          }}
+        />
+      )}
     </main>
   )
 }
@@ -179,7 +199,7 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
   const [rirHelp, setRirHelp] = useState(false)
   const eff = exercise
     ? effective(exercise, byId)
-    : { trackingType: 'weight_reps', isUnilateral: false, floor: null, seat: null, footPosition: null, setupNote: null, focusMuscles: [] as string[], focusCue: null }
+    : { trackingType: 'weight_reps', isUnilateral: false, floor: null, seat: null, footPosition: null, setupNote: null, focusMuscles: [] as string[], focusCue: null, restS: null }
 
   const prevWorking = previous.filter((s) => s.set_type === 'working')
   // RIR is recorded only for the last working set, below the set rows
@@ -252,7 +272,7 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
               previous={describeSet(prev, tt, eff.isUnilateral)}
               trackingType={tt}
               unilateral={eff.isUnilateral}
-              restSeconds={we.rest_s}
+              restSeconds={eff.restS ?? we.rest_s}
             />
           )
         })}

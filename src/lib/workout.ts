@@ -129,6 +129,42 @@ export async function startWorkout(templateId: string, userId: string): Promise<
   return workout
 }
 
+/** Appends an exercise to a running workout, with sets prefilled from the last performance. */
+export async function addExerciseToWorkout(w: Workout, exerciseId: string): Promise<void> {
+  const ex = await db.exercise.get(exerciseId)
+  if (!ex) throw new Error('Exercise not found')
+  const parent = ex.parent_id ? await db.exercise.get(ex.parent_id) : undefined
+  const eff = effective(ex, new Map([[ex.id, ex], ...(parent ? ([[parent.id, parent]] as const) : [])]))
+  const existing = (await db.workout_exercise.where('workout_id').equals(w.id).toArray()).filter((we) => we.deleted_at === null)
+  const ts = now()
+  const we: WorkoutExercise = {
+    id: uuid(),
+    workout_id: w.id,
+    exercise_id: ex.id,
+    position: Math.max(0, ...existing.map((e) => e.position)) + 1,
+    rest_s: eff.restS,
+    comment: null,
+    ...base(w.user_id, ts),
+  }
+  const prev = (await previousSets(ex.id, w.id)).filter((s) => s.set_type === 'working')
+  const count = prev.length || (eff.trackingType === 'weight_reps' ? 3 : 1)
+  const sets: WorkoutSet[] = Array.from({ length: count }, (_, i) => {
+    const p = prev[i] ?? prev.at(-1)
+    return {
+      id: uuid(),
+      workout_exercise_id: we.id,
+      position: i + 1,
+      set_type: 'working',
+      ...(p ? measureOf(p) : { weight: null, reps: null, reps_left: null, reps_right: null, duration_s: null, distance_km: null }),
+      rir: null,
+      completed_at: null,
+      ...base(w.user_id, ts),
+    }
+  })
+  await saveRows('workout_exercise', [we])
+  await saveRows('workout_set', sets)
+}
+
 export async function updateSet(set: WorkoutSet, patch: Partial<WorkoutSet>): Promise<void> {
   const current = (await db.workout_set.get(set.id)) ?? set
   await saveRows('workout_set', [{ ...current, ...patch }])
@@ -230,6 +266,7 @@ export function effective(ex: Exercise, byId: Map<string, Exercise>) {
     setupNote: ex.setup_note ?? parent?.setup_note ?? null,
     focusMuscles: ex.focus_muscles ?? parent?.focus_muscles ?? [],
     focusCue: ex.focus_cue ?? parent?.focus_cue ?? null,
+    restS: ex.default_rest_s ?? parent?.default_rest_s ?? null,
   }
 }
 

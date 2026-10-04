@@ -44,3 +44,6 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
 - Name, Variantenname und Notiz sind im Übungsblatt bearbeitbar; der Name der Hauptübung gilt für alle Varianten
 - Fokus-Hinweis (focus_cue) nur im Übungsblatt, nicht in der Trainingsansicht
 - RIR als Schnellwahl unterhalb der Sätze (gilt für den letzten Arbeitssatz), keine eigene Spalte
+- Pause zentral pro Übung (exercise.default_rest_s, Varianten erben); der Pausentimer verwendet diesen Wert, template_exercise.rest_s wird nicht mehr genutzt
+- Übungen und Varianten in der App anlegbar: Reiter «Exercises» auf der Startseite und «+ Add exercise» im laufenden Training
+- Übungskatalog (Free Exercise DB) wird als statische Datei mit der App ausgeliefert statt in exercise_catalog importiert (ersetzt den Entscheid vom 4. Oktober); Tabelle exercise_catalog bleibt vorerst leer

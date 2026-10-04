@@ -5,6 +5,8 @@ import { addLink, linkLabel, linksFor, normalizeUrl, removeLink, updateExercise 
 import { effective } from '../lib/workout'
 import { regionName } from '../lib/muscles'
 import BodyMap from './BodyMap'
+import RestStepper from './RestStepper'
+import { formatDuration } from '../lib/workout'
 
 interface Props {
   exerciseId: string
@@ -82,6 +84,14 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
             required
             onSave={(v) => updateExercise(ex, { name: v ?? ex.name })}
           />
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm font-semibold">Rest between sets</span>
+            <RestStepper
+              value={ex.default_rest_s}
+              onChange={(s) => void updateExercise(ex, { default_rest_s: s })}
+              fallbackLabel={parent?.default_rest_s ? `${formatDuration(parent.default_rest_s)} (inh.)` : 'Off'}
+            />
+          </div>
           <TextField
             label="Notes"
             value={ex.setup_note ?? ''}
