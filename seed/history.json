@@ -1,5 +1,6 @@
 {
   "schema_version": 1,
+  "seed_timestamp": "2026-10-04T00:00:00+02:00",
   "workouts": [
     {
       "id": "01e39cfd-d391-540c-a73a-3eff061f93a9",

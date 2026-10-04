@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "updated_on": "2026-10-04",
+  "seed_timestamp": "2026-10-04T00:00:00+02:00",
   "weekly_goal": {
     "strength_sessions": 2,
     "runs": 1
@@ -54,16 +55,11 @@
       "key": "chest_press_mid",
       "parent_id": "1f3d184e-fccb-514f-a554-b6a6cbbc7380",
       "name": "Griffe Mitte Brust",
-      "equipment": "machine",
-      "muscles_primary": [
-        "chest"
-      ],
-      "muscles_secondary": [
-        "triceps",
-        "front_delts"
-      ],
-      "tracking_type": "weight_reps",
-      "is_unilateral": false,
+      "equipment": null,
+      "muscles_primary": null,
+      "muscles_secondary": null,
+      "tracking_type": null,
+      "is_unilateral": null,
       "weight_step": null,
       "default_rest_s": 150,
       "floor": "oben",
@@ -77,16 +73,11 @@
       "key": "chest_press_low_seat",
       "parent_id": "1f3d184e-fccb-514f-a554-b6a6cbbc7380",
       "name": "Sitz tiefer",
-      "equipment": "machine",
-      "muscles_primary": [
-        "chest"
-      ],
-      "muscles_secondary": [
-        "triceps",
-        "front_delts"
-      ],
-      "tracking_type": "weight_reps",
-      "is_unilateral": false,
+      "equipment": null,
+      "muscles_primary": null,
+      "muscles_secondary": null,
+      "tracking_type": null,
+      "is_unilateral": null,
       "weight_step": null,
       "default_rest_s": 150,
       "floor": "oben",
@@ -180,13 +171,11 @@
       "key": "decline_crunch_15",
       "parent_id": "f1a5b601-f90c-5af6-8638-3e07239ec4c5",
       "name": "−15°",
-      "equipment": "bodyweight",
-      "muscles_primary": [
-        "abs"
-      ],
-      "muscles_secondary": [],
-      "tracking_type": "weight_reps",
-      "is_unilateral": false,
+      "equipment": null,
+      "muscles_primary": null,
+      "muscles_secondary": null,
+      "tracking_type": null,
+      "is_unilateral": null,
       "weight_step": null,
       "default_rest_s": 90,
       "floor": "oben",
@@ -222,15 +211,11 @@
       "key": "lat_pulldown_vgrip",
       "parent_id": "8ca6bcc2-1cc1-5f1f-b6a5-609954173d50",
       "name": "V-Griff (schwarz)",
-      "equipment": "cable",
-      "muscles_primary": [
-        "lats"
-      ],
-      "muscles_secondary": [
-        "biceps"
-      ],
-      "tracking_type": "weight_reps",
-      "is_unilateral": false,
+      "equipment": null,
+      "muscles_primary": null,
+      "muscles_secondary": null,
+      "tracking_type": null,
+      "is_unilateral": null,
       "weight_step": null,
       "default_rest_s": 90,
       "floor": "unten",

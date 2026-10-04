@@ -1,8 +1,8 @@
-# Entscheidungen
+# **Entscheidungen**
 
 Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
 
-## 4. Oktober 2026
+## **4. Oktober 2026**
 
 - Technologie-Stack wie im Handover empfohlen bestätigt
 - Kein Import des Strong-Verlaufs; stattdessen werden die Trainings vom 28. September und 2. Oktober 2026 als Starthistorie übernommen (seed/history.json)
@@ -17,3 +17,9 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
 - Seed-Daten verwenden deterministische UUIDs (UUIDv5), damit ein Import auf mehreren Geräten keine Duplikate erzeugt
 - Muskelgruppen als englische Schlüssel: chest, front_delts, side_delts, triceps, biceps, abs, lats, upper_back, quads, glutes, hamstrings, cardio
 - Progressionsvorschlag ohne festen Gewichtsschritt: Die App zeigt nur «Gewicht erhöhen», das neue Gewicht wird am Gerät selbst gewählt. Das Feld weight_step bleibt optional und ist in den Startdaten leer
+- Datenmodell gemäss docs/03_datenmodell.md:
+  - Free Exercise DB als separater, nur lesbarer Katalog (exercise_catalog)
+  - Muskelgruppen als Text-Arrays in exercise
+  - Zusätzliche Spalte synced_at (vom Server gesetzt) für das Abholen; updated_at entscheidet Konflikte
+  - Varianten erben Equipment, Muskelgruppen, Erfassungstyp, unilateral und Links von der Hauptübung (Felder in der Variante leer)
+  - Startdaten mit festem Zeitstempel seed_timestamp
