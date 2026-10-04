@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@neondatabase/neon-js": "0.7.0-beta",
+    "body-muscles": "^1.0.0",
     "dexie": "^4.4.6",
     "dexie-react-hooks": "^4.4.0",
     "react": "^19.2.8",

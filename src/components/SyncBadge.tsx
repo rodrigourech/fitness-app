@@ -15,28 +15,28 @@ export default function SyncBadge({ onReauth }: Props) {
   let tone = 'text-neutral-500 dark:text-neutral-400'
   switch (status.phase) {
     case 'syncing':
-      text = 'Synchronisiere …'
+      text = 'Syncing …'
       break
     case 'offline':
       text = pending ? `Offline (${pending})` : 'Offline'
       break
     case 'signed_out':
-      text = 'Anmeldung nötig'
+      text = 'Sign-in needed'
       tone = 'text-amber-600 dark:text-amber-400'
       break
     case 'error':
-      text = pending ? `Fehler (${pending})` : 'Fehler'
+      text = pending ? `Error (${pending})` : 'Error'
       tone = 'text-red-600 dark:text-red-400'
       break
     default:
-      text = pending ? `${pending} ausstehend` : 'Synchronisiert'
+      text = pending ? `${pending} pending` : 'Synced'
   }
 
   const action = status.phase === 'signed_out' ? onReauth : () => void syncNow()
   return (
     <button
       onClick={action}
-      title={status.error ?? (status.lastSuccess ? `Zuletzt synchronisiert: ${new Date(status.lastSuccess).toLocaleString('de-CH')}` : undefined)}
+      title={status.error ?? (status.lastSuccess ? `Last synced: ${new Date(status.lastSuccess).toLocaleString('en-GB')}` : undefined)}
       className={`rounded-md px-2 py-1 text-sm whitespace-nowrap ${tone}`}
     >
       {text}

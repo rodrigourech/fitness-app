@@ -46,6 +46,8 @@ export async function importSeedIfNeeded(userId: string): Promise<boolean> {
     foot_position: e.foot_position,
     setup_note: e.setup_note,
     source_id: e.source_id,
+    focus_muscles: e.focus_muscles,
+    focus_cue: e.focus_cue,
     ...s,
   }))
 

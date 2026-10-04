@@ -61,7 +61,7 @@ function measureOf(s: WorkoutSet): Measure {
 /** Starts a workout from a template. Inputs are prefilled with the last performance, else the template targets. */
 export async function startWorkout(templateId: string, userId: string): Promise<Workout> {
   const template = await db.template.get(templateId)
-  if (!template) throw new Error('Vorlage nicht gefunden')
+  if (!template) throw new Error('Template not found')
   const ts = now()
   const workout: Workout = {
     id: uuid(),
@@ -228,6 +228,8 @@ export function effective(ex: Exercise, byId: Map<string, Exercise>) {
     seat: ex.seat ?? parent?.seat ?? null,
     footPosition: ex.foot_position ?? parent?.foot_position ?? null,
     setupNote: ex.setup_note ?? parent?.setup_note ?? null,
+    focusMuscles: ex.focus_muscles ?? parent?.focus_muscles ?? [],
+    focusCue: ex.focus_cue ?? parent?.focus_cue ?? null,
   }
 }
 

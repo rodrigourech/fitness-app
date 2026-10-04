@@ -28,17 +28,17 @@ export class SignInError extends Error {}
 /** Signs in against Neon Auth and remembers the user locally. */
 export async function signIn(username: string, password: string): Promise<LocalUser> {
   if (!navigator.onLine) {
-    throw new SignInError('Keine Verbindung. Die erste Anmeldung braucht Internet.')
+    throw new SignInError('No connection. The first sign-in needs internet.')
   }
   const { error } = await neon.auth.signIn.email({ email: usernameToEmail(username), password })
   if (error) {
     throw new SignInError(
-      error.status === 401 ? 'Benutzername oder Passwort falsch.' : `Anmeldung fehlgeschlagen: ${error.message ?? 'unbekannter Fehler'}`,
+      error.status === 401 ? 'Wrong username or password.' : `Sign-in failed: ${error.message ?? 'unknown error'}`,
     )
   }
   const { data } = await neon.auth.getSession()
   const id = data?.user.id
-  if (!id) throw new SignInError('Anmeldung fehlgeschlagen: keine Sitzung erhalten.')
+  if (!id) throw new SignInError('Sign-in failed: no session received.')
 
   // user_id is kept after sign-out and identifies the owner of the local data
   const previous = await getMeta('user_id')

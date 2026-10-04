@@ -29,6 +29,9 @@ export interface Exercise extends SyncColumns {
   foot_position: string | null
   setup_note: string | null
   source_id: string | null
+  /** Regions of the body map to feel (mind-muscle connection); null on a variant = inherit */
+  focus_muscles: string[] | null
+  focus_cue: string | null
 }
 
 export interface ExerciseLink extends SyncColumns {

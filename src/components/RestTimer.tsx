@@ -17,7 +17,7 @@ export default function RestTimer() {
         over ? 'bg-emerald-600 text-white' : 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
       }`}
     >
-      <span className="text-sm">{over ? 'Pause vorbei' : 'Pause'}</span>
+      <span className="text-sm">{over ? 'Rest over' : 'Rest'}</span>
       <span className="text-2xl font-semibold tabular-nums">{over ? formatDuration(-left) : formatDuration(left)}</span>
       <div className="flex gap-1">
         <button onClick={() => void adjustRest(-15)} className="rounded px-2 py-1 text-sm opacity-80">
@@ -27,7 +27,7 @@ export default function RestTimer() {
           +15
         </button>
         <button onClick={() => void stopRest()} className="rounded px-2 py-1 text-sm font-medium">
-          {over ? 'OK' : 'Stopp'}
+          {over ? 'OK' : 'Stop'}
         </button>
       </div>
     </div>

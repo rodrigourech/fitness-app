@@ -1,11 +1,14 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
+import AppBar from '../components/AppBar'
+import ExerciseSheet from '../components/ExerciseSheet'
 import Field from '../components/Field'
 import RestTimer from '../components/RestTimer'
 import SyncBadge from '../components/SyncBadge'
 import { useNow } from '../hooks/useNow'
 import { startRest, stopRest } from '../lib/rest'
-import { db, displayName, type Exercise, type Workout, type WorkoutExercise, type WorkoutSet } from '../lib/db'
+import { db, displayName, type Exercise, type ExerciseLink, type Workout, type WorkoutExercise, type WorkoutSet } from '../lib/db'
+import { linkLabel, linksFor } from '../lib/exercise'
 import {
   addSet,
   cancelWorkout,
@@ -35,9 +38,10 @@ interface ExerciseBlock {
   name: string
   sets: WorkoutSet[]
   previous: WorkoutSet[]
+  links: ExerciseLink[]
 }
 
-const FLOOR = { oben: 'Oben', unten: 'Unten' } as const
+const FLOOR = { oben: 'Upstairs', unten: 'Downstairs' } as const
 
 async function loadBlocks(workoutId: string): Promise<ExerciseBlock[]> {
   const [wes, exercises] = await Promise.all([
@@ -53,11 +57,12 @@ async function loadBlocks(workoutId: string): Promise<ExerciseBlock[]> {
       return {
         we,
         exercise,
-        name: exercise ? displayName(exercise, byId) : 'Unbekannte Übung',
+        name: exercise ? displayName(exercise, byId) : 'Unknown exercise',
         sets: allSets
           .filter((s) => s.workout_exercise_id === we.id && s.deleted_at === null)
           .sort((a, b) => a.position - b.position),
         previous: await previousSets(we.exercise_id, workoutId),
+        links: exercise ? await linksFor(exercise) : [],
       }
     }),
   )
@@ -67,6 +72,7 @@ export default function WorkoutPage({ workout, onReauth }: Props) {
   const blocks = useLiveQuery(() => loadBlocks(workout.id), [workout.id])
   const exercises = useLiveQuery(() => db.exercise.toArray(), [])
   const now = useNow(1000)
+  const [sheet, setSheet] = useState<string | null>(null)
   const [confirm, setConfirm] = useState<null | { kind: 'finish'; open: number } | { kind: 'cancel' }>(null)
   const byId = new Map((exercises ?? []).map((e) => [e.id, e]))
 
@@ -89,34 +95,31 @@ export default function WorkoutPage({ workout, onReauth }: Props) {
   return (
     <main className="mx-auto max-w-xl px-4 pb-32">
       <RestTimer />
-      <header className="mb-4 flex items-center justify-between gap-2 pt-[max(env(safe-area-inset-top),1rem)]">
+      <AppBar>
+        <SyncBadge onReauth={onReauth} />
+      </AppBar>
+      <header className="mb-4 flex items-center justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{workout.template_name_snapshot ?? 'Training'}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{workout.template_name_snapshot ?? 'Workout'}</h1>
           <p className="text-sm text-neutral-500 tabular-nums dark:text-neutral-400">{formatDuration(elapsed)}</p>
         </div>
-        <div className="flex items-center gap-1">
-          <SyncBadge onReauth={onReauth} />
-          <button
-            onClick={() => void askFinish()}
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white"
-          >
-            Abschliessen
-          </button>
-        </div>
+        <button onClick={() => void askFinish()} className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">
+          Finish
+        </button>
       </header>
 
       {blocks === undefined ? (
-        <p className="text-neutral-500">Laden …</p>
+        <p className="text-neutral-500">Loading …</p>
       ) : (
         <div className="flex flex-col gap-4">
           {blocks.map((b) => (
-            <ExerciseCard key={b.we.id} block={b} byId={byId} />
+            <ExerciseCard key={b.we.id} block={b} byId={byId} onOpen={setSheet} />
           ))}
         </div>
       )}
 
       <label className="mt-6 flex flex-col gap-1">
-        <span className="text-sm text-neutral-500 dark:text-neutral-400">Notiz zum Training</span>
+        <span className="text-sm text-neutral-500 dark:text-neutral-400">Workout note</span>
         <textarea
           defaultValue={workout.note ?? ''}
           onBlur={(e) => void updateWorkout(workout, { note: e.target.value.trim() || null })}
@@ -129,7 +132,7 @@ export default function WorkoutPage({ workout, onReauth }: Props) {
         onClick={() => setConfirm({ kind: 'cancel' })}
         className="mt-6 w-full rounded-lg px-4 py-3 text-sm text-red-600 dark:text-red-400"
       >
-        Training abbrechen
+        Discard workout
       </button>
 
       {confirm && (
@@ -140,45 +143,47 @@ export default function WorkoutPage({ workout, onReauth }: Props) {
           >
             {confirm.kind === 'finish' ? (
               <>
-                <h2 className="mb-2 text-lg font-semibold">Training abschliessen?</h2>
+                <h2 className="mb-2 text-lg font-semibold">Finish workout?</h2>
                 <p className="mb-4 text-sm text-neutral-600 dark:text-neutral-300">
                   {confirm.open === 0
-                    ? 'Alle Sätze sind abgehakt.'
-                    : `${confirm.open} nicht abgehakte ${confirm.open === 1 ? 'Satz wird' : 'Sätze werden'} verworfen.`}
+                    ? 'All sets are checked.'
+                    : `${confirm.open} unchecked ${confirm.open === 1 ? 'set' : 'sets'} will be discarded.`}
                 </p>
                 <button onClick={() => void doFinish()} className="w-full rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white">
-                  Abschliessen
+                  Finish
                 </button>
               </>
             ) : (
               <>
-                <h2 className="mb-2 text-lg font-semibold">Training abbrechen?</h2>
-                <p className="mb-4 text-sm text-neutral-600 dark:text-neutral-300">Alle erfassten Sätze dieses Trainings werden verworfen.</p>
+                <h2 className="mb-2 text-lg font-semibold">Discard workout?</h2>
+                <p className="mb-4 text-sm text-neutral-600 dark:text-neutral-300">All sets of this workout will be discarded.</p>
                 <button onClick={() => void doCancel()} className="w-full rounded-lg bg-red-600 px-4 py-3 font-semibold text-white">
-                  Training verwerfen
+                  Discard
                 </button>
               </>
             )}
             <button onClick={() => setConfirm(null)} className="mt-2 w-full rounded-lg px-4 py-3 text-sm text-neutral-600 dark:text-neutral-300">
-              Zurück
+              Back
             </button>
           </div>
         </div>
       )}
+
+      {sheet && <ExerciseSheet exerciseId={sheet} onClose={() => setSheet(null)} />}
     </main>
   )
 }
 
-function ExerciseCard({ block, byId }: { block: ExerciseBlock; byId: Map<string, Exercise> }) {
-  const { we, exercise, name, sets, previous } = block
+function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map<string, Exercise>; onOpen: (exerciseId: string) => void }) {
+  const { we, exercise, name, sets, previous, links } = block
   const [rirHelp, setRirHelp] = useState(false)
   const eff = exercise
     ? effective(exercise, byId)
-    : { trackingType: 'weight_reps', isUnilateral: false, floor: null, seat: null, footPosition: null, setupNote: null }
+    : { trackingType: 'weight_reps', isUnilateral: false, floor: null, seat: null, footPosition: null, setupNote: null, focusMuscles: [] as string[], focusCue: null }
   const settings = [
     eff.floor ? FLOOR[eff.floor] : null,
-    eff.seat ? `Sitz ${eff.seat}` : null,
-    eff.footPosition ? `Füsse ${eff.footPosition}` : null,
+    eff.seat ? `Seat ${eff.seat}` : null,
+    eff.footPosition ? `Feet ${eff.footPosition}` : null,
     eff.setupNote,
   ].filter(Boolean)
 
@@ -201,25 +206,37 @@ function ExerciseCard({ block, byId }: { block: ExerciseBlock; byId: Map<string,
 
   return (
     <section className="rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
-      <h2 className="font-semibold">{name}</h2>
+      <button onClick={() => onOpen(we.exercise_id)} className="text-left">
+        <h2 className="font-semibold underline-offset-2 hover:underline">{name} <span className="text-neutral-400">›</span></h2>
+      </button>
       {settings.length > 0 && <p className="text-sm text-neutral-500 dark:text-neutral-400">{settings.join(' · ')}</p>}
+      {eff.focusCue && <p className="text-sm text-red-700 dark:text-red-300">Feel: {eff.focusCue}</p>}
+      {links.length > 0 && (
+        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+          {links.map((l) => (
+            <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" className="text-sm text-sky-700 underline dark:text-sky-400">
+              ▶ {linkLabel(l)}
+            </a>
+          ))}
+        </div>
+      )}
       {we.comment && <p className="text-sm text-neutral-500 italic dark:text-neutral-400">{we.comment}</p>}
 
       {rirHelp && (
         <p className="mt-3 rounded-md bg-neutral-100 p-2 text-sm text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
-          RIR = Reps in Reserve: Wiederholungen, die mit sauberer Technik noch möglich gewesen wären (0 = Muskelversagen,
-          2 = zwei weitere wären gegangen). Nur beim letzten Satz, freiwillig. Ziel: 1–2.
+          RIR = Reps in Reserve: how many more reps you could have done with clean form (0 = failure, 2 = two more were
+          possible). Last set only, optional. Target: 1–2.
         </p>
       )}
 
       <div className={`mt-3 grid ${cols} items-center gap-x-1 gap-y-1.5 text-xs text-neutral-500 dark:text-neutral-400`}>
-        <span className="text-center">Satz</span>
-        <span>Vorher</span>
-        {tt === 'duration' && <span className="text-center">Zeit</span>}
+        <span className="text-center">Set</span>
+        <span>Previous</span>
+        {tt === 'duration' && <span className="text-center">Time</span>}
         {tt === 'distance_duration' && (
           <>
             <span className="text-center">km</span>
-            <span className="text-center">Zeit</span>
+            <span className="text-center">Time</span>
           </>
         )}
         {tt === 'weight_reps' && (
@@ -231,7 +248,7 @@ function ExerciseCard({ block, byId }: { block: ExerciseBlock; byId: Map<string,
                 <span className="text-center">R</span>
               </>
             ) : (
-              <span className="text-center">Wdh.</span>
+              <span className="text-center">Reps</span>
             )}
             <button
               onClick={() => setRirHelp((v) => !v)}
@@ -264,14 +281,14 @@ function ExerciseCard({ block, byId }: { block: ExerciseBlock; byId: Map<string,
 
       <div className="mt-2 flex gap-2">
         <button onClick={() => void addSet(we)} className="flex-1 rounded-lg bg-neutral-100 py-2 text-sm font-medium dark:bg-neutral-800">
-          + Satz
+          + Add set
         </button>
         {sets.length > 0 && (
           <button
             onClick={() => void removeLastSet(we)}
             className="rounded-lg px-3 py-2 text-sm text-neutral-500 dark:text-neutral-400"
           >
-            Satz entfernen
+            Remove set
           </button>
         )}
       </div>
@@ -325,24 +342,24 @@ function SetRow({ set, label, previous, trackingType, unilateral, restSeconds, s
         {previous[1] && <span className="truncate">{previous[1]}</span>}
       </span>
       {trackingType === 'duration' && (
-        <Field label="Zeit" inputMode="text" placeholder="mm:ss" value={formatDuration(set.duration_s)} onCommit={durationCommit} />
+        <Field label="Time" inputMode="text" placeholder="mm:ss" value={formatDuration(set.duration_s)} onCommit={durationCommit} />
       )}
       {trackingType === 'distance_duration' && (
         <>
-          <Field label="Distanz km" inputMode="decimal" value={formatNumber(set.distance_km)} onCommit={numberCommit('distance_km', false)} />
-          <Field label="Zeit" inputMode="text" placeholder="mm:ss" value={formatDuration(set.duration_s)} onCommit={durationCommit} />
+          <Field label="Distance km" inputMode="decimal" value={formatNumber(set.distance_km)} onCommit={numberCommit('distance_km', false)} />
+          <Field label="Time" inputMode="text" placeholder="mm:ss" value={formatDuration(set.duration_s)} onCommit={durationCommit} />
         </>
       )}
       {trackingType === 'weight_reps' && (
         <>
-          <Field label="Gewicht kg" inputMode="decimal" value={formatNumber(set.weight)} onCommit={numberCommit('weight', false)} />
+          <Field label="Weight kg" inputMode="decimal" value={formatNumber(set.weight)} onCommit={numberCommit('weight', false)} />
           {unilateral ? (
             <>
-              <Field label="Wiederholungen links" inputMode="numeric" value={formatNumber(set.reps_left)} onCommit={numberCommit('reps_left', true)} />
-              <Field label="Wiederholungen rechts" inputMode="numeric" value={formatNumber(set.reps_right)} onCommit={numberCommit('reps_right', true)} />
+              <Field label="Reps left" inputMode="numeric" value={formatNumber(set.reps_left)} onCommit={numberCommit('reps_left', true)} />
+              <Field label="Reps right" inputMode="numeric" value={formatNumber(set.reps_right)} onCommit={numberCommit('reps_right', true)} />
             </>
           ) : (
-            <Field label="Wiederholungen" inputMode="numeric" value={formatNumber(set.reps)} onCommit={numberCommit('reps', true)} />
+            <Field label="Reps" inputMode="numeric" value={formatNumber(set.reps)} onCommit={numberCommit('reps', true)} />
           )}
           {showRir ? (
             <select
@@ -364,7 +381,7 @@ function SetRow({ set, label, previous, trackingType, unilateral, restSeconds, s
         </>
       )}
       <button
-        aria-label={done ? 'Satz offen' : 'Satz erledigt'}
+        aria-label={done ? 'Mark set as not done' : 'Mark set as done'}
         aria-pressed={done}
         onClick={() => void toggle()}
         className={`flex h-10 items-center justify-center rounded-md text-lg font-bold ${

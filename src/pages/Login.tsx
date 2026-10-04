@@ -18,7 +18,7 @@ export default function Login({ onSignedIn }: Props) {
     try {
       onSignedIn(await signIn(username, password))
     } catch (err) {
-      setError(err instanceof SignInError ? err.message : 'Anmeldung fehlgeschlagen.')
+      setError(err instanceof SignInError ? err.message : 'Sign-in failed.')
     } finally {
       setBusy(false)
     }
@@ -26,10 +26,10 @@ export default function Login({ onSignedIn }: Props) {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-6">
-      <h1 className="mb-8 text-3xl font-semibold tracking-tight">Fitness</h1>
+      <h1 className="mb-8 text-3xl font-bold tracking-tight">Fitness App</h1>
       <form onSubmit={submit} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1">
-          <span className="text-sm text-neutral-500 dark:text-neutral-400">Benutzername</span>
+          <span className="text-sm text-neutral-500 dark:text-neutral-400">Username</span>
           <input
             className="rounded-lg border border-neutral-300 bg-transparent px-3 py-3 text-base outline-none focus:border-neutral-900 dark:border-neutral-700 dark:focus:border-neutral-100"
             autoComplete="username"
@@ -42,7 +42,7 @@ export default function Login({ onSignedIn }: Props) {
           />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-sm text-neutral-500 dark:text-neutral-400">Passwort</span>
+          <span className="text-sm text-neutral-500 dark:text-neutral-400">Password</span>
           <input
             className="rounded-lg border border-neutral-300 bg-transparent px-3 py-3 text-base outline-none focus:border-neutral-900 dark:border-neutral-700 dark:focus:border-neutral-100"
             type="password"
@@ -62,7 +62,7 @@ export default function Login({ onSignedIn }: Props) {
           disabled={busy}
           className="mt-2 rounded-lg bg-neutral-900 px-4 py-3 text-base font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
         >
-          {busy ? 'Anmelden …' : 'Anmelden'}
+          {busy ? 'Signing in …' : 'Sign in'}
         </button>
       </form>
     </main>

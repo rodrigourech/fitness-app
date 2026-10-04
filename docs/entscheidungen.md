@@ -37,3 +37,6 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
 - Neon CLI ohne Agent-Integrationen: neon skills und neon mcp werden vorerst nicht installiert (kein kontoweiter API-Schlüssel)
 - Absicherung gegen fremde Registrierungen: Neon Auth kann die Registrierung derzeit nicht sperren. Migration 0002 führt die Owner-Liste private.app_owner ein; alle Policies verlangen zusätzlich private.is_app_owner(). Fremde Konten können damit weder lesen noch schreiben
 - RIR wird nur beim letzten Arbeitssatz jeder Übung erfasst (optional). Progressionsvorschlag: Erreichen alle Arbeitssätze die Zielwiederholungen und hat der letzte Arbeitssatz mindestens 2 RIR, schlägt die App «Gewicht erhöhen» vor (ersetzt die Regel im Handover, die RIR für jeden Satz voraussetzte)
+- Oberfläche auf Englisch, App-Name «Fitness App»; eigene Daten (Übungsvarianten, Notizen, Hinweise) bleiben deutsch
+- Referenzvideos pro Übung über exercise_link; Varianten zeigen zusätzlich die Links der Hauptübung
+- Muskelfokus für die Mind-Muscle-Connection: Spalten focus_muscles und focus_cue (Migration 0003), Darstellung als 2D-Körperkarte mit der Bibliothek body-muscles (Apache-2.0), Muskeln in der App antippbar; kein 3D

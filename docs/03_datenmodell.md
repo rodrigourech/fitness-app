@@ -49,6 +49,7 @@ Warum `updated_at` und `synced_at` getrennt sind: Ein offline erfasster Satz tr�
 - Eine Variante ist eine Zeile in `exercise` mit `parent_id`; es gibt nur eine Ebene
 - Geerbt (in der Variante `NULL`): `equipment`, `muscles_primary`, `muscles_secondary`, `tracking_type`, `is_unilateral`, Tutorial-Links
 - Eigene Werte der Variante: `name`, `default_rest_s`, `weight_step`, `floor`, `seat`, `foot_position`, `setup_note`
+- Fokus (`focus_muscles`, `focus_cue`): eigener Wert der Variante, sonst von der Hauptübung geerbt
 - Die Sicht `exercise_effective` liefert die aufgelösten Werte; Auswertungen pro Hauptübung gruppieren über `root_id`
 
 ## **Wertebereiche**
@@ -130,6 +131,8 @@ create table public.exercise (
   foot_position     text,
   setup_note        text,
   source_id         text references public.exercise_catalog (id),
+  focus_muscles     text[],                       -- Migration 0003: Regionen der Körperkarte (body-muscles), seitenunabhängig
+  focus_cue         text,                         -- Migration 0003: Hinweis für die Mind-Muscle-Connection
   created_at        timestamptz not null,
   updated_at        timestamptz not null,
   deleted_at        timestamptz,

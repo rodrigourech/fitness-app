@@ -60,7 +60,14 @@ export async function push(remote: RemoteApi): Promise<number> {
     for (const batch of chunks(tableEntries, PUSH_BATCH)) {
       const rows = (await db.table(table).bulkGet(batch.map((e) => e.row_id))) as (SyncRow | undefined)[]
       const present = rows.filter((r): r is SyncRow => r !== undefined)
-      if (present.length) await remote.upsert(table, present)
+      // Rows with different column sets (e.g. created before a schema change) are sent separately,
+      // so a missing column is left untouched on the server instead of being set to null.
+      const groups = new Map<string, SyncRow[]>()
+      for (const r of present) {
+        const key = Object.keys(r).sort().join(',')
+        groups.set(key, [...(groups.get(key) ?? []), r])
+      }
+      for (const group of groups.values()) await remote.upsert(table, group)
 
       // Remove only entries whose row was not changed again while the request ran
       const sent = new Map(present.map((r) => [r.id, r.updated_at]))

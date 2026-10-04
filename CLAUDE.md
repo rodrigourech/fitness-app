@@ -27,7 +27,7 @@ Persönliche Fitness-App als Ersatz für die Strong App: Trainingsvorlagen, Trai
 
 ## Konventionen
 
-- UI und Dokumentation auf Deutsch mit Schweizer Rechtschreibung (ss statt ß)
+- UI auf Englisch; Dokumentation auf Deutsch mit Schweizer Rechtschreibung (ss statt ß); eigene Daten (Variantennamen, Notizen, Hinweise) bleiben deutsch
 - Code, Bezeichner und Commit-Messages auf Englisch
 - Keine Emojis
 - Keine Secrets im Repo; Schlüssel nur in .env.local

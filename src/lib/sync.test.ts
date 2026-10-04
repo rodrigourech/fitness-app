@@ -98,6 +98,23 @@ describe('push', () => {
   })
 })
 
+describe('push with mixed column sets', () => {
+  it('sends rows without a new column separately so the server value is kept', async () => {
+    const server = new FakeServer()
+    const sent: string[][] = []
+    const orig = server.upsert.bind(server)
+    server.upsert = async (table, rows) => {
+      sent.push(rows.map((r) => Object.keys(r).sort().join(',')))
+      return orig(table, rows)
+    }
+    await saveRows('template', [template('t1', 'old shape', '')])
+    await saveRows('template', [{ ...template('t2', 'new shape', ''), extra: 'x' }])
+    await push(server)
+    expect(sent).toHaveLength(2)
+    expect(sent.every((batch) => new Set(batch).size === 1)).toBe(true)
+  })
+})
+
 describe('pull', () => {
   it('takes newer remote rows, keeps newer local rows, across time zone formats', async () => {
     const server = new FakeServer()

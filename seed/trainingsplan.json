@@ -25,7 +25,9 @@
       "seat": null,
       "foot_position": null,
       "setup_note": "Level 7",
-      "source_id": null
+      "source_id": null,
+      "focus_muscles": null,
+      "focus_cue": null
     },
     {
       "id": "1f3d184e-fccb-514f-a554-b6a6cbbc7380",
@@ -48,7 +50,9 @@
       "seat": null,
       "foot_position": null,
       "setup_note": null,
-      "source_id": null
+      "source_id": null,
+      "focus_muscles": null,
+      "focus_cue": null
     },
     {
       "id": "03d8bced-f440-542c-b6eb-0bfd3a4e08ba",
@@ -66,7 +70,12 @@
       "seat": null,
       "foot_position": null,
       "setup_note": "Griffe auf Brustwarzenhöhe",
-      "source_id": null
+      "source_id": null,
+      "focus_muscles": [
+        "chest-upper",
+        "chest-lower"
+      ],
+      "focus_cue": "Brust zusammendrücken, Schulterblätter hinten unten fixiert"
     },
     {
       "id": "ce51ba9f-ae6a-5876-b3ee-40df14397a37",
@@ -84,7 +93,11 @@
       "seat": null,
       "foot_position": null,
       "setup_note": "Sitz tiefer, Griffe obere Brust (knapp unter dem Schlüsselbein)",
-      "source_id": null
+      "source_id": null,
+      "focus_muscles": [
+        "chest-upper"
+      ],
+      "focus_cue": "Obere Brust spüren, Ellbogen leicht unter Schulterhöhe"
     },
     {
       "id": "a3f09696-52df-5e8f-a9b3-26ab3c1684f7",
@@ -104,7 +117,11 @@
       "seat": null,
       "foot_position": null,
       "setup_note": "Kabel auf Handhöhe; Seiten abwechselnd, rechts beginnt",
-      "source_id": null
+      "source_id": null,
+      "focus_muscles": [
+        "shoulder-side"
+      ],
+      "focus_cue": "Mit dem Ellbogen führen, Trapez locker lassen"
     },
     {
       "id": "c6473665-753c-5771-ba78-c6e0d8c1c89b",
@@ -124,7 +141,12 @@
       "seat": null,
       "foot_position": null,
       "setup_note": null,
-      "source_id": null
+      "source_id": null,
+      "focus_muscles": [
+        "triceps-lateral",
+        "triceps-long"
+      ],
+      "focus_cue": "Ellbogen fix am Körper, unten voll strecken"
     },
     {
       "id": "51217eb3-ec3e-52ea-8065-2e689d996e75",
@@ -144,7 +166,11 @@
       "seat": null,
       "foot_position": null,
       "setup_note": null,
-      "source_id": null
+      "source_id": null,
+      "focus_muscles": [
+        "biceps"
+      ],
+      "focus_cue": "Oberarm aufs Polster, langsam ablassen"
     },
     {
       "id": "f1a5b601-f90c-5af6-8638-3e07239ec4c5",
@@ -164,7 +190,9 @@
       "seat": null,
       "foot_position": null,
       "setup_note": null,
-      "source_id": null
+      "source_id": null,
+      "focus_muscles": null,
+      "focus_cue": null
     },
     {
       "id": "ed13da4b-ac33-57f7-8cda-c3aae3c9dded",
@@ -182,7 +210,12 @@
       "seat": null,
       "foot_position": null,
       "setup_note": "Bank −15 Grad; ab 2 × 15 mit 5 kg Scheibe",
-      "source_id": null
+      "source_id": null,
+      "focus_muscles": [
+        "abs-upper",
+        "abs-lower"
+      ],
+      "focus_cue": "Wirbelsäule einrollen, nicht aus der Hüfte ziehen"
     },
     {
       "id": "8ca6bcc2-1cc1-5f1f-b6a5-609954173d50",
@@ -204,7 +237,9 @@
       "seat": null,
       "foot_position": null,
       "setup_note": null,
-      "source_id": null
+      "source_id": null,
+      "focus_muscles": null,
+      "focus_cue": null
     },
     {
       "id": "b587ecd4-4ddc-54f8-86bf-325f26dda158",
@@ -222,7 +257,13 @@
       "seat": null,
       "foot_position": null,
       "setup_note": null,
-      "source_id": null
+      "source_id": null,
+      "focus_muscles": [
+        "lats-upper",
+        "lats-mid",
+        "lats-lower"
+      ],
+      "focus_cue": "Ellbogen Richtung Hüfte ziehen, Lat spüren"
     },
     {
       "id": "6144fd76-baee-5c78-a409-4ce968051388",
@@ -244,7 +285,12 @@
       "seat": "4",
       "foot_position": "2",
       "setup_note": null,
-      "source_id": null
+      "source_id": null,
+      "focus_muscles": [
+        "quads",
+        "gluteus-maximus"
+      ],
+      "focus_cue": "Druck über die ganze Fusssohle, Knie in Fussrichtung"
     },
     {
       "id": "09ab0a44-dcd2-5c33-989a-3986f73cdb06",
@@ -266,7 +312,13 @@
       "seat": null,
       "foot_position": null,
       "setup_note": null,
-      "source_id": null
+      "source_id": null,
+      "focus_muscles": [
+        "lats-mid",
+        "traps-mid",
+        "deltoid-rear"
+      ],
+      "focus_cue": "Schulterblätter zusammenziehen, Ellbogen nach hinten"
     },
     {
       "id": "fb2adc06-d45c-58f6-b67b-ed1ba6ec8fe7",
@@ -286,7 +338,12 @@
       "seat": null,
       "foot_position": "3",
       "setup_note": "Höhe 1",
-      "source_id": null
+      "source_id": null,
+      "focus_muscles": [
+        "hamstrings-medial",
+        "hamstrings-lateral"
+      ],
+      "focus_cue": "Hüfte aufs Polster drücken, kontrolliert ablassen"
     },
     {
       "id": "9b59a2a8-77da-57ff-9cc0-14e69c647037",
@@ -306,7 +363,9 @@
       "seat": null,
       "foot_position": null,
       "setup_note": null,
-      "source_id": null
+      "source_id": null,
+      "focus_muscles": null,
+      "focus_cue": null
     }
   ],
   "templates": [
