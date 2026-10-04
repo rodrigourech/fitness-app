@@ -43,8 +43,6 @@ interface ExerciseBlock {
   links: ExerciseLink[]
 }
 
-const FLOOR = { oben: 'Upstairs', unten: 'Downstairs' } as const
-
 async function loadBlocks(workoutId: string): Promise<ExerciseBlock[]> {
   const [wes, exercises] = await Promise.all([
     db.workout_exercise.where('workout_id').equals(workoutId).toArray(),
@@ -182,16 +180,10 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
   const eff = exercise
     ? effective(exercise, byId)
     : { trackingType: 'weight_reps', isUnilateral: false, floor: null, seat: null, footPosition: null, setupNote: null, focusMuscles: [] as string[], focusCue: null }
-  const settings = [
-    eff.floor ? FLOOR[eff.floor] : null,
-    eff.seat ? `Seat ${eff.seat}` : null,
-    eff.footPosition ? `Feet ${eff.footPosition}` : null,
-    eff.setupNote,
-  ].filter(Boolean)
 
   const prevWorking = previous.filter((s) => s.set_type === 'working')
-  // RIR is recorded only for the last working set of an exercise
-  const lastWorkingId = sets.filter((s) => s.set_type === 'working').at(-1)?.id
+  // RIR is recorded only for the last working set, below the set rows
+  const lastWorking = sets.filter((s) => s.set_type === 'working').at(-1)
   const prevWarmup = previous.filter((s) => s.set_type === 'warmup')
   let workingNo = 0
   let warmupNo = 0
@@ -203,16 +195,15 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
       : tt === 'distance_duration'
         ? 'grid-cols-[1.5rem_1fr_3.25rem_4rem_4rem_2.5rem]'
         : eff.isUnilateral
-          ? 'grid-cols-[1.5rem_1fr_3.25rem_2.75rem_2.75rem_2.75rem_2.5rem]'
-          : 'grid-cols-[1.5rem_1fr_3.75rem_3.25rem_3rem_2.75rem]'
+          ? 'grid-cols-[1.5rem_1fr_3.5rem_3rem_3rem_2.75rem]'
+          : 'grid-cols-[1.5rem_1fr_4.25rem_3.75rem_2.75rem]'
 
   return (
     <section className="rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
       <button onClick={() => onOpen(we.exercise_id)} className="text-left">
         <h2 className="font-semibold underline-offset-2 hover:underline">{name} <span className="text-neutral-400">›</span></h2>
       </button>
-      {settings.length > 0 && <p className="text-sm text-neutral-500 dark:text-neutral-400">{settings.join(' · ')}</p>}
-      {eff.focusCue && <p className="text-sm text-red-700 dark:text-red-300">Feel: {eff.focusCue}</p>}
+      {eff.setupNote && <p className="text-sm whitespace-pre-line text-neutral-500 dark:text-neutral-400">{eff.setupNote}</p>}
       {links.length > 0 && (
         <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
           {links.map((l) => (
@@ -222,14 +213,7 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
           ))}
         </div>
       )}
-      {we.comment && <p className="text-sm text-neutral-500 italic dark:text-neutral-400">{we.comment}</p>}
 
-      {rirHelp && (
-        <p className="mt-3 rounded-md bg-neutral-100 p-2 text-sm text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
-          RIR = Reps in Reserve: how many more reps you could have done with clean form (0 = failure, 2 = two more were
-          possible). Last set only, optional. Target: 1–2.
-        </p>
-      )}
 
       <div className={`mt-3 grid ${cols} items-center gap-x-1 gap-y-1.5 text-xs text-neutral-500 dark:text-neutral-400`}>
         <span className="text-center">Set</span>
@@ -253,13 +237,6 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
             ) : (
               <span className="text-center">Reps</span>
             )}
-            <button
-              onClick={() => setRirHelp((v) => !v)}
-              aria-expanded={rirHelp}
-              className="text-center underline decoration-dotted underline-offset-2"
-            >
-              RIR ⓘ
-            </button>
           </>
         )}
         <span />
@@ -276,11 +253,47 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
               trackingType={tt}
               unilateral={eff.isUnilateral}
               restSeconds={we.rest_s}
-              showRir={s.id === lastWorkingId}
             />
           )
         })}
       </div>
+
+      {tt === 'weight_reps' && lastWorking && (
+        <div className="mt-2">
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setRirHelp((v) => !v)}
+              aria-expanded={rirHelp}
+              className="mr-1 text-xs text-neutral-500 underline decoration-dotted underline-offset-2 dark:text-neutral-400"
+            >
+              RIR last set ⓘ
+            </button>
+            {RIR_OPTIONS.map((o) => {
+              const active = lastWorking.rir === o.value
+              return (
+                <button
+                  key={o.label}
+                  aria-pressed={active}
+                  onClick={() => void updateSet(lastWorking, { rir: o.value })}
+                  className={`h-8 min-w-8 rounded-md px-2 text-sm tabular-nums ${
+                    active
+                      ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
+                      : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'
+                  }`}
+                >
+                  {o.label}
+                </button>
+              )
+            })}
+          </div>
+          {rirHelp && (
+        <p className="mt-2 rounded-md bg-neutral-100 p-2 text-sm text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
+          RIR = Reps in Reserve: how many more reps you could have done with clean form (0 = failure, 2 = two more were
+          possible). Last set only, optional. Target: 1–2.
+        </p>
+      )}
+        </div>
+      )}
 
       <div className="mt-2 flex gap-2">
         <button onClick={() => void addSet(we)} className="flex-1 rounded-lg bg-neutral-100 py-2 text-sm font-medium dark:bg-neutral-800">
@@ -299,6 +312,15 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
   )
 }
 
+const RIR_OPTIONS: { label: string; value: number | null }[] = [
+  { label: '–', value: null },
+  { label: '0', value: 0 },
+  { label: '1', value: 1 },
+  { label: '2', value: 2 },
+  { label: '3', value: 3 },
+  { label: '4+', value: 4 },
+]
+
 interface SetRowProps {
   set: WorkoutSet
   label: string
@@ -306,10 +328,9 @@ interface SetRowProps {
   trackingType: string
   unilateral: boolean
   restSeconds: number | null
-  showRir: boolean
 }
 
-function SetRow({ set, label, previous, trackingType, unilateral, restSeconds, showRir }: SetRowProps) {
+function SetRow({ set, label, previous, trackingType, unilateral, restSeconds }: SetRowProps) {
   const done = set.completed_at !== null
 
   function numberCommit(field: 'weight' | 'reps' | 'reps_left' | 'reps_right' | 'distance_km', integer: boolean) {
@@ -379,23 +400,6 @@ function SetRow({ set, label, previous, trackingType, unilateral, restSeconds, s
             </>
           ) : (
             <Field label="Reps" inputMode="numeric" value={formatNumber(set.reps)} onCommit={numberCommit('reps', true)} />
-          )}
-          {showRir ? (
-            <select
-              aria-label="RIR"
-              value={set.rir === null ? '' : String(set.rir)}
-              onChange={(e) => void updateSet(set, { rir: e.target.value === '' ? null : Number(e.target.value) })}
-              className="h-10 w-full min-w-0 appearance-none rounded-md bg-neutral-100 text-center text-base tabular-nums dark:bg-neutral-800"
-            >
-              <option value="">–</option>
-              <option value="0">0</option>
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4+</option>
-            </select>
-          ) : (
-            <span />
           )}
         </>
       )}

@@ -40,3 +40,7 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
 - Oberfläche auf Englisch, App-Name «Fitness App»; eigene Daten (Übungsvarianten, Notizen, Hinweise) bleiben deutsch
 - Referenzvideos pro Übung über exercise_link; Varianten zeigen zusätzlich die Links der Hauptübung
 - Muskelfokus für die Mind-Muscle-Connection: Spalten focus_muscles und focus_cue (Migration 0003), Darstellung als 2D-Körperkarte mit der Bibliothek body-muscles (Apache-2.0), Muskeln in der App antippbar; kein 3D
+- Eine mehrzeilige Notiz pro Übung (setup_note) ersetzt in der Anzeige Stockwerk, Sitz, Füsse und Vorlagenkommentare; Migration 0004 überführt die bestehenden Angaben. Die Spalten floor, seat, foot_position bleiben vorerst bestehen, werden aber nicht mehr verwendet
+- Name, Variantenname und Notiz sind im Übungsblatt bearbeitbar; der Name der Hauptübung gilt für alle Varianten
+- Fokus-Hinweis (focus_cue) nur im Übungsblatt, nicht in der Trainingsansicht
+- RIR als Schnellwahl unterhalb der Sätze (gilt für den letzten Arbeitssatz), keine eigene Spalte

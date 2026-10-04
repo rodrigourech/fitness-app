@@ -11,8 +11,6 @@ interface Props {
   onClose: () => void
 }
 
-const FLOOR = { oben: 'Upstairs', unten: 'Downstairs' } as const
-
 /** Bottom sheet with focus muscles, cue and reference videos of an exercise. */
 export default function ExerciseSheet({ exerciseId, onClose }: Props) {
   const data = useLiveQuery(async () => {
@@ -20,7 +18,7 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
     if (!ex) return null
     const parent = ex.parent_id ? await db.exercise.get(ex.parent_id) : undefined
     const byId = new Map<string, Exercise>([[ex.id, ex], ...(parent ? ([[parent.id, parent]] as const) : [])])
-    return { ex, byId, links: await linksFor(ex) }
+    return { ex, parent, byId, links: await linksFor(ex) }
   }, [exerciseId])
 
   const [url, setUrl] = useState('')
@@ -29,7 +27,7 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
 
   if (data === undefined) return null
   if (data === null) return null
-  const { ex, byId, links } = data
+  const { ex, parent, byId, links } = data
   const eff = effective(ex, byId)
   const focusInherited = ex.parent_id !== null && ex.focus_muscles == null
   const cueInherited = ex.parent_id !== null && ex.focus_cue == null
@@ -53,12 +51,6 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
     setUrlError(false)
   }
 
-  const settings = [
-    eff.floor ? FLOOR[eff.floor] : null,
-    eff.seat ? `Seat ${eff.seat}` : null,
-    eff.footPosition ? `Feet ${eff.footPosition}` : null,
-    eff.setupNote,
-  ].filter(Boolean)
 
   return (
     <div className="fixed inset-0 z-30 flex items-end bg-black/50 sm:items-center sm:justify-center" onClick={onClose}>
@@ -69,14 +61,35 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-start justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold">{displayName(ex, byId)}</h2>
-            {settings.length > 0 && <p className="text-sm text-neutral-500 dark:text-neutral-400">{settings.join(' · ')}</p>}
-          </div>
+          <h2 className="text-lg font-semibold">{displayName(ex, byId)}</h2>
           <button onClick={onClose} className="rounded-md px-2 py-1 text-sm text-neutral-500 dark:text-neutral-400">
             Close
           </button>
         </div>
+
+        <section className="mb-5 flex flex-col gap-3">
+          {parent && (
+            <TextField
+              label="Exercise (shared by all variants)"
+              value={parent.name}
+              required
+              onSave={(v) => updateExercise(parent, { name: v ?? parent.name })}
+            />
+          )}
+          <TextField
+            label={parent ? 'Variant' : 'Exercise'}
+            value={ex.name}
+            required
+            onSave={(v) => updateExercise(ex, { name: v ?? ex.name })}
+          />
+          <TextField
+            label="Notes"
+            value={ex.setup_note ?? ''}
+            placeholder={parent?.setup_note ? `Inherited: ${parent.setup_note}` : 'Floor, seat, grip, …'}
+            multiline
+            onSave={(v) => updateExercise(ex, { setup_note: v })}
+          />
+        </section>
 
         <section className="mb-5">
           <h3 className="mb-1 text-sm font-semibold">Muscles to feel</h3>
@@ -165,5 +178,43 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
         </section>
       </div>
     </div>
+  )
+}
+
+interface TextFieldProps {
+  label: string
+  value: string
+  placeholder?: string
+  multiline?: boolean
+  required?: boolean
+  /** Called on blur with the trimmed value (null when empty). */
+  onSave: (value: string | null) => Promise<void> | void
+}
+
+/** Text input that saves on blur; multi-line keeps line breaks. */
+function TextField({ label, value, placeholder, multiline, required, onSave }: TextFieldProps) {
+  const className =
+    'rounded-lg border border-neutral-300 bg-transparent px-3 py-2 text-base outline-none focus:border-neutral-900 dark:border-neutral-700 dark:focus:border-neutral-100'
+  function save(raw: string) {
+    const v = multiline ? raw.replace(/\s+$/, '').replace(/^\s*\n/, '') : raw.trim()
+    if (required && !v) return
+    if ((v || '') !== value) void onSave(v || null)
+  }
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-sm font-semibold">{label}</span>
+      {multiline ? (
+        <textarea
+          key={value}
+          defaultValue={value}
+          placeholder={placeholder}
+          rows={Math.max(3, value.split('\n').length + 1)}
+          onBlur={(e) => save(e.target.value)}
+          className={className}
+        />
+      ) : (
+        <input key={value} defaultValue={value} placeholder={placeholder} onBlur={(e) => save(e.target.value)} className={className} />
+      )}
+    </label>
   )
 }
