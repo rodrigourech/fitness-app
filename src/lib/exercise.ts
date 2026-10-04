@@ -67,6 +67,12 @@ export interface NewExercise {
   isUnilateral: boolean
   restS: number | null
   note: string | null
+  /** Optional values taken from the exercise catalog */
+  equipment?: string | null
+  musclesPrimary?: string[]
+  musclesSecondary?: string[]
+  focusMuscles?: string[]
+  sourceId?: string | null
 }
 
 function blankExercise(userId: string, ts: string): Exercise {
@@ -103,11 +109,13 @@ export async function createExercise(userId: string, input: NewExercise): Promis
     name: input.name.trim(),
     tracking_type: input.trackingType,
     is_unilateral: input.trackingType === 'weight_reps' ? input.isUnilateral : false,
-    muscles_primary: [],
-    muscles_secondary: [],
+    equipment: input.equipment ?? null,
+    muscles_primary: input.musclesPrimary ?? [],
+    muscles_secondary: input.musclesSecondary ?? [],
     default_rest_s: input.restS,
     setup_note: input.note,
-    focus_muscles: [],
+    focus_muscles: input.focusMuscles ?? [],
+    source_id: input.sourceId ?? null,
   }
   await saveRows('exercise', [ex])
   return ex.id

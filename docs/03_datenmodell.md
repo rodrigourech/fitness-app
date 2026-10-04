@@ -4,6 +4,8 @@ Stand: 4. Oktober 2026. Grundlage: docs/00_handover.md und docs/entscheidungen.m
 
 ## **Überblick**
 
+> Stand Migration 0005: Der Übungskatalog wird als Datei mit der App ausgeliefert (src/data/catalog.json). Die Tabelle `exercise_catalog` und der Fremdschlüssel von `exercise.source_id` sind entfernt; `source_id` enthält die Katalog-ID als Text.
+
 | Tabelle | Zweck | Synchronisiert |
 |---|---|---|
 | `exercise_catalog` | Free Exercise DB, nur lesbar, ohne Benutzerbezug | nein, wird einmalig geladen |

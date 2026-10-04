@@ -47,3 +47,4 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
 - Pause zentral pro Übung (exercise.default_rest_s, Varianten erben); der Pausentimer verwendet diesen Wert, template_exercise.rest_s wird nicht mehr genutzt
 - Übungen und Varianten in der App anlegbar: Reiter «Exercises» auf der Startseite und «+ Add exercise» im laufenden Training
 - Übungskatalog (Free Exercise DB) wird als statische Datei mit der App ausgeliefert statt in exercise_catalog importiert (ersetzt den Entscheid vom 4. Oktober); Tabelle exercise_catalog bleibt vorerst leer
+- Katalogsuche beim Anlegen einer Übung: Vorschläge aus src/data/catalog.json (876 Übungen, Free Exercise DB, Unlicense); Auswahl übernimmt Name, Erfassungsart, Equipment, Muskelgruppen und schlägt den Muskelfokus vor. Migration 0005 entfernt exercise_catalog und den Fremdschlüssel

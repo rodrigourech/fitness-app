@@ -1,5 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
+import { catalogDefaults, describeEntry, loadCatalog, searchCatalog, type CatalogDefaults, type CatalogEntry } from '../lib/catalog'
 import { db, type TrackingType } from '../lib/db'
 import { createExercise, createVariant } from '../lib/exercise'
 import RestStepper from './RestStepper'
@@ -35,7 +36,28 @@ export default function NewExerciseForm({ userId, initialName = '', onCreated, o
   const [rest, setRest] = useState<number | null>(90)
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
+  const [catalog, setCatalog] = useState<CatalogEntry[]>([])
+  const [picked, setPicked] = useState<CatalogDefaults | null>(null)
+  const [showSuggestions, setShowSuggestions] = useState(true)
   const isVariant = parentId !== ''
+
+  useEffect(() => {
+    let alive = true
+    void loadCatalog().then((c) => alive && setCatalog(c))
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  const suggestions = !isVariant && showSuggestions && !picked ? searchCatalog(catalog, name, 6) : []
+
+  function pick(e: CatalogEntry) {
+    const d = catalogDefaults(e)
+    setPicked(d)
+    setName(d.name)
+    setType(d.trackingType)
+    setShowSuggestions(false)
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault()
@@ -46,7 +68,20 @@ export default function NewExerciseForm({ userId, initialName = '', onCreated, o
       const parent = isVariant ? mains?.find((m) => m.id === parentId) : undefined
       const id = parent
         ? await createVariant(parent, name, n)
-        : await createExercise(userId, { name, trackingType: type, isUnilateral: unilateral, restS: rest, note: n })
+        : await createExercise(userId, {
+            name,
+            trackingType: type,
+            isUnilateral: unilateral,
+            restS: rest,
+            note: n,
+            ...(picked && {
+              equipment: picked.equipment,
+              musclesPrimary: picked.musclesPrimary,
+              musclesSecondary: picked.musclesSecondary,
+              focusMuscles: picked.focusMuscles,
+              sourceId: picked.sourceId,
+            }),
+          })
       onCreated(id)
     } finally {
       setBusy(false)
@@ -73,11 +108,42 @@ export default function NewExerciseForm({ userId, initialName = '', onCreated, o
           required
           autoFocus
           value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder={isVariant ? 'e.g. Wide grip' : 'e.g. Pec Deck (Machine)'}
+          onChange={(e) => {
+            setName(e.target.value)
+            setShowSuggestions(true)
+          }}
+          placeholder={isVariant ? 'e.g. Wide grip' : 'Type to search the catalog, e.g. pec deck'}
           className={input}
         />
       </label>
+
+      {suggestions.length > 0 && (
+        <ul aria-label="Catalog suggestions" className="-mt-2 overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
+          {suggestions.map((s) => (
+            <li key={s.id}>
+              <button
+                type="button"
+                onClick={() => pick(s)}
+                className="w-full border-b border-neutral-100 px-3 py-2 text-left last:border-0 hover:bg-neutral-100 dark:border-neutral-800 dark:hover:bg-neutral-800"
+              >
+                <span className="block text-sm">{s.name}</span>
+                <span className="block text-xs text-neutral-500 dark:text-neutral-400">{describeEntry(s)}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {picked && !isVariant && (
+        <p className="-mt-1 flex items-center justify-between gap-2 rounded-lg bg-sky-50 px-3 py-2 text-xs text-sky-900 dark:bg-sky-950 dark:text-sky-200">
+          <span>
+            From catalog · muscles and focus are prefilled ({picked.musclesPrimary.join(', ') || 'none'})
+          </span>
+          <button type="button" onClick={() => setPicked(null)} className="font-semibold">
+            Remove
+          </button>
+        </p>
+      )}
 
       {!isVariant && (
         <>
