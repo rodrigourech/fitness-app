@@ -13,4 +13,5 @@ npm install
 npm run dev        # http://localhost:5173
 npm run build      # Typprüfung und Produktions-Build
 npm run lint
+npm test           # Unit-Tests (Synchronisation)
 ```

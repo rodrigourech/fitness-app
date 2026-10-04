@@ -1,4 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks'
+import SyncBadge from '../components/SyncBadge'
 import { signOut, type LocalUser } from '../lib/auth'
 import { db, displayName, type Exercise } from '../lib/db'
 
@@ -56,12 +57,16 @@ export default function Home({ user, onSignedOut }: Props) {
     <main className="mx-auto max-w-xl px-4 pt-[max(env(safe-area-inset-top),1.5rem)] pb-10">
       <header className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Vorlagen</h1>
-        <button
-          onClick={handleSignOut}
-          className="rounded-md px-3 py-2 text-sm text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
-        >
-          Abmelden ({user.username})
-        </button>
+        <div className="flex items-center gap-1">
+          <SyncBadge onReauth={handleSignOut} />
+          <button
+            onClick={handleSignOut}
+            title={`Angemeldet als ${user.username}`}
+            className="rounded-md px-2 py-1 text-sm text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
+          >
+            Abmelden
+          </button>
+        </div>
       </header>
 
       {cards === undefined ? (
