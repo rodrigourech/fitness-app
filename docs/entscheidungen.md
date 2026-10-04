@@ -16,7 +16,4 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
   - Lateral Raise: Kabel auf Handhöhe, Seiten abwechselnd, rechts beginnt
 - Seed-Daten verwenden deterministische UUIDs (UUIDv5), damit ein Import auf mehreren Geräten keine Duplikate erzeugt
 - Muskelgruppen als englische Schlüssel: chest, front_delts, side_delts, triceps, biceps, abs, lats, upper_back, quads, glutes, hamstrings, cardio
-
-## Offen
-
-- Gewichtsschritt pro Übung (weight_step) noch nicht festgelegt; nötig für den Progressionsvorschlag
+- Progressionsvorschlag ohne festen Gewichtsschritt: Die App zeigt nur «Gewicht erhöhen», das neue Gewicht wird am Gerät selbst gewählt. Das Feld weight_step bleibt optional und ist in den Startdaten leer
