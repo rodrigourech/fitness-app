@@ -1,0 +1,903 @@
+{
+  "schema_version": 1,
+  "updated_on": "2026-10-04",
+  "weekly_goal": {
+    "strength_sessions": 2,
+    "runs": 1
+  },
+  "exercises": [
+    {
+      "id": "584aae25-67a2-54c9-b314-2c9c0f6c78d9",
+      "key": "bicycle",
+      "parent_id": null,
+      "name": "Bicycle",
+      "equipment": "cardio_machine",
+      "muscles_primary": [
+        "cardio"
+      ],
+      "muscles_secondary": [],
+      "tracking_type": "duration",
+      "is_unilateral": false,
+      "weight_step": null,
+      "default_rest_s": null,
+      "floor": "oben",
+      "seat": null,
+      "foot_position": null,
+      "setup_note": "Level 7",
+      "source_id": null
+    },
+    {
+      "id": "1f3d184e-fccb-514f-a554-b6a6cbbc7380",
+      "key": "chest_press",
+      "parent_id": null,
+      "name": "Chest Press (Machine)",
+      "equipment": "machine",
+      "muscles_primary": [
+        "chest"
+      ],
+      "muscles_secondary": [
+        "triceps",
+        "front_delts"
+      ],
+      "tracking_type": "weight_reps",
+      "is_unilateral": false,
+      "weight_step": null,
+      "default_rest_s": 150,
+      "floor": "oben",
+      "seat": null,
+      "foot_position": null,
+      "setup_note": null,
+      "source_id": null
+    },
+    {
+      "id": "03d8bced-f440-542c-b6eb-0bfd3a4e08ba",
+      "key": "chest_press_mid",
+      "parent_id": "1f3d184e-fccb-514f-a554-b6a6cbbc7380",
+      "name": "Griffe Mitte Brust",
+      "equipment": "machine",
+      "muscles_primary": [
+        "chest"
+      ],
+      "muscles_secondary": [
+        "triceps",
+        "front_delts"
+      ],
+      "tracking_type": "weight_reps",
+      "is_unilateral": false,
+      "weight_step": null,
+      "default_rest_s": 150,
+      "floor": "oben",
+      "seat": null,
+      "foot_position": null,
+      "setup_note": "Griffe auf Brustwarzenhöhe",
+      "source_id": null
+    },
+    {
+      "id": "ce51ba9f-ae6a-5876-b3ee-40df14397a37",
+      "key": "chest_press_low_seat",
+      "parent_id": "1f3d184e-fccb-514f-a554-b6a6cbbc7380",
+      "name": "Sitz tiefer",
+      "equipment": "machine",
+      "muscles_primary": [
+        "chest"
+      ],
+      "muscles_secondary": [
+        "triceps",
+        "front_delts"
+      ],
+      "tracking_type": "weight_reps",
+      "is_unilateral": false,
+      "weight_step": null,
+      "default_rest_s": 150,
+      "floor": "oben",
+      "seat": null,
+      "foot_position": null,
+      "setup_note": "Sitz tiefer, Griffe obere Brust (knapp unter dem Schlüsselbein)",
+      "source_id": null
+    },
+    {
+      "id": "a3f09696-52df-5e8f-a9b3-26ab3c1684f7",
+      "key": "lateral_raise_cable",
+      "parent_id": null,
+      "name": "Lateral Raise (Cable)",
+      "equipment": "cable",
+      "muscles_primary": [
+        "side_delts"
+      ],
+      "muscles_secondary": [],
+      "tracking_type": "weight_reps",
+      "is_unilateral": true,
+      "weight_step": null,
+      "default_rest_s": 60,
+      "floor": "oben",
+      "seat": null,
+      "foot_position": null,
+      "setup_note": "Kabel auf Handhöhe; Seiten abwechselnd, rechts beginnt",
+      "source_id": null
+    },
+    {
+      "id": "c6473665-753c-5771-ba78-c6e0d8c1c89b",
+      "key": "triceps_pushdown_bar",
+      "parent_id": null,
+      "name": "Triceps Pushdown (Cable - Straight Bar)",
+      "equipment": "cable",
+      "muscles_primary": [
+        "triceps"
+      ],
+      "muscles_secondary": [],
+      "tracking_type": "weight_reps",
+      "is_unilateral": false,
+      "weight_step": null,
+      "default_rest_s": 90,
+      "floor": "oben",
+      "seat": null,
+      "foot_position": null,
+      "setup_note": null,
+      "source_id": null
+    },
+    {
+      "id": "51217eb3-ec3e-52ea-8065-2e689d996e75",
+      "key": "preacher_curl_machine",
+      "parent_id": null,
+      "name": "Preacher Curl (Machine)",
+      "equipment": "machine",
+      "muscles_primary": [
+        "biceps"
+      ],
+      "muscles_secondary": [],
+      "tracking_type": "weight_reps",
+      "is_unilateral": false,
+      "weight_step": null,
+      "default_rest_s": 90,
+      "floor": "oben",
+      "seat": null,
+      "foot_position": null,
+      "setup_note": null,
+      "source_id": null
+    },
+    {
+      "id": "f1a5b601-f90c-5af6-8638-3e07239ec4c5",
+      "key": "decline_crunch",
+      "parent_id": null,
+      "name": "Decline Crunch",
+      "equipment": "bodyweight",
+      "muscles_primary": [
+        "abs"
+      ],
+      "muscles_secondary": [],
+      "tracking_type": "weight_reps",
+      "is_unilateral": false,
+      "weight_step": null,
+      "default_rest_s": 90,
+      "floor": "oben",
+      "seat": null,
+      "foot_position": null,
+      "setup_note": null,
+      "source_id": null
+    },
+    {
+      "id": "ed13da4b-ac33-57f7-8cda-c3aae3c9dded",
+      "key": "decline_crunch_15",
+      "parent_id": "f1a5b601-f90c-5af6-8638-3e07239ec4c5",
+      "name": "−15°",
+      "equipment": "bodyweight",
+      "muscles_primary": [
+        "abs"
+      ],
+      "muscles_secondary": [],
+      "tracking_type": "weight_reps",
+      "is_unilateral": false,
+      "weight_step": null,
+      "default_rest_s": 90,
+      "floor": "oben",
+      "seat": null,
+      "foot_position": null,
+      "setup_note": "Bank −15 Grad; ab 2 × 15 mit 5 kg Scheibe",
+      "source_id": null
+    },
+    {
+      "id": "8ca6bcc2-1cc1-5f1f-b6a5-609954173d50",
+      "key": "lat_pulldown_cable",
+      "parent_id": null,
+      "name": "Lat Pulldown (Cable)",
+      "equipment": "cable",
+      "muscles_primary": [
+        "lats"
+      ],
+      "muscles_secondary": [
+        "biceps"
+      ],
+      "tracking_type": "weight_reps",
+      "is_unilateral": false,
+      "weight_step": null,
+      "default_rest_s": 90,
+      "floor": "unten",
+      "seat": null,
+      "foot_position": null,
+      "setup_note": null,
+      "source_id": null
+    },
+    {
+      "id": "b587ecd4-4ddc-54f8-86bf-325f26dda158",
+      "key": "lat_pulldown_vgrip",
+      "parent_id": "8ca6bcc2-1cc1-5f1f-b6a5-609954173d50",
+      "name": "V-Griff (schwarz)",
+      "equipment": "cable",
+      "muscles_primary": [
+        "lats"
+      ],
+      "muscles_secondary": [
+        "biceps"
+      ],
+      "tracking_type": "weight_reps",
+      "is_unilateral": false,
+      "weight_step": null,
+      "default_rest_s": 90,
+      "floor": "unten",
+      "seat": null,
+      "foot_position": null,
+      "setup_note": null,
+      "source_id": null
+    },
+    {
+      "id": "6144fd76-baee-5c78-a409-4ce968051388",
+      "key": "leg_press",
+      "parent_id": null,
+      "name": "Leg Press",
+      "equipment": "machine",
+      "muscles_primary": [
+        "quads"
+      ],
+      "muscles_secondary": [
+        "glutes"
+      ],
+      "tracking_type": "weight_reps",
+      "is_unilateral": false,
+      "weight_step": null,
+      "default_rest_s": 90,
+      "floor": "unten",
+      "seat": "4",
+      "foot_position": "2",
+      "setup_note": null,
+      "source_id": null
+    },
+    {
+      "id": "09ab0a44-dcd2-5c33-989a-3986f73cdb06",
+      "key": "seated_row_cable",
+      "parent_id": null,
+      "name": "Seated Row (Cable)",
+      "equipment": "cable",
+      "muscles_primary": [
+        "upper_back"
+      ],
+      "muscles_secondary": [
+        "biceps"
+      ],
+      "tracking_type": "weight_reps",
+      "is_unilateral": false,
+      "weight_step": null,
+      "default_rest_s": 90,
+      "floor": "unten",
+      "seat": null,
+      "foot_position": null,
+      "setup_note": null,
+      "source_id": null
+    },
+    {
+      "id": "fb2adc06-d45c-58f6-b67b-ed1ba6ec8fe7",
+      "key": "lying_leg_curl",
+      "parent_id": null,
+      "name": "Lying Leg Curl (Machine)",
+      "equipment": "machine",
+      "muscles_primary": [
+        "hamstrings"
+      ],
+      "muscles_secondary": [],
+      "tracking_type": "weight_reps",
+      "is_unilateral": false,
+      "weight_step": null,
+      "default_rest_s": 90,
+      "floor": "unten",
+      "seat": null,
+      "foot_position": "3",
+      "setup_note": "Höhe 1",
+      "source_id": null
+    },
+    {
+      "id": "9b59a2a8-77da-57ff-9cc0-14e69c647037",
+      "key": "running",
+      "parent_id": null,
+      "name": "Laufen",
+      "equipment": "none",
+      "muscles_primary": [
+        "cardio"
+      ],
+      "muscles_secondary": [],
+      "tracking_type": "distance_duration",
+      "is_unilateral": false,
+      "weight_step": null,
+      "default_rest_s": null,
+      "floor": null,
+      "seat": null,
+      "foot_position": null,
+      "setup_note": null,
+      "source_id": null
+    }
+  ],
+  "templates": [
+    {
+      "id": "30a6cb05-9ea8-5d39-9a00-7c68b66647cd",
+      "key": "day1",
+      "name": "DAY1",
+      "note": "Nur Maschinen und Kabel; Ziel 10 Wdh. mit 1–2 RIR",
+      "exercises": [
+        {
+          "id": "8664a386-a119-5906-b8b0-ce6752e40011",
+          "exercise_id": "584aae25-67a2-54c9-b314-2c9c0f6c78d9",
+          "exercise_key": "bicycle",
+          "position": 1,
+          "rest_s": null,
+          "comment": null,
+          "sets": [
+            {
+              "id": "0853d539-1c34-50a5-8fbd-70db9ca52f37",
+              "position": 1,
+              "set_type": "working",
+              "target_reps_min": null,
+              "target_reps_max": null,
+              "target_weight": null,
+              "target_duration_s": 420,
+              "target_distance_km": null
+            }
+          ]
+        },
+        {
+          "id": "b0360d21-2fd4-533d-bdc6-bab36913ca09",
+          "exercise_id": "03d8bced-f440-542c-b6eb-0bfd3a4e08ba",
+          "exercise_key": "chest_press_mid",
+          "position": 2,
+          "rest_s": 150,
+          "comment": "Aufwärmen wird nicht erfasst",
+          "sets": [
+            {
+              "id": "5f37af87-326d-5f4f-88c2-90649a619e95",
+              "position": 1,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 30,
+              "target_duration_s": null,
+              "target_distance_km": null
+            },
+            {
+              "id": "42c447f7-3225-5820-9ee6-a8510c58dc7b",
+              "position": 2,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 30,
+              "target_duration_s": null,
+              "target_distance_km": null
+            },
+            {
+              "id": "df14d92f-30cb-5f68-8871-d307c3e6ef5d",
+              "position": 3,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 30,
+              "target_duration_s": null,
+              "target_distance_km": null
+            },
+            {
+              "id": "f16ca802-109d-5d0d-8412-0e302beb25eb",
+              "position": 4,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 30,
+              "target_duration_s": null,
+              "target_distance_km": null
+            }
+          ]
+        },
+        {
+          "id": "f37d21c8-efca-5908-b36e-bc180e359e16",
+          "exercise_id": "a3f09696-52df-5e8f-a9b3-26ab3c1684f7",
+          "exercise_key": "lateral_raise_cable",
+          "position": 3,
+          "rest_s": 60,
+          "comment": "Je Seite",
+          "sets": [
+            {
+              "id": "ef40d02a-cc48-55ee-bab9-54325cf6b92d",
+              "position": 1,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 4.5,
+              "target_duration_s": null,
+              "target_distance_km": null
+            },
+            {
+              "id": "0bdf48ec-6ada-5aba-8f7d-29aa661f77e2",
+              "position": 2,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 4.5,
+              "target_duration_s": null,
+              "target_distance_km": null
+            },
+            {
+              "id": "de1689d4-5586-5f56-af3a-275d9d49e428",
+              "position": 3,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 4.5,
+              "target_duration_s": null,
+              "target_distance_km": null
+            }
+          ]
+        },
+        {
+          "id": "937997d5-5553-52cd-b0ed-9d8baaceb9b7",
+          "exercise_id": "c6473665-753c-5771-ba78-c6e0d8c1c89b",
+          "exercise_key": "triceps_pushdown_bar",
+          "position": 4,
+          "rest_s": 90,
+          "comment": null,
+          "sets": [
+            {
+              "id": "5cf6731d-84c5-53be-af4f-30b60834e18e",
+              "position": 1,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 27,
+              "target_duration_s": null,
+              "target_distance_km": null
+            },
+            {
+              "id": "de6a18b7-9cfc-5b78-9d6c-3771b25cf2fa",
+              "position": 2,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 27,
+              "target_duration_s": null,
+              "target_distance_km": null
+            }
+          ]
+        },
+        {
+          "id": "a877d484-5d03-5057-8f1a-23a64e537690",
+          "exercise_id": "51217eb3-ec3e-52ea-8065-2e689d996e75",
+          "exercise_key": "preacher_curl_machine",
+          "position": 5,
+          "rest_s": 90,
+          "comment": null,
+          "sets": [
+            {
+              "id": "b0be5bca-4167-51c5-83ad-31cb92e20615",
+              "position": 1,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 15,
+              "target_duration_s": null,
+              "target_distance_km": null
+            },
+            {
+              "id": "ec8c7e43-35ce-5ef9-a2b8-4f75169491d6",
+              "position": 2,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 15,
+              "target_duration_s": null,
+              "target_distance_km": null
+            }
+          ]
+        },
+        {
+          "id": "2949d4ce-398b-5a6d-b299-49dd6c878435",
+          "exercise_id": "b587ecd4-4ddc-54f8-86bf-325f26dda158",
+          "exercise_key": "lat_pulldown_vgrip",
+          "position": 6,
+          "rest_s": 90,
+          "comment": null,
+          "sets": [
+            {
+              "id": "f49254ab-f140-529f-84ed-4cd390fc513d",
+              "position": 1,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 45,
+              "target_duration_s": null,
+              "target_distance_km": null
+            },
+            {
+              "id": "5db37da8-4b4f-5bac-bcc0-1f175f352982",
+              "position": 2,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 45,
+              "target_duration_s": null,
+              "target_distance_km": null
+            },
+            {
+              "id": "d85215a0-ff26-5054-acb6-a87a7c149510",
+              "position": 3,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 45,
+              "target_duration_s": null,
+              "target_distance_km": null
+            }
+          ]
+        },
+        {
+          "id": "a8919905-fd18-571f-bfa0-f5972287c68e",
+          "exercise_id": "6144fd76-baee-5c78-a409-4ce968051388",
+          "exercise_key": "leg_press",
+          "position": 7,
+          "rest_s": 90,
+          "comment": null,
+          "sets": [
+            {
+              "id": "fd689ed3-6baa-5b93-ad5e-3f37bd399531",
+              "position": 1,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 70,
+              "target_duration_s": null,
+              "target_distance_km": null
+            },
+            {
+              "id": "fffb9967-af40-50b0-8276-eeb282397d3b",
+              "position": 2,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 70,
+              "target_duration_s": null,
+              "target_distance_km": null
+            },
+            {
+              "id": "90fad537-7b73-5083-a9b8-dfcc4a63ca13",
+              "position": 3,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 70,
+              "target_duration_s": null,
+              "target_distance_km": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "4af480e8-7a8d-5fd9-ae69-998bcf30f86a",
+      "key": "day2",
+      "name": "DAY2",
+      "note": "Nur Maschinen und Kabel; Ziel 10 Wdh. mit 1–2 RIR",
+      "exercises": [
+        {
+          "id": "0cf4ec28-4402-5906-8c1d-661f090e5371",
+          "exercise_id": "584aae25-67a2-54c9-b314-2c9c0f6c78d9",
+          "exercise_key": "bicycle",
+          "position": 1,
+          "rest_s": null,
+          "comment": null,
+          "sets": [
+            {
+              "id": "aa45bcdc-82cb-5aec-92bc-2787da507094",
+              "position": 1,
+              "set_type": "working",
+              "target_reps_min": null,
+              "target_reps_max": null,
+              "target_weight": null,
+              "target_duration_s": 420,
+              "target_distance_km": null
+            }
+          ]
+        },
+        {
+          "id": "cc3f9251-32e3-5319-a817-a58bcbf2f7db",
+          "exercise_id": "ce51ba9f-ae6a-5876-b3ee-40df14397a37",
+          "exercise_key": "chest_press_low_seat",
+          "position": 2,
+          "rest_s": 150,
+          "comment": "Aufwärmen wird nicht erfasst",
+          "sets": [
+            {
+              "id": "84dc91bd-1bd2-5bad-a9f2-d9b1f71e4bc8",
+              "position": 1,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 30,
+              "target_duration_s": null,
+              "target_distance_km": null
+            },
+            {
+              "id": "d7cd6766-4755-5773-b50d-fe84f136a1e6",
+              "position": 2,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 30,
+              "target_duration_s": null,
+              "target_distance_km": null
+            },
+            {
+              "id": "81129288-5198-5ff8-b355-d3804e258755",
+              "position": 3,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 30,
+              "target_duration_s": null,
+              "target_distance_km": null
+            },
+            {
+              "id": "34f84832-6d0e-5979-87fa-b473e3f9af57",
+              "position": 4,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 30,
+              "target_duration_s": null,
+              "target_distance_km": null
+            }
+          ]
+        },
+        {
+          "id": "d86cabdf-f2fe-5f6f-975f-f977b0cf4346",
+          "exercise_id": "a3f09696-52df-5e8f-a9b3-26ab3c1684f7",
+          "exercise_key": "lateral_raise_cable",
+          "position": 3,
+          "rest_s": 60,
+          "comment": "Je Seite",
+          "sets": [
+            {
+              "id": "698aefa9-b967-5955-b5a1-31aa36ab620e",
+              "position": 1,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 4.5,
+              "target_duration_s": null,
+              "target_distance_km": null
+            },
+            {
+              "id": "2559e87d-fa69-5d90-95a5-b95a29f98cda",
+              "position": 2,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 4.5,
+              "target_duration_s": null,
+              "target_distance_km": null
+            },
+            {
+              "id": "712fcd5b-335e-5931-947a-8f98f2b77989",
+              "position": 3,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 4.5,
+              "target_duration_s": null,
+              "target_distance_km": null
+            }
+          ]
+        },
+        {
+          "id": "735c03e8-0f1c-58bf-87b3-efee4fffbe15",
+          "exercise_id": "c6473665-753c-5771-ba78-c6e0d8c1c89b",
+          "exercise_key": "triceps_pushdown_bar",
+          "position": 4,
+          "rest_s": 90,
+          "comment": null,
+          "sets": [
+            {
+              "id": "7e47d7b1-3b35-51b0-b106-ed7ebdd3c76b",
+              "position": 1,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 27,
+              "target_duration_s": null,
+              "target_distance_km": null
+            },
+            {
+              "id": "6761258b-f506-5165-a8bd-a5f37da0180d",
+              "position": 2,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 27,
+              "target_duration_s": null,
+              "target_distance_km": null
+            }
+          ]
+        },
+        {
+          "id": "d4dab967-b79d-5d40-8ae8-6968704fdad3",
+          "exercise_id": "51217eb3-ec3e-52ea-8065-2e689d996e75",
+          "exercise_key": "preacher_curl_machine",
+          "position": 5,
+          "rest_s": 90,
+          "comment": null,
+          "sets": [
+            {
+              "id": "d70a417b-f7df-57f3-9f95-3f619a393ebc",
+              "position": 1,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 15,
+              "target_duration_s": null,
+              "target_distance_km": null
+            },
+            {
+              "id": "b42ed7ef-f30c-5dd4-bfe0-26ae56093adb",
+              "position": 2,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 15,
+              "target_duration_s": null,
+              "target_distance_km": null
+            }
+          ]
+        },
+        {
+          "id": "8bfe3a53-e7f8-5a4c-92ac-7c26e8aa5dfd",
+          "exercise_id": "ed13da4b-ac33-57f7-8cda-c3aae3c9dded",
+          "exercise_key": "decline_crunch_15",
+          "position": 6,
+          "rest_s": 90,
+          "comment": null,
+          "sets": [
+            {
+              "id": "64d8b569-923a-5fb1-af36-a71369a54510",
+              "position": 1,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 15,
+              "target_weight": null,
+              "target_duration_s": null,
+              "target_distance_km": null
+            },
+            {
+              "id": "3f76b28f-c7bb-5c59-9e9a-00479786da5d",
+              "position": 2,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 15,
+              "target_weight": null,
+              "target_duration_s": null,
+              "target_distance_km": null
+            }
+          ]
+        },
+        {
+          "id": "afba7f83-558e-5084-a8e4-b1dd69566d6c",
+          "exercise_id": "09ab0a44-dcd2-5c33-989a-3986f73cdb06",
+          "exercise_key": "seated_row_cable",
+          "position": 7,
+          "rest_s": 90,
+          "comment": null,
+          "sets": [
+            {
+              "id": "ef9c4ddb-dc63-51d1-bc6b-6f189dbd9ce2",
+              "position": 1,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 32,
+              "target_duration_s": null,
+              "target_distance_km": null
+            },
+            {
+              "id": "667d837e-b5f9-5d66-a642-f23a822e3010",
+              "position": 2,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 32,
+              "target_duration_s": null,
+              "target_distance_km": null
+            },
+            {
+              "id": "1c7bbcf5-b4b3-5b11-955e-45981462b471",
+              "position": 3,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 32,
+              "target_duration_s": null,
+              "target_distance_km": null
+            }
+          ]
+        },
+        {
+          "id": "5ed888f0-2c12-5c54-a61c-88f39711b893",
+          "exercise_id": "fb2adc06-d45c-58f6-b67b-ed1ba6ec8fe7",
+          "exercise_key": "lying_leg_curl",
+          "position": 8,
+          "rest_s": 90,
+          "comment": null,
+          "sets": [
+            {
+              "id": "3a49516e-628a-5025-b8e3-e0b21a95a866",
+              "position": 1,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 35,
+              "target_duration_s": null,
+              "target_distance_km": null
+            },
+            {
+              "id": "d1888ef8-9950-5722-9aea-29a7099e9009",
+              "position": 2,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 35,
+              "target_duration_s": null,
+              "target_distance_km": null
+            },
+            {
+              "id": "4291c304-caec-55e2-84d9-84d9491645ab",
+              "position": 3,
+              "set_type": "working",
+              "target_reps_min": 10,
+              "target_reps_max": 10,
+              "target_weight": 35,
+              "target_duration_s": null,
+              "target_distance_km": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "b6776365-ee39-527d-8390-d0b4aae3983f",
+      "key": "run",
+      "name": "Lauf",
+      "note": "Einmal pro Woche",
+      "exercises": [
+        {
+          "id": "7da7aada-4818-5615-a220-220248fd6aa9",
+          "exercise_id": "9b59a2a8-77da-57ff-9cc0-14e69c647037",
+          "exercise_key": "running",
+          "position": 1,
+          "rest_s": null,
+          "comment": null,
+          "sets": [
+            {
+              "id": "d5225c36-d056-5fbb-9a1e-3084bfa019e2",
+              "position": 1,
+              "set_type": "working",
+              "target_reps_min": null,
+              "target_reps_max": null,
+              "target_weight": null,
+              "target_duration_s": null,
+              "target_distance_km": 7
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

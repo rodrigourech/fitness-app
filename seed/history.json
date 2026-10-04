@@ -1,0 +1,669 @@
+{
+  "schema_version": 1,
+  "workouts": [
+    {
+      "id": "01e39cfd-d391-540c-a73a-3eff061f93a9",
+      "template_id": "30a6cb05-9ea8-5d39-9a00-7c68b66647cd",
+      "template_name_snapshot": "DAY1",
+      "started_at": "2026-09-28T09:37:00+02:00",
+      "finished_at": "2026-09-28T10:35:00+02:00",
+      "note": "Übernommen aus Strong (Screenshot)",
+      "exercises": [
+        {
+          "id": "e07ae12c-ea29-5956-9924-401704f1f703",
+          "exercise_id": "584aae25-67a2-54c9-b314-2c9c0f6c78d9",
+          "exercise_key": "bicycle",
+          "position": 1,
+          "rest_s": null,
+          "comment": null,
+          "sets": [
+            {
+              "id": "2288f944-fcc0-573e-881b-b385e4781315",
+              "position": 1,
+              "set_type": "working",
+              "weight": null,
+              "reps": null,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": 420,
+              "distance_km": null,
+              "completed_at": null
+            }
+          ]
+        },
+        {
+          "id": "165714e7-f7eb-536c-b02a-7fc3c4cfbc1a",
+          "exercise_id": "03d8bced-f440-542c-b6eb-0bfd3a4e08ba",
+          "exercise_key": "chest_press_mid",
+          "position": 2,
+          "rest_s": 150,
+          "comment": null,
+          "sets": [
+            {
+              "id": "f9719c67-7844-5fc6-8a15-195573a44645",
+              "position": 1,
+              "set_type": "working",
+              "weight": 20,
+              "reps": 10,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            },
+            {
+              "id": "54a54f29-b3aa-5071-9a27-f237b97a8226",
+              "position": 2,
+              "set_type": "working",
+              "weight": 30,
+              "reps": 10,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            },
+            {
+              "id": "cf2402aa-bbf2-5778-b6fd-dfd92abbc993",
+              "position": 3,
+              "set_type": "working",
+              "weight": 30,
+              "reps": 8,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            },
+            {
+              "id": "2bc71190-70b0-5675-b770-baee73bf0e7d",
+              "position": 4,
+              "set_type": "working",
+              "weight": 30,
+              "reps": 7,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            }
+          ]
+        },
+        {
+          "id": "bc61e166-208b-56de-ba64-0cbb08a4153d",
+          "exercise_id": "a3f09696-52df-5e8f-a9b3-26ab3c1684f7",
+          "exercise_key": "lateral_raise_cable",
+          "position": 3,
+          "rest_s": 60,
+          "comment": null,
+          "sets": [
+            {
+              "id": "6d500c01-5ae8-5469-b120-430807833ca2",
+              "position": 1,
+              "set_type": "working",
+              "weight": 4.5,
+              "reps": null,
+              "reps_left": 10,
+              "reps_right": 10,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            },
+            {
+              "id": "209b6821-c5e0-5326-b900-e44dd1767f86",
+              "position": 2,
+              "set_type": "working",
+              "weight": 4.5,
+              "reps": null,
+              "reps_left": 10,
+              "reps_right": 8,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            },
+            {
+              "id": "ca886c6c-919e-5c16-9daf-56687df080d4",
+              "position": 3,
+              "set_type": "working",
+              "weight": 4.5,
+              "reps": null,
+              "reps_left": 10,
+              "reps_right": 9,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            }
+          ]
+        },
+        {
+          "id": "8f9a55ed-63bd-56ac-8576-c596e7ea957b",
+          "exercise_id": "c6473665-753c-5771-ba78-c6e0d8c1c89b",
+          "exercise_key": "triceps_pushdown_bar",
+          "position": 4,
+          "rest_s": 90,
+          "comment": null,
+          "sets": [
+            {
+              "id": "e1352da2-0886-558a-81e7-fa64a269d3d4",
+              "position": 1,
+              "set_type": "working",
+              "weight": 27,
+              "reps": 10,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            },
+            {
+              "id": "9dbabbaf-6743-58b3-9a65-de74ab6f36ef",
+              "position": 2,
+              "set_type": "working",
+              "weight": 27,
+              "reps": 10,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            }
+          ]
+        },
+        {
+          "id": "9be0354c-db8c-53a1-add6-a03efcc6c3cb",
+          "exercise_id": "51217eb3-ec3e-52ea-8065-2e689d996e75",
+          "exercise_key": "preacher_curl_machine",
+          "position": 5,
+          "rest_s": 90,
+          "comment": null,
+          "sets": [
+            {
+              "id": "e21d5c29-eea1-5e6e-8430-001e17f0c944",
+              "position": 1,
+              "set_type": "working",
+              "weight": 15,
+              "reps": 8,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            },
+            {
+              "id": "c2651662-98c0-56cd-b25b-7a26f5ac3d0b",
+              "position": 2,
+              "set_type": "working",
+              "weight": 15,
+              "reps": 4,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            }
+          ]
+        },
+        {
+          "id": "25218762-dfd8-53af-b05d-ada5d3ee58f5",
+          "exercise_id": "b587ecd4-4ddc-54f8-86bf-325f26dda158",
+          "exercise_key": "lat_pulldown_vgrip",
+          "position": 6,
+          "rest_s": 90,
+          "comment": null,
+          "sets": [
+            {
+              "id": "2159d31b-e199-59ce-9aab-c797b058156c",
+              "position": 1,
+              "set_type": "working",
+              "weight": 45,
+              "reps": 10,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            },
+            {
+              "id": "18bfafa4-0cc9-536d-babb-11ae1538ccb6",
+              "position": 2,
+              "set_type": "working",
+              "weight": 45,
+              "reps": 10,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            },
+            {
+              "id": "d4baeabe-df0e-5325-935a-05ce0b9c7314",
+              "position": 3,
+              "set_type": "working",
+              "weight": 45,
+              "reps": 9,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            }
+          ]
+        },
+        {
+          "id": "a57ed9ae-b489-53e1-a4fb-c765e30b04fc",
+          "exercise_id": "6144fd76-baee-5c78-a409-4ce968051388",
+          "exercise_key": "leg_press",
+          "position": 7,
+          "rest_s": 90,
+          "comment": null,
+          "sets": [
+            {
+              "id": "25cc944c-cb1c-5b81-856a-9b86fe5fb3f8",
+              "position": 1,
+              "set_type": "working",
+              "weight": 70,
+              "reps": 10,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            },
+            {
+              "id": "d2742e85-e46b-55c1-84d4-13a996c5fe5a",
+              "position": 2,
+              "set_type": "working",
+              "weight": 70,
+              "reps": 10,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            },
+            {
+              "id": "684e0077-083c-5cf8-ac2a-23d93ce26356",
+              "position": 3,
+              "set_type": "working",
+              "weight": 70,
+              "reps": 10,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cb03f7f6-8442-56d9-8e02-e04cf839b759",
+      "template_id": "4af480e8-7a8d-5fd9-ae69-998bcf30f86a",
+      "template_name_snapshot": "DAY2",
+      "started_at": "2026-10-02T10:45:00+02:00",
+      "finished_at": "2026-10-02T11:50:00+02:00",
+      "note": "Übernommen aus Strong (Screenshot)",
+      "exercises": [
+        {
+          "id": "28d5aead-30ad-55bc-ac9f-ed62c8067e7a",
+          "exercise_id": "584aae25-67a2-54c9-b314-2c9c0f6c78d9",
+          "exercise_key": "bicycle",
+          "position": 1,
+          "rest_s": null,
+          "comment": null,
+          "sets": [
+            {
+              "id": "afb92391-8c98-505f-a3ae-bbac398ccf92",
+              "position": 1,
+              "set_type": "working",
+              "weight": null,
+              "reps": null,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": 420,
+              "distance_km": null,
+              "completed_at": null
+            }
+          ]
+        },
+        {
+          "id": "154ce33b-4b8e-5d11-83c7-702c9bafc07b",
+          "exercise_id": "ce51ba9f-ae6a-5876-b3ee-40df14397a37",
+          "exercise_key": "chest_press_low_seat",
+          "position": 2,
+          "rest_s": 150,
+          "comment": null,
+          "sets": [
+            {
+              "id": "04b0a8ea-8d41-59dd-84ca-94f5c86c6715",
+              "position": 1,
+              "set_type": "working",
+              "weight": 30,
+              "reps": 10,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            },
+            {
+              "id": "3a2135cc-7556-59fa-ae84-8c38217c1e99",
+              "position": 2,
+              "set_type": "working",
+              "weight": 30,
+              "reps": 10,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            },
+            {
+              "id": "b44374e5-1110-56a8-8ec2-48565f8c9070",
+              "position": 3,
+              "set_type": "working",
+              "weight": 30,
+              "reps": 10,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            },
+            {
+              "id": "8fdd4f61-3e8d-5f2e-b8f4-28bb4695c8b1",
+              "position": 4,
+              "set_type": "working",
+              "weight": 30,
+              "reps": 7,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            }
+          ]
+        },
+        {
+          "id": "c6f312da-4a2b-5e85-8d0f-651c42884bcc",
+          "exercise_id": "a3f09696-52df-5e8f-a9b3-26ab3c1684f7",
+          "exercise_key": "lateral_raise_cable",
+          "position": 3,
+          "rest_s": 60,
+          "comment": null,
+          "sets": [
+            {
+              "id": "948202ae-4b16-5cb8-9b52-deea91b7e30f",
+              "position": 1,
+              "set_type": "working",
+              "weight": 4.5,
+              "reps": null,
+              "reps_left": 10,
+              "reps_right": 10,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            },
+            {
+              "id": "71817046-4091-56a1-8cbc-0d0d4a72819d",
+              "position": 2,
+              "set_type": "working",
+              "weight": 4.5,
+              "reps": null,
+              "reps_left": 10,
+              "reps_right": 8,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            },
+            {
+              "id": "9eb8434c-5961-56f5-8e12-59cf3dd70b3c",
+              "position": 3,
+              "set_type": "working",
+              "weight": 4.5,
+              "reps": null,
+              "reps_left": 7,
+              "reps_right": 8,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            }
+          ]
+        },
+        {
+          "id": "b0e828e9-86e4-5553-a327-a2569a3f49e5",
+          "exercise_id": "c6473665-753c-5771-ba78-c6e0d8c1c89b",
+          "exercise_key": "triceps_pushdown_bar",
+          "position": 4,
+          "rest_s": 90,
+          "comment": null,
+          "sets": [
+            {
+              "id": "590eb597-4b8f-5e97-b7b1-73f8a748e650",
+              "position": 1,
+              "set_type": "working",
+              "weight": 27,
+              "reps": 10,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            },
+            {
+              "id": "a671ecc8-5c2e-5ce2-a487-125d2be95962",
+              "position": 2,
+              "set_type": "working",
+              "weight": 27,
+              "reps": 10,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            }
+          ]
+        },
+        {
+          "id": "50ee0f68-5ba2-5851-b368-ab7a93c552d4",
+          "exercise_id": "51217eb3-ec3e-52ea-8065-2e689d996e75",
+          "exercise_key": "preacher_curl_machine",
+          "position": 5,
+          "rest_s": 90,
+          "comment": null,
+          "sets": [
+            {
+              "id": "cfec200e-1815-520b-b26d-3955b5310025",
+              "position": 1,
+              "set_type": "working",
+              "weight": 15,
+              "reps": 10,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            },
+            {
+              "id": "dbf42a69-7ff9-5fb0-b6ea-9daed18eba6b",
+              "position": 2,
+              "set_type": "working",
+              "weight": 15,
+              "reps": 10,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            }
+          ]
+        },
+        {
+          "id": "b9a5bca0-456c-5cc2-9c6c-6c2d784d8da3",
+          "exercise_id": "ed13da4b-ac33-57f7-8cda-c3aae3c9dded",
+          "exercise_key": "decline_crunch_15",
+          "position": 6,
+          "rest_s": 90,
+          "comment": null,
+          "sets": [
+            {
+              "id": "ee370d7a-d4f5-545f-b8bc-41feda78041f",
+              "position": 1,
+              "set_type": "working",
+              "weight": null,
+              "reps": 12,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            },
+            {
+              "id": "2fef0b68-a401-5a26-a043-97239e8b103a",
+              "position": 2,
+              "set_type": "working",
+              "weight": null,
+              "reps": 12,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            }
+          ]
+        },
+        {
+          "id": "24d439ea-6db2-553d-a218-f6d8e49c390e",
+          "exercise_id": "09ab0a44-dcd2-5c33-989a-3986f73cdb06",
+          "exercise_key": "seated_row_cable",
+          "position": 7,
+          "rest_s": 90,
+          "comment": null,
+          "sets": [
+            {
+              "id": "35b959d5-398e-555a-bb02-10d96aa8de3a",
+              "position": 1,
+              "set_type": "working",
+              "weight": 32,
+              "reps": 10,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            },
+            {
+              "id": "6d8dd97b-3f7a-58f8-a3bd-d41933d7c013",
+              "position": 2,
+              "set_type": "working",
+              "weight": 32,
+              "reps": 10,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            },
+            {
+              "id": "865a26b6-3465-599a-8f7c-bd431687304c",
+              "position": 3,
+              "set_type": "working",
+              "weight": 32,
+              "reps": 10,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            }
+          ]
+        },
+        {
+          "id": "2e319c00-4a4f-539b-a8a4-0b0d64dcdaab",
+          "exercise_id": "fb2adc06-d45c-58f6-b67b-ed1ba6ec8fe7",
+          "exercise_key": "lying_leg_curl",
+          "position": 8,
+          "rest_s": 90,
+          "comment": null,
+          "sets": [
+            {
+              "id": "35276053-651a-560f-8fcb-93c8287c1b70",
+              "position": 1,
+              "set_type": "working",
+              "weight": 35,
+              "reps": 10,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            },
+            {
+              "id": "235692e7-c5cc-5f50-b94c-2d7dfc2f6dca",
+              "position": 2,
+              "set_type": "working",
+              "weight": 35,
+              "reps": 10,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            },
+            {
+              "id": "4894d588-8b57-52d8-a7fe-4cf94269ac3e",
+              "position": 3,
+              "set_type": "working",
+              "weight": 30,
+              "reps": 10,
+              "reps_left": null,
+              "reps_right": null,
+              "rir": null,
+              "duration_s": null,
+              "distance_km": null,
+              "completed_at": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

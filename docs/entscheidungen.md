@@ -1,0 +1,22 @@
+# Entscheidungen
+
+Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
+
+## 4. Oktober 2026
+
+- Technologie-Stack wie im Handover empfohlen bestätigt
+- Kein Import des Strong-Verlaufs; stattdessen werden die Trainings vom 28. September und 2. Oktober 2026 als Starthistorie übernommen (seed/history.json)
+- Trainingsplan gemäss den Strong-Protokollen vom 28. September und 2. Oktober 2026 (seed/trainingsplan.json):
+  - DAY1 ohne Decline Crunch
+  - Chest Press: 4 × 10 mit 30 kg, Aufwärmen wird nicht erfasst; der 20-kg-Satz vom 28. September war eine Ausnahme
+  - Lat Pulldown mit Variante «V-Griff (schwarz)» statt Neutralgriff schulterbreit
+  - Seated Row 32 kg ohne Griffvariante
+  - Lying Leg Curl 35 kg, Fuss 3, Höhe 1
+  - Bicycle Level 7, Stockwerk Oben
+  - Lateral Raise: Kabel auf Handhöhe, Seiten abwechselnd, rechts beginnt
+- Seed-Daten verwenden deterministische UUIDs (UUIDv5), damit ein Import auf mehreren Geräten keine Duplikate erzeugt
+- Muskelgruppen als englische Schlüssel: chest, front_delts, side_delts, triceps, biceps, abs, lats, upper_back, quads, glutes, hamstrings, cardio
+
+## Offen
+
+- Gewichtsschritt pro Übung (weight_step) noch nicht festgelegt; nötig für den Progressionsvorschlag
