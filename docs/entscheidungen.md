@@ -23,3 +23,4 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
   - Zusätzliche Spalte synced_at (vom Server gesetzt) für das Abholen; updated_at entscheidet Konflikte
   - Varianten erben Equipment, Muskelgruppen, Erfassungstyp, unilateral und Links von der Hauptübung (Felder in der Variante leer)
   - Startdaten mit festem Zeitstempel seed_timestamp
+- Anmeldung mit E-Mail und Passwort (Supabase Auth); keine Magic Links, da diese auf dem iPhone die installierte PWA umgehen
