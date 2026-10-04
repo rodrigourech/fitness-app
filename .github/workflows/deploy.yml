@@ -23,29 +23,17 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Check configuration
-        env:
-          NEON_AUTH_BASE_URL: ${{ vars.NEON_AUTH_BASE_URL }}
-          NEON_DATA_API_URL: ${{ vars.NEON_DATA_API_URL }}
-        run: |
-          for v in NEON_AUTH_BASE_URL NEON_DATA_API_URL; do
-            case "${!v}" in
-              https://*) echo "$v ok" ;;
-              *) echo "::error::Repository variable $v is missing or does not start with https://"; exit 1 ;;
-            esac
-          done
-
       - run: npm ci
 
       - run: npm test
 
       - name: Build
-        run: npm run build
+        run: |
+          npm run build
+          grep -q "apirest" dist/assets/index-*.js || { echo "::error::Neon Data API URL missing in build"; exit 1; }
         env:
           BASE_PATH: /fitness-app-web/
-          # Public endpoints only (repository variables, not secrets). Never DATABASE_URL.
-          NEON_AUTH_BASE_URL: ${{ vars.NEON_AUTH_BASE_URL }}
-          NEON_DATA_API_URL: ${{ vars.NEON_DATA_API_URL }}
+          # The public Neon URLs come from .env.production (committed, not secret).
 
       - name: Publish to fitness-app-web
         uses: peaceiris/actions-gh-pages@v4
