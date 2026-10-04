@@ -23,6 +23,18 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Check configuration
+        env:
+          NEON_AUTH_BASE_URL: ${{ vars.NEON_AUTH_BASE_URL }}
+          NEON_DATA_API_URL: ${{ vars.NEON_DATA_API_URL }}
+        run: |
+          for v in NEON_AUTH_BASE_URL NEON_DATA_API_URL; do
+            case "${!v}" in
+              https://*) echo "$v ok" ;;
+              *) echo "::error::Repository variable $v is missing or does not start with https://"; exit 1 ;;
+            esac
+          done
+
       - run: npm ci
 
       - run: npm test
