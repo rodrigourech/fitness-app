@@ -162,6 +162,7 @@ export async function syncNow(remote: RemoteApi = neonRemote): Promise<void> {
         await pull(remote)
         setStatus({ phase: 'idle', lastSuccess: new Date().toISOString() })
       } catch (err) {
+        console.error('Sync failed', err)
         if (err instanceof RemoteError && (err.status === 401 || err.status === 403)) {
           setStatus({ phase: 'signed_out', error: err.message })
         } else {

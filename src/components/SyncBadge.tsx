@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useSyncExternalStore } from 'react'
 import { db } from '../lib/db'
 import { getSyncStatus, subscribeSyncStatus, syncNow } from '../lib/sync'
+import Popover from './Popover'
 
 interface Props {
   onReauth: () => void
@@ -33,10 +34,34 @@ export default function SyncBadge({ onReauth }: Props) {
   }
 
   const action = status.phase === 'signed_out' ? onReauth : () => void syncNow()
+
+  if (status.phase === 'error') {
+    // On phones there is no hover tooltip: show the error in a popover with a retry button
+    return (
+      <Popover label={text} ariaLabel="Sync error details" align="right" triggerClassName={`rounded-md px-2 py-1 text-sm whitespace-nowrap ${tone}`}>
+        {(close) => (
+          <span className="flex flex-col gap-2">
+            <span className="font-semibold">Sync failed</span>
+            <span className="text-xs break-words text-neutral-600 dark:text-neutral-300">{status.error ?? 'Unknown error'}</span>
+            <button
+              onClick={() => {
+                close()
+                void syncNow()
+              }}
+              className="rounded-md bg-neutral-900 py-1.5 text-sm font-semibold text-white dark:bg-neutral-100 dark:text-neutral-900"
+            >
+              Retry
+            </button>
+          </span>
+        )}
+      </Popover>
+    )
+  }
+
   return (
     <button
       onClick={action}
-      title={status.error ?? (status.lastSuccess ? `Last synced: ${new Date(status.lastSuccess).toLocaleString('en-GB')}` : undefined)}
+      title={status.lastSuccess ? `Last synced: ${new Date(status.lastSuccess).toLocaleString('en-GB')}` : undefined}
       className={`rounded-md px-2 py-1 text-sm whitespace-nowrap ${tone}`}
     >
       {text}

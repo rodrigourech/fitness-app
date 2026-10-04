@@ -27,7 +27,7 @@ export const neonRemote: RemoteApi = {
 
   async upsert(table, rows) {
     const { error, status } = await neon.from(table).upsert(rows, { onConflict: 'id' })
-    if (error) throw new RemoteError(`${table}: ${error.message}`, status)
+    if (error) throw new RemoteError(`${table}: ${error.message} (HTTP ${status})`, status)
   },
 
   async fetchSince(table, since, limit, offset) {
@@ -38,7 +38,7 @@ export const neonRemote: RemoteApi = {
       .order('synced_at', { ascending: true })
       .order('id', { ascending: true })
       .range(offset, offset + limit - 1)
-    if (error) throw new RemoteError(`${table}: ${error.message}`, status)
+    if (error) throw new RemoteError(`${table}: ${error.message} (HTTP ${status})`, status)
     return (data ?? []) as RemoteRow[]
   },
 }
