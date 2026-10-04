@@ -1,0 +1,70 @@
+import { useState, type FormEvent } from 'react'
+import { SignInError, signIn, type LocalUser } from '../lib/auth'
+
+interface Props {
+  onSignedIn: (user: LocalUser) => void
+}
+
+export default function Login({ onSignedIn }: Props) {
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  async function submit(e: FormEvent) {
+    e.preventDefault()
+    setError(null)
+    setBusy(true)
+    try {
+      onSignedIn(await signIn(username, password))
+    } catch (err) {
+      setError(err instanceof SignInError ? err.message : 'Anmeldung fehlgeschlagen.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-6">
+      <h1 className="mb-8 text-3xl font-semibold tracking-tight">Fitness</h1>
+      <form onSubmit={submit} className="flex flex-col gap-4">
+        <label className="flex flex-col gap-1">
+          <span className="text-sm text-neutral-500 dark:text-neutral-400">Benutzername</span>
+          <input
+            className="rounded-lg border border-neutral-300 bg-transparent px-3 py-3 text-base outline-none focus:border-neutral-900 dark:border-neutral-700 dark:focus:border-neutral-100"
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            required
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-sm text-neutral-500 dark:text-neutral-400">Passwort</span>
+          <input
+            className="rounded-lg border border-neutral-300 bg-transparent px-3 py-3 text-base outline-none focus:border-neutral-900 dark:border-neutral-700 dark:focus:border-neutral-100"
+            type="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </label>
+        {error && (
+          <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+            {error}
+          </p>
+        )}
+        <button
+          type="submit"
+          disabled={busy}
+          className="mt-2 rounded-lg bg-neutral-900 px-4 py-3 text-base font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+        >
+          {busy ? 'Anmelden …' : 'Anmelden'}
+        </button>
+      </form>
+    </main>
+  )
+}

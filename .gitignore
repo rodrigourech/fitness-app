@@ -11,3 +11,5 @@ coverage/
 Thumbs.db
 .DS_Store
 .neon
+.idea
+*.tsbuildinfo
