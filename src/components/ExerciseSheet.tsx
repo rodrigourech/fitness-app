@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState, type FormEvent } from 'react'
 import { db, displayName, type Exercise } from '../lib/db'
-import { addLink, linkLabel, linksFor, normalizeUrl, removeLink, updateExercise } from '../lib/exercise'
+import { addLink, createVariant, linkLabel, linksFor, normalizeUrl, removeLink, updateExercise } from '../lib/exercise'
 import { effective } from '../lib/workout'
 import { regionName } from '../lib/muscles'
 import BodyMap from './BodyMap'
@@ -15,13 +15,20 @@ interface Props {
 
 /** Bottom sheet with focus muscles, cue and reference videos of an exercise. */
 export default function ExerciseSheet({ exerciseId, onClose }: Props) {
+  // The sheet can navigate between a main exercise and its variants
+  const [currentId, setCurrentId] = useState(exerciseId)
+  const [variantName, setVariantName] = useState('')
   const data = useLiveQuery(async () => {
-    const ex = await db.exercise.get(exerciseId)
+    const ex = await db.exercise.get(currentId)
     if (!ex) return null
     const parent = ex.parent_id ? await db.exercise.get(ex.parent_id) : undefined
     const byId = new Map<string, Exercise>([[ex.id, ex], ...(parent ? ([[parent.id, parent]] as const) : [])])
-    return { ex, parent, byId, links: await linksFor(ex) }
-  }, [exerciseId])
+    const mainId = parent?.id ?? ex.id
+    const variants = (await db.exercise.where('parent_id').equals(mainId).toArray())
+      .filter((v) => v.deleted_at === null)
+      .sort((a, b) => a.name.localeCompare(b.name))
+    return { ex, parent, byId, variants, links: await linksFor(ex) }
+  }, [currentId])
 
   const [url, setUrl] = useState('')
   const [title, setTitle] = useState('')
@@ -29,7 +36,8 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
 
   if (data === undefined) return null
   if (data === null) return null
-  const { ex, parent, byId, links } = data
+  const { ex, parent, byId, variants, links } = data
+  const main = parent ?? ex
   const eff = effective(ex, byId)
   const focusInherited = ex.parent_id !== null && ex.focus_muscles == null
   const cueInherited = ex.parent_id !== null && ex.focus_cue == null
@@ -38,6 +46,14 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
     const current = eff.focusMuscles
     const next = current.includes(region) ? current.filter((r) => r !== region) : [...current, region]
     void updateExercise(ex, { focus_muscles: next })
+  }
+
+  async function submitVariant(e: FormEvent) {
+    e.preventDefault()
+    if (!variantName.trim()) return
+    const id = await createVariant(main, variantName, null)
+    setVariantName('')
+    setCurrentId(id)
   }
 
   async function submitLink(e: FormEvent) {
@@ -99,6 +115,51 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
             multiline
             onSave={(v) => updateExercise(ex, { setup_note: v })}
           />
+        </section>
+
+        <section className="mb-5">
+          <h3 className="mb-2 text-sm font-semibold">Variants of {main.name}</h3>
+          <ul className="mb-2 flex flex-wrap gap-1.5">
+            {parent && (
+              <li>
+                <button onClick={() => setCurrentId(main.id)} className="rounded-full border border-neutral-300 px-3 py-1 text-sm dark:border-neutral-700">
+                  ‹ Main exercise
+                </button>
+              </li>
+            )}
+            {variants.map((v) => (
+              <li key={v.id}>
+                <button
+                  onClick={() => setCurrentId(v.id)}
+                  aria-current={v.id === ex.id}
+                  className={`rounded-full px-3 py-1 text-sm ${
+                    v.id === ex.id
+                      ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
+                      : 'bg-neutral-100 dark:bg-neutral-800'
+                  }`}
+                >
+                  {v.name}
+                </button>
+              </li>
+            ))}
+            {variants.length === 0 && <li className="text-sm text-neutral-500 dark:text-neutral-400">No variants yet.</li>}
+          </ul>
+          <form onSubmit={(e) => void submitVariant(e)} className="flex gap-2">
+            <input
+              aria-label="New variant name"
+              placeholder="New variant, e.g. Rope"
+              value={variantName}
+              onChange={(e) => setVariantName(e.target.value)}
+              className="min-w-0 flex-1 rounded-lg border border-neutral-300 bg-transparent px-3 py-2 text-base outline-none dark:border-neutral-700"
+            />
+            <button
+              type="submit"
+              disabled={!variantName.trim()}
+              className="rounded-lg bg-neutral-900 px-3 text-sm font-semibold text-white disabled:opacity-40 dark:bg-neutral-100 dark:text-neutral-900"
+            >
+              + Add variant
+            </button>
+          </form>
         </section>
 
         <section className="mb-5">

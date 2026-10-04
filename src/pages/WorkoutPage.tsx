@@ -4,6 +4,7 @@ import AppBar from '../components/AppBar'
 import ExerciseSheet from '../components/ExerciseSheet'
 import ExercisePicker from '../components/ExercisePicker'
 import Field from '../components/Field'
+import Popover from '../components/Popover'
 import RestTimer from '../components/RestTimer'
 import SyncBadge from '../components/SyncBadge'
 import { useNow } from '../hooks/useNow'
@@ -196,7 +197,6 @@ export default function WorkoutPage({ workout, onReauth }: Props) {
 
 function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map<string, Exercise>; onOpen: (exerciseId: string) => void }) {
   const { we, exercise, name, sets, previous, links } = block
-  const [rirHelp, setRirHelp] = useState(false)
   const eff = exercise
     ? effective(exercise, byId)
     : { trackingType: 'weight_reps', isUnilateral: false, floor: null, seat: null, footPosition: null, setupNote: null, focusMuscles: [] as string[], focusCue: null, restS: null }
@@ -220,19 +220,15 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
 
   return (
     <section className="rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
-      <button onClick={() => onOpen(we.exercise_id)} className="text-left">
-        <h2 className="font-semibold underline-offset-2 hover:underline">{name} <span className="text-neutral-400">›</span></h2>
-      </button>
+      <div className="flex items-start justify-between gap-2">
+        <button onClick={() => onOpen(we.exercise_id)} className="text-left">
+          <h2 className="font-semibold underline-offset-2 hover:underline">
+            {name} <span className="text-neutral-400">›</span>
+          </h2>
+        </button>
+        <VideoButton links={links} />
+      </div>
       {eff.setupNote && <p className="text-sm whitespace-pre-line text-neutral-500 dark:text-neutral-400">{eff.setupNote}</p>}
-      {links.length > 0 && (
-        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
-          {links.map((l) => (
-            <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" className="text-sm text-sky-700 underline dark:text-sky-400">
-              ▶ {linkLabel(l)}
-            </a>
-          ))}
-        </div>
-      )}
 
 
       <div className={`mt-3 grid ${cols} items-center gap-x-1 gap-y-1.5 text-xs text-neutral-500 dark:text-neutral-400`}>
@@ -281,13 +277,14 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
       {tt === 'weight_reps' && lastWorking && (
         <div className="mt-2">
           <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => setRirHelp((v) => !v)}
-              aria-expanded={rirHelp}
-              className="mr-1 text-xs text-neutral-500 underline decoration-dotted underline-offset-2 dark:text-neutral-400"
+            <Popover
+              hover
+              label={<>RIR ⓘ</>}
+              ariaLabel="What is RIR?"
+              triggerClassName="mr-1 text-xs text-neutral-500 underline decoration-dotted underline-offset-2 dark:text-neutral-400"
             >
-              RIR last set ⓘ
-            </button>
+              <RirHelp />
+            </Popover>
             {RIR_OPTIONS.map((o) => {
               const active = lastWorking.rir === o.value
               return (
@@ -306,12 +303,6 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
               )
             })}
           </div>
-          {rirHelp && (
-        <p className="mt-2 rounded-md bg-neutral-100 p-2 text-sm text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
-          RIR = Reps in Reserve: how many more reps you could have done with clean form (0 = failure, 2 = two more were
-          possible). Last set only, optional. Target: 1–2.
-        </p>
-      )}
         </div>
       )}
 
@@ -329,6 +320,60 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
         )}
       </div>
     </section>
+  )
+}
+
+function RirHelp() {
+  return (
+    <>
+      <span className="mb-1 block font-semibold">RIR – Reps in Reserve</span>
+      <span className="mb-2 block text-neutral-600 dark:text-neutral-300">How many more reps you could have done with clean form.</span>
+      <span className="grid grid-cols-[2rem_1fr] gap-x-2 gap-y-0.5 tabular-nums">
+        <b>0</b>
+        <span>failure, no rep left</span>
+        <b>1</b>
+        <span>one more rep possible</span>
+        <b>2</b>
+        <span>two more reps possible</span>
+        <b>4+</b>
+        <span>clearly easy</span>
+      </span>
+      <span className="mt-2 block text-xs text-neutral-500 dark:text-neutral-400">Target 1–2 · last set only · optional</span>
+    </>
+  )
+}
+
+function VideoButton({ links }: { links: ExerciseLink[] }) {
+  if (links.length === 0) return null
+  const cls = 'shrink-0 rounded-md bg-sky-100 px-2.5 py-1 text-sm font-semibold text-sky-800 dark:bg-sky-950 dark:text-sky-300'
+  if (links.length === 1) {
+    const l = links[0]!
+    return (
+      <a href={l.url} target="_blank" rel="noopener noreferrer" aria-label={`Video: ${linkLabel(l)}`} className={cls}>
+        ▶ Video
+      </a>
+    )
+  }
+  return (
+    <Popover label={`▶ Videos (${links.length})`} ariaLabel="Choose a video" triggerClassName={cls} align="right">
+      {(close) => (
+        <span className="flex flex-col">
+          <span className="mb-1 text-xs text-neutral-500 dark:text-neutral-400">Choose a video</span>
+          {links.map((l) => (
+            <a
+              key={l.id}
+              href={l.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={close}
+              className="truncate rounded-md px-2 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            >
+              ▶ {linkLabel(l)}
+            </a>
+          ))}
+        </span>
+      )}
+    </Popover>
   )
 }
 
