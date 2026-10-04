@@ -31,8 +31,8 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
   if (data === null) return null
   const { ex, byId, links } = data
   const eff = effective(ex, byId)
-  const focusInherited = ex.parent_id !== null && ex.focus_muscles === null
-  const cueInherited = ex.parent_id !== null && ex.focus_cue === null
+  const focusInherited = ex.parent_id !== null && ex.focus_muscles == null
+  const cueInherited = ex.parent_id !== null && ex.focus_cue == null
 
   function toggleRegion(region: string) {
     const current = eff.focusMuscles
