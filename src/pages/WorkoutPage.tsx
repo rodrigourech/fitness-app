@@ -171,6 +171,7 @@ export default function WorkoutPage({ workout, onReauth }: Props) {
 
 function ExerciseCard({ block, byId }: { block: ExerciseBlock; byId: Map<string, Exercise> }) {
   const { we, exercise, name, sets, previous } = block
+  const [rirHelp, setRirHelp] = useState(false)
   const eff = exercise
     ? effective(exercise, byId)
     : { trackingType: 'weight_reps', isUnilateral: false, floor: null, seat: null, footPosition: null, setupNote: null }
@@ -204,6 +205,13 @@ function ExerciseCard({ block, byId }: { block: ExerciseBlock; byId: Map<string,
       {settings.length > 0 && <p className="text-sm text-neutral-500 dark:text-neutral-400">{settings.join(' · ')}</p>}
       {we.comment && <p className="text-sm text-neutral-500 italic dark:text-neutral-400">{we.comment}</p>}
 
+      {rirHelp && (
+        <p className="mt-3 rounded-md bg-neutral-100 p-2 text-sm text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
+          RIR = Reps in Reserve: Wiederholungen, die mit sauberer Technik noch möglich gewesen wären (0 = Muskelversagen,
+          2 = zwei weitere wären gegangen). Nur beim letzten Satz, freiwillig. Ziel: 1–2.
+        </p>
+      )}
+
       <div className={`mt-3 grid ${cols} items-center gap-x-1 gap-y-1.5 text-xs text-neutral-500 dark:text-neutral-400`}>
         <span className="text-center">Satz</span>
         <span>Vorher</span>
@@ -225,7 +233,13 @@ function ExerciseCard({ block, byId }: { block: ExerciseBlock; byId: Map<string,
             ) : (
               <span className="text-center">Wdh.</span>
             )}
-            <span className="text-center">RIR</span>
+            <button
+              onClick={() => setRirHelp((v) => !v)}
+              aria-expanded={rirHelp}
+              className="text-center underline decoration-dotted underline-offset-2"
+            >
+              RIR ⓘ
+            </button>
           </>
         )}
         <span />
