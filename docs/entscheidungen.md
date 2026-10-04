@@ -36,3 +36,4 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
 - Projektstruktur: Die App liegt direkt im Hauptordner (Vite-Projekt neben neon.ts, eine gemeinsame package.json); der Ordner app/ entfällt
 - Neon CLI ohne Agent-Integrationen: neon skills und neon mcp werden vorerst nicht installiert (kein kontoweiter API-Schlüssel)
 - Absicherung gegen fremde Registrierungen: Neon Auth kann die Registrierung derzeit nicht sperren. Migration 0002 führt die Owner-Liste private.app_owner ein; alle Policies verlangen zusätzlich private.is_app_owner(). Fremde Konten können damit weder lesen noch schreiben
+- RIR wird nur beim letzten Arbeitssatz jeder Übung erfasst (optional). Progressionsvorschlag: Erreichen alle Arbeitssätze die Zielwiederholungen und hat der letzte Arbeitssatz mindestens 2 RIR, schlägt die App «Gewicht erhöhen» vor (ersetzt die Regel im Handover, die RIR für jeden Satz voraussetzte)

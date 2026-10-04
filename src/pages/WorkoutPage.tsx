@@ -182,6 +182,8 @@ function ExerciseCard({ block, byId }: { block: ExerciseBlock; byId: Map<string,
   ].filter(Boolean)
 
   const prevWorking = previous.filter((s) => s.set_type === 'working')
+  // RIR is recorded only for the last working set of an exercise
+  const lastWorkingId = sets.filter((s) => s.set_type === 'working').at(-1)?.id
   const prevWarmup = previous.filter((s) => s.set_type === 'warmup')
   let workingNo = 0
   let warmupNo = 0
@@ -240,6 +242,7 @@ function ExerciseCard({ block, byId }: { block: ExerciseBlock; byId: Map<string,
               trackingType={tt}
               unilateral={eff.isUnilateral}
               restSeconds={we.rest_s}
+              showRir={s.id === lastWorkingId}
             />
           )
         })}
@@ -269,9 +272,10 @@ interface SetRowProps {
   trackingType: string
   unilateral: boolean
   restSeconds: number | null
+  showRir: boolean
 }
 
-function SetRow({ set, label, previous, trackingType, unilateral, restSeconds }: SetRowProps) {
+function SetRow({ set, label, previous, trackingType, unilateral, restSeconds, showRir }: SetRowProps) {
   const done = set.completed_at !== null
 
   function numberCommit(field: 'weight' | 'reps' | 'reps_left' | 'reps_right' | 'distance_km', integer: boolean) {
@@ -326,19 +330,23 @@ function SetRow({ set, label, previous, trackingType, unilateral, restSeconds }:
           ) : (
             <Field label="Wiederholungen" inputMode="numeric" value={formatNumber(set.reps)} onCommit={numberCommit('reps', true)} />
           )}
-          <select
-            aria-label="RIR"
-            value={set.rir === null ? '' : String(set.rir)}
-            onChange={(e) => void updateSet(set, { rir: e.target.value === '' ? null : Number(e.target.value) })}
-            className="h-10 w-full min-w-0 appearance-none rounded-md bg-neutral-100 text-center text-base tabular-nums dark:bg-neutral-800"
-          >
-            <option value="">–</option>
-            <option value="0">0</option>
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value="4">4+</option>
-          </select>
+          {showRir ? (
+            <select
+              aria-label="RIR"
+              value={set.rir === null ? '' : String(set.rir)}
+              onChange={(e) => void updateSet(set, { rir: e.target.value === '' ? null : Number(e.target.value) })}
+              className="h-10 w-full min-w-0 appearance-none rounded-md bg-neutral-100 text-center text-base tabular-nums dark:bg-neutral-800"
+            >
+              <option value="">–</option>
+              <option value="0">0</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4+</option>
+            </select>
+          ) : (
+            <span />
+          )}
         </>
       )}
       <button
