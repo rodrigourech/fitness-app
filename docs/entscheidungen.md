@@ -48,3 +48,5 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
 - Übungen und Varianten in der App anlegbar: Reiter «Exercises» auf der Startseite und «+ Add exercise» im laufenden Training
 - Übungskatalog (Free Exercise DB) wird als statische Datei mit der App ausgeliefert statt in exercise_catalog importiert (ersetzt den Entscheid vom 4. Oktober); Tabelle exercise_catalog bleibt vorerst leer
 - Katalogsuche beim Anlegen einer Übung: Vorschläge aus src/data/catalog.json (876 Übungen, Free Exercise DB, Unlicense); Auswahl übernimmt Name, Erfassungsart, Equipment, Muskelgruppen und schlägt den Muskelfokus vor. Migration 0005 entfernt exercise_catalog und den Fremdschlüssel
+- Inkrement 2 vorgezogen: Historie mit Detail, Löschen und Export (CSV der Sätze, JSON aller Tabellen); Bestleistungen (Gewicht, geschätztes 1RM nach Epley; bei einseitigen Sätzen zählt die schwächere Seite) werden beim Abhaken markiert; Progressionshinweis gemäss Regel; Körpergewicht mit 7-Tage-Durchschnitt
+- In Vorlagen ist die verwendete Variante pro Übung umschaltbar; ein Tipp auf den Namen öffnet das Übungsblatt

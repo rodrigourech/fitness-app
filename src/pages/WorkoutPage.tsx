@@ -11,6 +11,7 @@ import { useNow } from '../hooks/useNow'
 import { startRest, stopRest } from '../lib/rest'
 import { db, displayName, type Exercise, type ExerciseLink, type Workout, type WorkoutExercise, type WorkoutSet } from '../lib/db'
 import { linkLabel, linksFor } from '../lib/exercise'
+import { bestBefore, recordsOf, shouldIncrease, targetRepsFor, type Best } from '../lib/stats'
 import {
   addExerciseToWorkout,
   addSet,
@@ -44,9 +45,11 @@ interface ExerciseBlock {
   sets: WorkoutSet[]
   previous: WorkoutSet[]
   links: ExerciseLink[]
+  best: Best
+  increase: boolean
 }
 
-async function loadBlocks(workoutId: string): Promise<ExerciseBlock[]> {
+async function loadBlocks(workoutId: string, templateId: string | null): Promise<ExerciseBlock[]> {
   const [wes, exercises] = await Promise.all([
     db.workout_exercise.where('workout_id').equals(workoutId).toArray(),
     db.exercise.toArray(),
@@ -57,6 +60,7 @@ async function loadBlocks(workoutId: string): Promise<ExerciseBlock[]> {
   return Promise.all(
     active.map(async (we) => {
       const exercise = byId.get(we.exercise_id)
+      const prev = await previousSets(we.exercise_id, workoutId)
       return {
         we,
         exercise,
@@ -64,15 +68,17 @@ async function loadBlocks(workoutId: string): Promise<ExerciseBlock[]> {
         sets: allSets
           .filter((s) => s.workout_exercise_id === we.id && s.deleted_at === null)
           .sort((a, b) => a.position - b.position),
-        previous: await previousSets(we.exercise_id, workoutId),
+        previous: prev,
         links: exercise ? await linksFor(exercise) : [],
+        best: await bestBefore(we.exercise_id, workoutId),
+        increase: shouldIncrease(prev, await targetRepsFor(templateId, we.exercise_id)),
       }
     }),
   )
 }
 
 export default function WorkoutPage({ workout, onReauth }: Props) {
-  const blocks = useLiveQuery(() => loadBlocks(workout.id), [workout.id])
+  const blocks = useLiveQuery(() => loadBlocks(workout.id, workout.template_id), [workout.id, workout.template_id])
   const exercises = useLiveQuery(() => db.exercise.toArray(), [])
   const now = useNow(1000)
   const [sheet, setSheet] = useState<string | null>(null)
@@ -196,7 +202,7 @@ export default function WorkoutPage({ workout, onReauth }: Props) {
 }
 
 function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map<string, Exercise>; onOpen: (exerciseId: string) => void }) {
-  const { we, exercise, name, sets, previous, links } = block
+  const { we, exercise, name, sets, previous, links, best, increase } = block
   const eff = exercise
     ? effective(exercise, byId)
     : { trackingType: 'weight_reps', isUnilateral: false, floor: null, seat: null, footPosition: null, setupNote: null, focusMuscles: [] as string[], focusCue: null, restS: null }
@@ -229,6 +235,11 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
         <VideoButton links={links} />
       </div>
       {eff.setupNote && <p className="text-sm whitespace-pre-line text-neutral-500 dark:text-neutral-400">{eff.setupNote}</p>}
+      {increase && (
+        <p className="mt-1 rounded-md bg-emerald-50 px-2 py-1 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+          ↑ Last time every set hit the target with RIR ≥ 2 – increase the weight.
+        </p>
+      )}
 
 
       <div className={`mt-3 grid ${cols} items-center gap-x-1 gap-y-1.5 text-xs text-neutral-500 dark:text-neutral-400`}>
@@ -269,6 +280,7 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
               trackingType={tt}
               unilateral={eff.isUnilateral}
               restSeconds={eff.restS ?? we.rest_s}
+              records={recordsOf(s, best)}
             />
           )
         })}
@@ -393,9 +405,10 @@ interface SetRowProps {
   trackingType: string
   unilateral: boolean
   restSeconds: number | null
+  records: string[]
 }
 
-function SetRow({ set, label, previous, trackingType, unilateral, restSeconds }: SetRowProps) {
+function SetRow({ set, label, previous, trackingType, unilateral, restSeconds, records }: SetRowProps) {
   const done = set.completed_at !== null
 
   function numberCommit(field: 'weight' | 'reps' | 'reps_left' | 'reps_right' | 'distance_km', integer: boolean) {
@@ -432,8 +445,12 @@ function SetRow({ set, label, previous, trackingType, unilateral, restSeconds }:
 
   return (
     <>
-      <span className={`flex h-10 items-center justify-center rounded-md text-sm font-medium text-neutral-700 dark:text-neutral-200 ${rowTone}`}>
+      <span
+        title={records.length ? `Personal record: ${records.join(', ')}` : undefined}
+        className={`flex h-10 flex-col items-center justify-center rounded-md text-sm leading-none font-medium text-neutral-700 dark:text-neutral-200 ${rowTone}`}
+      >
         {label}
+        {records.length > 0 && <span className="mt-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400">PR</span>}
       </span>
       <span className="flex min-w-0 flex-col text-[11px] leading-tight text-neutral-500 tabular-nums dark:text-neutral-400">
         <span className="truncate">{previous[0]}</span>

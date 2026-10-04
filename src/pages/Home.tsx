@@ -3,7 +3,9 @@ import { useState } from 'react'
 import AppBar from '../components/AppBar'
 import ExerciseSheet from '../components/ExerciseSheet'
 import SyncBadge from '../components/SyncBadge'
+import BodyTab from './BodyTab'
 import ExercisesTab from './ExercisesTab'
+import HistoryTab from './HistoryTab'
 import { signOut, type LocalUser } from '../lib/auth'
 import { db, displayName, type Exercise } from '../lib/db'
 import { createTemplate } from '../lib/template'
@@ -21,6 +23,10 @@ interface TemplateCard {
   exercises: { id: string; name: string }[]
   lastDone: string | null
 }
+
+type Tab = 'templates' | 'exercises' | 'history' | 'body'
+const TABS: Tab[] = ['templates', 'exercises', 'history', 'body']
+const TAB_LABEL: Record<Tab, string> = { templates: 'Templates', exercises: 'Exercises', history: 'History', body: 'Body' }
 
 const dateFormat = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'long' })
 
@@ -55,7 +61,7 @@ async function loadTemplates(): Promise<TemplateCard[]> {
 export default function Home({ user, onSignedOut }: Props) {
   const cards = useLiveQuery(loadTemplates, [])
   const [sheet, setSheet] = useState<string | null>(null)
-  const [tab, setTab] = useState<'templates' | 'exercises'>('templates')
+  const [tab, setTab] = useState<Tab>('templates')
   const [editing, setEditing] = useState<string | null>(null)
 
   async function handleSignOut() {
@@ -78,24 +84,28 @@ export default function Home({ user, onSignedOut }: Props) {
         </button>
       </AppBar>
 
-      <div role="tablist" className="mb-4 grid grid-cols-2 gap-1 rounded-lg bg-neutral-100 p-1 dark:bg-neutral-900">
-        {(['templates', 'exercises'] as const).map((t) => (
+      <div role="tablist" className="mb-4 grid grid-cols-4 gap-1 rounded-lg bg-neutral-100 p-1 dark:bg-neutral-900">
+        {TABS.map((t) => (
           <button
             key={t}
             role="tab"
             aria-selected={tab === t}
             onClick={() => setTab(t)}
-            className={`rounded-md py-2 text-sm font-semibold ${
+            className={`rounded-md py-2 text-xs font-semibold sm:text-sm ${
               tab === t ? 'bg-white shadow-sm dark:bg-neutral-700' : 'text-neutral-500 dark:text-neutral-400'
             }`}
           >
-            {t === 'templates' ? 'Templates' : 'Exercises'}
+            {TAB_LABEL[t]}
           </button>
         ))}
       </div>
 
       {tab === 'exercises' ? (
         <ExercisesTab userId={user.id} />
+      ) : tab === 'history' ? (
+        <HistoryTab />
+      ) : tab === 'body' ? (
+        <BodyTab userId={user.id} />
       ) : cards === undefined ? (
         <p className="text-neutral-500">Loading …</p>
       ) : cards.length === 0 ? (

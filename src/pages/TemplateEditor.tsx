@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import AppBar from '../components/AppBar'
 import ExercisePicker from '../components/ExercisePicker'
+import ExerciseSheet from '../components/ExerciseSheet'
 import Field from '../components/Field'
 import { db, displayName, type Exercise, type TemplateExercise, type TemplateSet } from '../lib/db'
 import {
@@ -13,6 +14,7 @@ import {
   renameTemplate,
   setPlannedSetCount,
   setPlannedTargets,
+  setTemplateExerciseVariant,
 } from '../lib/template'
 import { effective, formatDuration, formatNumber, parseDuration, parseNumber } from '../lib/workout'
 
@@ -26,6 +28,8 @@ interface Row {
   name: string
   trackingType: string
   sets: TemplateSet[]
+  /** Main exercise and its variants, to switch the variant used in this template */
+  family: { id: string; label: string }[]
 }
 
 async function load(templateId: string) {
@@ -39,11 +43,17 @@ async function load(templateId: string) {
   const rows: Row[] = await Promise.all(
     tes.map(async (te) => {
       const ex = byId.get(te.exercise_id)
+      const mainId = ex?.parent_id ?? ex?.id
+      const family = exercises
+        .filter((e) => e.deleted_at === null && (e.id === mainId || e.parent_id === mainId))
+        .sort((a, b) => (a.parent_id === null ? -1 : b.parent_id === null ? 1 : a.name.localeCompare(b.name)))
+        .map((e) => ({ id: e.id, label: e.parent_id === null ? 'Main' : e.name }))
       return {
         te,
         name: ex ? displayName(ex, byId) : 'Unknown exercise',
         trackingType: ex ? effective(ex, byId).trackingType : 'weight_reps',
         sets: await activeSets(te.id),
+        family,
       }
     }),
   )
@@ -56,6 +66,7 @@ export default function TemplateEditor({ templateId, onDone }: Props) {
   const data = useLiveQuery(() => load(templateId), [templateId])
   const [picking, setPicking] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [sheet, setSheet] = useState<string | null>(null)
 
   if (data === undefined) return null
   if (data === null) {
@@ -95,10 +106,12 @@ export default function TemplateEditor({ templateId, onDone }: Props) {
           return (
             <li key={r.te.id} className="rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
               <div className="mb-2 flex items-start justify-between gap-2">
-                <h2 className="font-semibold">
-                  <span className="mr-1 text-neutral-400 tabular-nums">{i + 1}.</span>
-                  {r.name}
-                </h2>
+                <button onClick={() => setSheet(r.te.exercise_id)} className="text-left">
+                  <h2 className="font-semibold underline-offset-2 hover:underline">
+                    <span className="mr-1 text-neutral-400 tabular-nums">{i + 1}.</span>
+                    {r.name} <span className="text-neutral-400">›</span>
+                  </h2>
+                </button>
                 <div className="flex shrink-0 gap-1">
                   <button aria-label="Move up" disabled={i === 0} onClick={() => void moveTemplateExercise(r.te, -1)} className={iconBtn}>
                     ↑
@@ -111,6 +124,26 @@ export default function TemplateEditor({ templateId, onDone }: Props) {
                   </button>
                 </div>
               </div>
+
+              {r.family.length > 1 && (
+                <div className="mb-3 flex flex-wrap items-center gap-1.5">
+                  <span className="mr-1 text-xs text-neutral-500 dark:text-neutral-400">Variant</span>
+                  {r.family.map((f) => (
+                    <button
+                      key={f.id}
+                      aria-pressed={f.id === r.te.exercise_id}
+                      onClick={() => void setTemplateExerciseVariant(r.te, f.id)}
+                      className={`rounded-full px-3 py-1 text-sm ${
+                        f.id === r.te.exercise_id
+                          ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
+                          : 'bg-neutral-100 dark:bg-neutral-800'
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               <div className="flex flex-wrap items-end gap-3">
                 <div className="flex flex-col gap-1">
@@ -215,6 +248,7 @@ export default function TemplateEditor({ templateId, onDone }: Props) {
         </button>
       )}
 
+      {sheet && <ExerciseSheet exerciseId={sheet} onClose={() => setSheet(null)} />}
       {picking && (
         <ExercisePicker
           userId={template.user_id}

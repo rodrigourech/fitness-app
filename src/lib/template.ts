@@ -103,6 +103,12 @@ export async function moveTemplateExercise(te: TemplateExercise, direction: -1 |
   if (changed.length) await saveRows('template_exercise', changed)
 }
 
+/** Switches the template entry to another exercise (e.g. a different variant); planned sets stay. */
+export async function setTemplateExerciseVariant(te: TemplateExercise, exerciseId: string): Promise<void> {
+  const current = (await db.template_exercise.get(te.id)) ?? te
+  if (current.exercise_id !== exerciseId) await saveRows('template_exercise', [{ ...current, exercise_id: exerciseId }])
+}
+
 /** Sets the number of planned sets; new sets copy the targets of the last one. */
 export async function setPlannedSetCount(te: TemplateExercise, count: number): Promise<void> {
   const sets = await activeSets(te.id)
