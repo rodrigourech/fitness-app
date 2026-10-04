@@ -86,20 +86,62 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
         </div>
 
         <section className="mb-5 flex flex-col gap-3">
-          {parent && (
-            <TextField
-              label="Exercise (shared by all variants)"
-              value={parent.name}
-              required
-              onSave={(v) => updateExercise(parent, { name: v ?? parent.name })}
-            />
-          )}
           <TextField
-            label={parent ? 'Variant' : 'Exercise'}
-            value={ex.name}
+            label={parent ? 'Exercise (shared by all variants)' : 'Exercise'}
+            value={main.name}
             required
-            onSave={(v) => updateExercise(ex, { name: v ?? ex.name })}
+            onSave={(v) => updateExercise(main, { name: v ?? main.name })}
           />
+
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-semibold">Variant</span>
+            <ul className="flex flex-wrap gap-1.5">
+              <li>
+                <button
+                  onClick={() => setCurrentId(main.id)}
+                  aria-current={!parent}
+                  className={`rounded-full px-3 py-1 text-sm ${chip(!parent)}`}
+                >
+                  Main
+                </button>
+              </li>
+              {variants.map((v) => (
+                <li key={v.id}>
+                  <button onClick={() => setCurrentId(v.id)} aria-current={v.id === ex.id} className={`rounded-full px-3 py-1 text-sm ${chip(v.id === ex.id)}`}>
+                    {v.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {parent && (
+              <TextField label="Variant name" value={ex.name} required onSave={(v) => updateExercise(ex, { name: v ?? ex.name })} />
+            )}
+            <form onSubmit={(e) => void submitVariant(e)} className="flex gap-2">
+              <input
+                aria-label="New variant name"
+                placeholder="New variant, e.g. Rope"
+                value={variantName}
+                onChange={(e) => setVariantName(e.target.value)}
+                className="min-w-0 flex-1 rounded-lg border border-neutral-300 bg-transparent px-3 py-2 text-base outline-none dark:border-neutral-700"
+              />
+              <button
+                type="submit"
+                disabled={!variantName.trim()}
+                className="rounded-lg bg-neutral-900 px-3 text-sm font-semibold text-white disabled:opacity-40 dark:bg-neutral-100 dark:text-neutral-900"
+              >
+                + Add variant
+              </button>
+            </form>
+          </div>
+
+          <TextField
+            label="Notes"
+            value={ex.setup_note ?? ''}
+            placeholder={parent?.setup_note ? `Inherited: ${parent.setup_note}` : 'Floor, seat, grip, …'}
+            multiline
+            onSave={(v) => updateExercise(ex, { setup_note: v })}
+          />
+
           <div className="flex items-center justify-between gap-2">
             <span className="text-sm font-semibold">Rest between sets</span>
             <RestStepper
@@ -108,58 +150,6 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
               fallbackLabel={parent?.default_rest_s ? `${formatDuration(parent.default_rest_s)} (inh.)` : 'Off'}
             />
           </div>
-          <TextField
-            label="Notes"
-            value={ex.setup_note ?? ''}
-            placeholder={parent?.setup_note ? `Inherited: ${parent.setup_note}` : 'Floor, seat, grip, …'}
-            multiline
-            onSave={(v) => updateExercise(ex, { setup_note: v })}
-          />
-        </section>
-
-        <section className="mb-5">
-          <h3 className="mb-2 text-sm font-semibold">Variants of {main.name}</h3>
-          <ul className="mb-2 flex flex-wrap gap-1.5">
-            {parent && (
-              <li>
-                <button onClick={() => setCurrentId(main.id)} className="rounded-full border border-neutral-300 px-3 py-1 text-sm dark:border-neutral-700">
-                  ‹ Main exercise
-                </button>
-              </li>
-            )}
-            {variants.map((v) => (
-              <li key={v.id}>
-                <button
-                  onClick={() => setCurrentId(v.id)}
-                  aria-current={v.id === ex.id}
-                  className={`rounded-full px-3 py-1 text-sm ${
-                    v.id === ex.id
-                      ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
-                      : 'bg-neutral-100 dark:bg-neutral-800'
-                  }`}
-                >
-                  {v.name}
-                </button>
-              </li>
-            ))}
-            {variants.length === 0 && <li className="text-sm text-neutral-500 dark:text-neutral-400">No variants yet.</li>}
-          </ul>
-          <form onSubmit={(e) => void submitVariant(e)} className="flex gap-2">
-            <input
-              aria-label="New variant name"
-              placeholder="New variant, e.g. Rope"
-              value={variantName}
-              onChange={(e) => setVariantName(e.target.value)}
-              className="min-w-0 flex-1 rounded-lg border border-neutral-300 bg-transparent px-3 py-2 text-base outline-none dark:border-neutral-700"
-            />
-            <button
-              type="submit"
-              disabled={!variantName.trim()}
-              className="rounded-lg bg-neutral-900 px-3 text-sm font-semibold text-white disabled:opacity-40 dark:bg-neutral-100 dark:text-neutral-900"
-            >
-              + Add variant
-            </button>
-          </form>
         </section>
 
         <section className="mb-5">
@@ -250,6 +240,10 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
       </div>
     </div>
   )
+}
+
+function chip(active: boolean): string {
+  return active ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900' : 'bg-neutral-100 dark:bg-neutral-800'
 }
 
 interface TextFieldProps {
