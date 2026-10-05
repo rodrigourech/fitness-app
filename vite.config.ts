@@ -30,6 +30,10 @@ export default defineConfig({
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
+      workbox: {
+        // The beta build lives under <base>beta/ with its own service worker; never answer it with this app
+        navigateFallbackDenylist: [/\/beta\//],
+      },
     }),
   ],
   // Expose exactly these two public Neon URLs (pulled into .env.local by the Neon CLI).
