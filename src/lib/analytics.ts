@@ -1,4 +1,5 @@
 import { db, displayName, type Exercise, type TrackingType, type Workout, type WorkoutSet } from './db'
+import type { WeeklyGoal } from './settings'
 import { effectiveReps, epley } from './stats'
 
 // Analytics for the Stats tab. Definitions: docs/00_handover.md (section Analytics-Definitionen).
@@ -44,14 +45,6 @@ export interface AnalyticsData {
   /** Display name per exercise id ("Parent – Variant" for variants) */
   names: Map<string, string>
 }
-
-export interface WeeklyGoal {
-  strength: number
-  run: number
-}
-
-// Decision 5 October 2026 (docs/entscheidungen.md): 2 strength sessions and 1 run per week
-export const WEEKLY_GOAL: WeeklyGoal = { strength: 2, run: 1 }
 
 const DAY = 86_400_000
 
@@ -180,7 +173,7 @@ export interface GoalSummary {
   thisWeek: GoalWeek
 }
 
-export function weeklyGoal(workouts: WorkoutInfo[], weeks: number, now: Date, goal: WeeklyGoal = WEEKLY_GOAL): GoalSummary {
+export function weeklyGoal(workouts: WorkoutInfo[], weeks: number, now: Date, goal: WeeklyGoal): GoalSummary {
   const byDay = new Map<string, { strength: boolean; run: boolean }>()
   for (const w of workouts) {
     const key = dayKey(new Date(w.startedAt))
@@ -220,21 +213,35 @@ export function weeklyGoal(workouts: WorkoutInfo[], weeks: number, now: Date, go
   return { weeks: list, streak, thisWeek: list[list.length - 1]! }
 }
 
-// --- strength ------------------------------------------------------------------
+// --- strength progression -------------------------------------------------------
 
-export interface StrengthPoint {
+/** weight = heaviest working set of a workout; e1rm = best estimated 1RM (Epley) of a workout */
+export type Metric = 'weight' | 'e1rm'
+
+export interface ProgressPoint {
   workoutId: string
   date: string
-  /** Best estimated 1RM of the workout (Epley) */
-  e1rm: number
+  /** Value of the chosen metric */
+  value: number
+  /** The set behind the value */
   weight: number
   reps: number
+  e1rm: number
   exerciseId: string
 }
 
-/** Best e1RM per workout for a main exercise (all variants) or a single variant, oldest first. */
-export function strengthSeries(sets: SetInfo[], mainId: string, variantId: string | null, from: number): StrengthPoint[] {
-  const best = new Map<string, StrengthPoint>()
+/**
+ * One point per workout for a main exercise (all variants) or a single variant, oldest first.
+ * Weight: the heaviest working set (more reps break ties). 1RM: the set with the best Epley estimate.
+ */
+export function progressSeries(
+  sets: SetInfo[],
+  mainId: string,
+  variantId: string | null,
+  from: number,
+  metric: Metric,
+): ProgressPoint[] {
+  const best = new Map<string, ProgressPoint>()
   for (const x of sets) {
     if (x.mainId !== mainId || x.trackingType !== 'weight_reps' || x.set.set_type !== 'working') continue
     if (variantId !== null && x.exerciseId !== variantId) continue
@@ -242,12 +249,44 @@ export function strengthSeries(sets: SetInfo[], mainId: string, variantId: strin
     const reps = effectiveReps(x.set)
     const e = epley(x.set.weight, reps)
     if (e === null) continue
-    const cur = best.get(x.workoutId)
-    if (!cur || e > cur.e1rm) {
-      best.set(x.workoutId, { workoutId: x.workoutId, date: x.date, e1rm: e, weight: x.set.weight!, reps: reps!, exerciseId: x.exerciseId })
+    const p: ProgressPoint = {
+      workoutId: x.workoutId,
+      date: x.date,
+      value: metric === 'weight' ? x.set.weight! : e,
+      weight: x.set.weight!,
+      reps: reps!,
+      e1rm: e,
+      exerciseId: x.exerciseId,
     }
+    const cur = best.get(x.workoutId)
+    if (!cur || p.value > cur.value || (p.value === cur.value && p.reps > cur.reps)) best.set(x.workoutId, p)
   }
   return [...best.values()].sort((a, b) => a.date.localeCompare(b.date))
+}
+
+export interface ProgressRow {
+  mainId: string
+  name: string
+  points: ProgressPoint[]
+  latest: number
+  /** latest minus first value in the period */
+  change: number
+  lastDate: string
+}
+
+/** Progression of every exercise with data in the period, most recently trained first. */
+export function progressOverview(data: AnalyticsData, from: number, metric: Metric): ProgressRow[] {
+  return data.exercises
+    .map((e) => {
+      const points = progressSeries(data.sets, e.mainId, null, from, metric)
+      const first = points[0]
+      const last = points.at(-1)
+      return first && last
+        ? { mainId: e.mainId, name: e.name, points, latest: last.value, change: last.value - first.value, lastDate: last.date }
+        : null
+    })
+    .filter((r): r is ProgressRow => r !== null)
+    .sort((a, b) => b.lastDate.localeCompare(a.lastDate) || a.name.localeCompare(b.name))
 }
 
 // --- volume --------------------------------------------------------------------

@@ -106,7 +106,7 @@ export default function Home({ user, onSignedOut }: Props) {
       ) : tab === 'history' ? (
         <HistoryTab />
       ) : tab === 'stats' ? (
-        <StatsTab />
+        <StatsTab userId={user.id} />
       ) : tab === 'body' ? (
         <BodyTab userId={user.id} />
       ) : cards === undefined ? (

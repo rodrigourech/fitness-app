@@ -1,13 +1,14 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useMemo, useState, type ReactNode } from 'react'
-import { ColumnChart, Heatmap, HBarChart, LineChart, SideChart } from '../components/Charts'
+import { useState, type ReactNode } from 'react'
+import { ColumnChart, Heatmap, HBarChart, LineChart, SideChart, Sparkline } from '../components/Charts'
+import Popover from '../components/Popover'
 import { formatShortDate } from '../lib/chart'
+import { DEFAULT_WEEKLY_GOAL, getWeeklyGoal, saveWeeklyGoal, type WeeklyGoal } from '../lib/settings'
 import {
   CROWD_LABEL,
   CROWD_SLOTS,
   RANGE_LABEL,
   WEEKDAYS,
-  WEEKLY_GOAL,
   crowdGrid,
   dayKey,
   loadAnalytics,
@@ -15,12 +16,14 @@ import {
   rangeStart,
   setsPerMuscle,
   sideComparison,
-  strengthSeries,
+  progressOverview,
+  progressSeries,
   weekStart,
   weeklyGoal,
   weeklyVolume,
   type AnalyticsData,
   type GoalWeek,
+  type Metric,
   type Range,
 } from '../lib/analytics'
 
@@ -37,9 +40,9 @@ function compactKg(v: number): string {
 
 function Card({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
   return (
-    <section className="rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
-      <h2 className="font-semibold">{title}</h2>
-      {subtitle && <p className="text-xs text-neutral-500 dark:text-neutral-400">{subtitle}</p>}
+    <section className="relative rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
+      <h2 className="pr-14 font-semibold">{title}</h2>
+      {subtitle && <p className="pr-14 text-xs text-neutral-500 dark:text-neutral-400">{subtitle}</p>}
       <div className="mt-3">{children}</div>
     </section>
   )
@@ -49,7 +52,7 @@ function Empty({ children }: { children: ReactNode }) {
   return <p className="py-4 text-sm text-neutral-500 dark:text-neutral-400">{children}</p>
 }
 
-export default function StatsTab() {
+export default function StatsTab({ userId }: { userId: string }) {
   const data = useLiveQuery(loadAnalytics, [])
   const [range, setRange] = useState<Range>('3m')
   // Fixed per visit of the tab, so all cards use the same reference time
@@ -62,7 +65,7 @@ export default function StatsTab() {
 
   return (
     <div className="flex flex-col gap-4">
-      <GoalCard data={data} now={now} />
+      <GoalCard data={data} now={now} userId={userId} />
 
       <div role="radiogroup" aria-label="Time range" className="grid grid-cols-4 gap-1 rounded-lg bg-neutral-100 p-1 dark:bg-neutral-900">
         {RANGES.map((r) => (
@@ -91,20 +94,33 @@ export default function StatsTab() {
 
 // --- weekly goal ----------------------------------------------------------------------
 
-function GoalCard({ data, now }: { data: AnalyticsData; now: Date }) {
-  const goal = weeklyGoal(data.workouts, GOAL_WEEKS, now)
-  const tw = goal.thisWeek
+function GoalCard({ data, now, userId }: { data: AnalyticsData; now: Date; userId: string }) {
+  const goal = useLiveQuery(getWeeklyGoal, []) ?? DEFAULT_WEEKLY_GOAL
+  const [editing, setEditing] = useState(false)
+  const summary = weeklyGoal(data.workouts, GOAL_WEEKS, now, goal)
+  const tw = summary.thisWeek
+  const subtitle = `${goal.strength} strength ${goal.strength === 1 ? 'workout' : 'workouts'}${
+    goal.run > 0 ? ` and ${goal.run} ${goal.run === 1 ? 'run' : 'runs'} per week (Mon–Sun)` : ' per week (Mon–Sun), running optional'
+  }`
+
   return (
-    <Card title="Weekly goal" subtitle={`${WEEKLY_GOAL.strength} strength workouts and ${WEEKLY_GOAL.run} run per week (Mon–Sun)`}>
+    <Card title="Weekly goal" subtitle={subtitle}>
+      {editing ? (
+        <GoalEditor goal={goal} onSave={(g) => void saveWeeklyGoal(userId, g).then(() => setEditing(false))} onCancel={() => setEditing(false)} />
+      ) : (
+        <button onClick={() => setEditing(true)} className="absolute top-3 right-3 rounded-md bg-neutral-100 px-2.5 py-1 text-sm font-medium dark:bg-neutral-800">
+          Edit
+        </button>
+      )}
       <div className="mb-3 flex items-end justify-between gap-3">
         <div>
-          <div className="text-4xl font-semibold tabular-nums">{goal.streak}</div>
-          <div className="text-xs text-neutral-500 dark:text-neutral-400">{goal.streak === 1 ? 'week' : 'weeks'} in a row</div>
+          <div className="text-4xl font-semibold tabular-nums">{summary.streak}</div>
+          <div className="text-xs text-neutral-500 dark:text-neutral-400">{summary.streak === 1 ? 'week' : 'weeks'} in a row</div>
         </div>
         <div className="text-right text-sm tabular-nums">
           <div className="text-xs text-neutral-500 dark:text-neutral-400">This week</div>
           <div>
-            Strength {tw.strength}/{WEEKLY_GOAL.strength} · Run {tw.run}/{WEEKLY_GOAL.run}
+            Strength {tw.strength}/{goal.strength} · Run {goal.run > 0 ? `${tw.run}/${goal.run}` : tw.run}
           </div>
         </div>
       </div>
@@ -116,7 +132,7 @@ function GoalCard({ data, now }: { data: AnalyticsData; now: Date }) {
           </span>
         ))}
         <span />
-        {goal.weeks.map((w) => (
+        {summary.weeks.map((w) => (
           <GoalRow key={w.start} week={w} />
         ))}
       </div>
@@ -130,6 +146,57 @@ function GoalCard({ data, now }: { data: AnalyticsData; now: Date }) {
         <span>✓ goal met</span>
       </div>
     </Card>
+  )
+}
+
+function Stepper({ label, value, min, max, format, onChange }: {
+  label: string
+  value: number
+  min: number
+  max: number
+  format: (n: number) => string
+  onChange: (n: number) => void
+}) {
+  const btn = 'h-9 w-9 rounded-md bg-neutral-100 text-lg disabled:opacity-30 dark:bg-neutral-800'
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-sm">{label}</span>
+      <div className="flex items-center gap-2">
+        <button type="button" aria-label={`${label} minus`} disabled={value <= min} onClick={() => onChange(value - 1)} className={btn}>
+          −
+        </button>
+        <span className="w-16 text-center text-sm font-semibold tabular-nums">{format(value)}</span>
+        <button type="button" aria-label={`${label} plus`} disabled={value >= max} onClick={() => onChange(value + 1)} className={btn}>
+          +
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function GoalEditor({ goal, onSave, onCancel }: { goal: WeeklyGoal; onSave: (g: WeeklyGoal) => void; onCancel: () => void }) {
+  const [draft, setDraft] = useState(goal)
+  return (
+    <div className="mb-4 flex flex-col gap-2 rounded-lg bg-neutral-50 p-3 dark:bg-neutral-900">
+      <Stepper label="Strength per week" value={draft.strength} min={1} max={7} format={String} onChange={(n) => setDraft({ ...draft, strength: n })} />
+      <Stepper
+        label="Runs per week"
+        value={draft.run}
+        min={0}
+        max={7}
+        format={(n) => (n === 0 ? 'optional' : String(n))}
+        onChange={(n) => setDraft({ ...draft, run: n })}
+      />
+      <p className="text-xs text-neutral-500 dark:text-neutral-400">Set runs to optional if running should not count. Runs still appear in the calendar.</p>
+      <div className="mt-1 flex gap-2">
+        <button onClick={onCancel} className="flex-1 rounded-lg py-2 text-sm">
+          Cancel
+        </button>
+        <button onClick={() => onSave(draft)} className="flex-1 rounded-lg bg-neutral-900 py-2 text-sm font-semibold text-white dark:bg-neutral-100 dark:text-neutral-900">
+          Save
+        </button>
+      </div>
+    </div>
   )
 }
 
@@ -167,91 +234,142 @@ function GoalRow({ week }: { week: GoalWeek }) {
 
 // --- strength ----------------------------------------------------------------------------
 
+const METRIC_LABEL: Record<Metric, string> = { weight: 'Weight', e1rm: 'Est. 1RM' }
+
+function formatKg(v: number): string {
+  return `${Math.round(v * 10) / 10} kg`
+}
+
+function formatChange(v: number): string {
+  const r = Math.round(v * 10) / 10
+  return r === 0 ? '±0 kg' : `${r > 0 ? '+' : '−'}${Math.abs(r)} kg`
+}
+
+function OneRmHelp() {
+  return (
+    <span className="block w-60 text-left text-sm leading-snug font-normal">
+      <span className="mb-1 block font-semibold">1RM – One-Rep Max</span>
+      The heaviest weight you could lift exactly once with clean technique. The app estimates it from your
+      working sets with the Epley formula: weight × (1 + reps / 30). Example: 30 kg × 10 reps ≈ 40 kg. It makes
+      more reps at the same weight visible as progress.
+    </span>
+  )
+}
+
 function StrengthCard({ data, from }: { data: AnalyticsData; from: number }) {
-  // Default: the exercise with the most working sets
-  const defaultMain = useMemo(() => {
-    const count = new Map<string, number>()
-    for (const x of data.sets) if (x.trackingType === 'weight_reps') count.set(x.mainId, (count.get(x.mainId) ?? 0) + 1)
-    return [...count.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
-  }, [data])
-  const [mainId, setMainId] = useState<string | null>(null)
-  const [variantId, setVariantId] = useState<string | null>(null)
-  const main = mainId ?? defaultMain
-  const option = data.exercises.find((e) => e.mainId === main)
-
-  if (!option) {
-    return (
-      <Card title="Strength">
-        <Empty>No weight training recorded yet.</Empty>
-      </Card>
-    )
-  }
-
-  const series = strengthSeries(data.sets, option.mainId, variantId, from)
-  const first = series[0]
-  const last = series.at(-1)
-  const select = 'min-w-0 flex-1 rounded-lg border border-neutral-300 bg-transparent px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-950'
+  const [metric, setMetric] = useState<Metric>('weight')
+  const [open, setOpen] = useState<string | null>(null)
+  const rows = progressOverview(data, from, metric)
 
   return (
-    <Card title="Strength" subtitle="Best estimated 1RM per workout (Epley, working sets)">
-      <div className="mb-3 flex gap-2">
-        <select
-          aria-label="Exercise"
-          value={option.mainId}
-          onChange={(e) => {
-            setMainId(e.target.value)
-            setVariantId(null)
-          }}
-          className={select}
+    <Card
+      title="Strength"
+      subtitle={metric === 'weight' ? 'Heaviest working set per workout' : 'Best estimated 1RM per workout (working sets)'}
+    >
+      <div className="mb-3 flex items-center gap-2">
+        <div role="radiogroup" aria-label="Metric" className="grid flex-1 grid-cols-2 gap-1 rounded-lg bg-neutral-100 p-1 dark:bg-neutral-900">
+          {(['weight', 'e1rm'] as Metric[]).map((m) => (
+            <button
+              key={m}
+              role="radio"
+              aria-checked={metric === m}
+              onClick={() => setMetric(m)}
+              className={`rounded-md py-1.5 text-xs font-semibold ${
+                metric === m ? 'bg-white shadow-sm dark:bg-neutral-700' : 'text-neutral-500 dark:text-neutral-400'
+              }`}
+            >
+              {METRIC_LABEL[m]}
+            </button>
+          ))}
+        </div>
+        <Popover
+          hover
+          align="right"
+          label={<>1RM ⓘ</>}
+          ariaLabel="What is 1RM?"
+          triggerClassName="text-xs text-neutral-500 underline decoration-dotted underline-offset-2 dark:text-neutral-400"
         >
-          {data.exercises.map((e) => (
-            <option key={e.mainId} value={e.mainId}>
-              {e.name}
+          <OneRmHelp />
+        </Popover>
+      </div>
+
+      {rows.length === 0 ? (
+        <Empty>No weight training in this period.</Empty>
+      ) : (
+        <ul className="flex flex-col">
+          {rows.map((r) => (
+            <li key={r.mainId} className="border-t border-neutral-100 first:border-t-0 dark:border-neutral-800">
+              <button
+                onClick={() => setOpen(open === r.mainId ? null : r.mainId)}
+                aria-expanded={open === r.mainId}
+                className="grid w-full grid-cols-[minmax(0,1fr)_auto_4.5rem] items-center gap-3 py-2 text-left"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate text-sm">{r.name}</span>
+                  <span className="block text-xs text-neutral-500 tabular-nums dark:text-neutral-400">{formatChange(r.change)}</span>
+                </span>
+                <Sparkline values={r.points.map((p) => p.value)} width={72} />
+                <span className="text-right text-sm font-semibold tabular-nums">{formatKg(r.latest)}</span>
+              </button>
+              {open === r.mainId && <StrengthDetail data={data} mainId={r.mainId} from={from} metric={metric} />}
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">Change since the first workout in the period. Tap an exercise for details.</p>
+    </Card>
+  )
+}
+
+function StrengthDetail({ data, mainId, from, metric }: { data: AnalyticsData; mainId: string; from: number; metric: Metric }) {
+  const [variantId, setVariantId] = useState<string | null>(null)
+  const option = data.exercises.find((e) => e.mainId === mainId)
+  if (!option) return null
+  const series = progressSeries(data.sets, mainId, variantId, from, metric)
+  const best = series.reduce<(typeof series)[number] | null>((b, p) => (b === null || p.value > b.value ? p : b), null)
+
+  return (
+    <div className="pb-3">
+      {option.variants.length > 0 && (
+        <select
+          aria-label="Variant"
+          value={variantId ?? ''}
+          onChange={(e) => setVariantId(e.target.value || null)}
+          className="mb-2 w-full rounded-lg border border-neutral-300 bg-transparent px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-950"
+        >
+          <option value="">All variants</option>
+          <option value={option.mainId}>Main only</option>
+          {option.variants.map((v) => (
+            <option key={v.id} value={v.id}>
+              {v.name}
             </option>
           ))}
         </select>
-        {option.variants.length > 0 && (
-          <select aria-label="Variant" value={variantId ?? ''} onChange={(e) => setVariantId(e.target.value || null)} className={select}>
-            <option value="">All variants</option>
-            <option value={option.mainId}>Main only</option>
-            {option.variants.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.name}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
+      )}
       {series.length === 0 ? (
         <Empty>No sets in this period.</Empty>
       ) : (
         <>
-          <div className="mb-1 flex gap-6 text-sm tabular-nums">
-            <div>
-              <div className="text-xs text-neutral-500 dark:text-neutral-400">Latest</div>
-              <div className="text-xl font-semibold">{kg(last!.e1rm)}</div>
-            </div>
-            {series.length > 1 && (
-              <div>
-                <div className="text-xs text-neutral-500 dark:text-neutral-400">Change</div>
-                <div className="text-xl font-semibold">
-                  {last!.e1rm >= first!.e1rm ? '+' : '−'}
-                  {kg(Math.abs(last!.e1rm - first!.e1rm))}
-                </div>
-              </div>
-            )}
-          </div>
+          {best && (
+            <p className="mb-1 text-xs text-neutral-500 tabular-nums dark:text-neutral-400">
+              Best in period{' '}
+              {metric === 'weight'
+                ? `${best.weight} kg × ${best.reps} (${formatShortDate(Date.parse(best.date))})`
+                : `${formatKg(best.value)} (${best.weight} kg × ${best.reps}, ${formatShortDate(Date.parse(best.date))})`}
+            </p>
+          )}
           <LineChart
-            label={`Estimated 1RM of ${option.name}`}
-            formatY={(v) => String(Math.round(v))}
+            label={`${METRIC_LABEL[metric]} of ${option.name}`}
+            formatY={(v) => String(Math.round(v * 10) / 10)}
             points={series.map((p) => ({
               x: Date.parse(p.date),
-              y: p.e1rm,
+              y: p.value,
               tooltip: (
                 <>
-                  <div className="font-semibold">{kg(p.e1rm)}</div>
+                  <div className="font-semibold">{formatKg(p.value)}</div>
                   <div className="text-neutral-500 dark:text-neutral-400">
                     {formatShortDate(Date.parse(p.date))} · {p.weight} kg × {p.reps}
+                    {metric === 'weight' && ` · est. 1RM ${Math.round(p.e1rm)} kg`}
                   </div>
                   {p.exerciseId !== option.mainId && <div className="text-neutral-500 dark:text-neutral-400">{data.names.get(p.exerciseId)}</div>}
                 </>
@@ -260,7 +378,7 @@ function StrengthCard({ data, from }: { data: AnalyticsData; from: number }) {
           />
         </>
       )}
-    </Card>
+    </div>
   )
 }
 

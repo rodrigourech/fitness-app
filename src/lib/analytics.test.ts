@@ -5,7 +5,8 @@ import {
   dayKey,
   setsPerMuscle,
   sideComparison,
-  strengthSeries,
+  progressOverview,
+  progressSeries,
   weekStart,
   weeklyGoal,
   weeklyVolume,
@@ -106,10 +107,19 @@ describe('analytics', () => {
       [set('a', { weight: 60, reps: 10 }), set('a', { weight: 70, reps: 3 }), set('a', { set_type: 'warmup', weight: 100 }), set('b', { weight: 65, reps: 8 })],
       exercises,
     )
-    const all = strengthSeries(data.sets, 'press', null, 0)
-    expect(all.map((p) => Math.round(p.e1rm * 10) / 10)).toEqual([80, 82.3])
+    const all = progressSeries(data.sets, 'press', null, 0, 'e1rm')
+    expect(all.map((p) => Math.round(p.value * 10) / 10)).toEqual([80, 82.3])
     expect(all[0]).toMatchObject({ weight: 60, reps: 10 })
-    expect(strengthSeries(data.sets, 'press', 'press_low', 0)).toHaveLength(1)
+    expect(progressSeries(data.sets, 'press', 'press_low', 0, 'e1rm')).toHaveLength(1)
+    // Weight: the heaviest working set, warm-ups excluded
+    const weight = progressSeries(data.sets, 'press', null, 0, 'weight')
+    expect(weight.map((p) => [p.value, p.reps])).toEqual([
+      [70, 3],
+      [65, 8],
+    ])
+    expect(progressOverview(data, 0, 'weight')).toEqual([
+      expect.objectContaining({ mainId: 'press', latest: 65, change: -5 }),
+    ])
   })
 
   it('sums weekly volume including both sides of one-sided sets', () => {
@@ -178,7 +188,7 @@ describe('analytics', () => {
       // current week (5 Oct): not yet met
       w('2026-10-05', true, false),
     ]
-    const g = weeklyGoal(workouts, 4, new Date(2026, 9, 6, 12))
+    const g = weeklyGoal(workouts, 4, new Date(2026, 9, 6, 12), { strength: 2, run: 1 })
     expect(g.weeks.map((x) => [x.start, x.strength, x.run, x.met])).toEqual([
       ['2026-09-14', 0, 0, false],
       ['2026-09-21', 2, 1, true],
@@ -187,6 +197,9 @@ describe('analytics', () => {
     ])
     expect(g.streak).toBe(2)
     expect(g.thisWeek.days[2]!.future).toBe(true)
+    // Running optional (0): the week of 14 Sep still fails, the others only need two strength days
+    const optional = weeklyGoal(workouts, 4, new Date(2026, 9, 6, 12), { strength: 2, run: 0 })
+    expect(optional.weeks.map((x) => x.met)).toEqual([false, true, true, false])
   })
 
   it('averages crowd ratings by weekday and time of leaving', () => {

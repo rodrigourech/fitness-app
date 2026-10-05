@@ -224,6 +224,18 @@ create table public.workout (
   synced_at              timestamptz not null default now()
 );
 
+create table public.user_setting (                -- Migration 0009
+  id         uuid primary key,                       -- fester Wert pro Schlüssel (siehe src/lib/settings.ts)
+  user_id    text not null default (auth.user_id()),
+  key        text not null,                          -- z.B. 'weekly_goal'
+  value      jsonb not null,                         -- z.B. {"strength": 2, "run": 0}
+  created_at timestamptz not null,
+  updated_at timestamptz not null,
+  deleted_at timestamptz,
+  synced_at  timestamptz not null default now(),
+  unique (user_id, key)
+);
+
 create table public.workout_exercise (
   id          uuid primary key,
   user_id     text not null default (auth.user_id()),

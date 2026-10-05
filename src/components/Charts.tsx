@@ -381,3 +381,22 @@ export function Heatmap({ rows, cols, cells, legend }: HeatProps) {
     </div>
   )
 }
+
+// --- sparkline ----------------------------------------------------------------------
+
+/** Tiny trend line without axes; the end dot marks the latest value. */
+export function Sparkline({ values, width = 88, height = 28 }: { values: number[]; width?: number; height?: number }) {
+  const pad = 4
+  const lo = Math.min(...values)
+  const hi = Math.max(...values)
+  const sx = (i: number) => (values.length < 2 ? width / 2 : pad + (i / (values.length - 1)) * (width - 2 * pad))
+  const sy = (v: number) => (hi === lo ? height / 2 : pad + (1 - (v - lo) / (hi - lo)) * (height - 2 * pad))
+  const d = values.map((v, i) => `${i ? 'L' : 'M'}${sx(i).toFixed(1)},${sy(v).toFixed(1)}`).join('')
+  const last = values.length - 1
+  return (
+    <svg width={width} height={height} aria-hidden="true" className="shrink-0">
+      {values.length > 1 && <path d={d} fill="none" stroke="var(--viz-s1)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />}
+      <circle cx={sx(last)} cy={sy(values[last]!)} r={3} fill="var(--viz-s1)" stroke="var(--viz-surface)" strokeWidth={1.5} />
+    </svg>
+  )
+}

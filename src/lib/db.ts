@@ -101,6 +101,12 @@ export interface BodyWeight extends SyncColumns {
   weight_kg: number
 }
 
+/** Setting that follows the user across devices (migration 0009); fixed id per key. */
+export interface UserSetting extends SyncColumns {
+  key: string
+  value: unknown
+}
+
 export interface CatalogExercise {
   id: string
   name: string
@@ -121,6 +127,7 @@ export const SYNC_TABLES = [
   'workout_exercise',
   'workout_set',
   'body_weight',
+  'user_setting',
 ] as const
 export type SyncTable = (typeof SYNC_TABLES)[number]
 
@@ -153,6 +160,7 @@ export const db = new Dexie('fitness-app') as Dexie & {
   workout_exercise: EntityTable<WorkoutExercise, 'id'>
   workout_set: EntityTable<WorkoutSet, 'id'>
   body_weight: EntityTable<BodyWeight, 'id'>
+  user_setting: EntityTable<UserSetting, 'id'>
   outbox: EntityTable<OutboxEntry, 'seq'>
   sync_state: EntityTable<SyncState, 'table'>
   meta: EntityTable<Meta, 'key'>
@@ -172,6 +180,11 @@ db.version(1).stores({
   outbox: '++seq, &[table+row_id]',
   sync_state: 'table',
   meta: 'key',
+})
+
+// Version 2: user_setting (migration 0009)
+db.version(2).stores({
+  user_setting: 'id, key',
 })
 
 export async function getMeta(key: string): Promise<string | undefined> {
