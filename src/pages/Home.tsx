@@ -6,6 +6,7 @@ import SyncBadge from '../components/SyncBadge'
 import BodyTab from './BodyTab'
 import ExercisesTab from './ExercisesTab'
 import HistoryTab from './HistoryTab'
+import StatsTab from './StatsTab'
 import { signOut, type LocalUser } from '../lib/auth'
 import { db, displayName, type Exercise } from '../lib/db'
 import { createTemplate } from '../lib/template'
@@ -24,9 +25,9 @@ interface TemplateCard {
   lastDone: string | null
 }
 
-type Tab = 'templates' | 'exercises' | 'history' | 'body'
-const TABS: Tab[] = ['templates', 'exercises', 'history', 'body']
-const TAB_LABEL: Record<Tab, string> = { templates: 'Templates', exercises: 'Exercises', history: 'History', body: 'Body' }
+type Tab = 'templates' | 'exercises' | 'history' | 'stats' | 'body'
+const TABS: Tab[] = ['templates', 'exercises', 'history', 'stats', 'body']
+const TAB_LABEL: Record<Tab, string> = { templates: 'Templates', exercises: 'Exercises', history: 'History', stats: 'Stats', body: 'Body' }
 
 const dateFormat = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'long' })
 
@@ -84,7 +85,7 @@ export default function Home({ user, onSignedOut }: Props) {
         </button>
       </AppBar>
 
-      <div role="tablist" className="mb-4 grid grid-cols-4 gap-1 rounded-lg bg-neutral-100 p-1 dark:bg-neutral-900">
+      <div role="tablist" className="mb-4 grid grid-cols-5 gap-1 rounded-lg bg-neutral-100 p-1 dark:bg-neutral-900">
         {TABS.map((t) => (
           <button
             key={t}
@@ -104,6 +105,8 @@ export default function Home({ user, onSignedOut }: Props) {
         <ExercisesTab userId={user.id} />
       ) : tab === 'history' ? (
         <HistoryTab />
+      ) : tab === 'stats' ? (
+        <StatsTab />
       ) : tab === 'body' ? (
         <BodyTab userId={user.id} />
       ) : cards === undefined ? (

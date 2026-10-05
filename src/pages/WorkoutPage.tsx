@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import AppBar from '../components/AppBar'
+import CrowdPicker from '../components/CrowdPicker'
 import ExerciseSheet from '../components/ExerciseSheet'
 import ExercisePicker from '../components/ExercisePicker'
 import Field from '../components/Field'
@@ -144,6 +145,10 @@ export default function WorkoutPage({ workout, onReauth }: Props) {
           className="rounded-lg border border-neutral-300 bg-transparent px-3 py-2 text-base outline-none dark:border-neutral-700"
         />
       </label>
+
+      <div className="mt-6">
+        <CrowdPicker value={workout.crowd_level ?? null} onChange={(v) => void updateWorkout(workout, { crowd_level: v })} />
+      </div>
 
       <button
         onClick={() => setConfirm({ kind: 'cancel' })}

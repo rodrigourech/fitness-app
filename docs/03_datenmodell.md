@@ -217,6 +217,7 @@ create table public.workout (
   started_at             timestamptz not null,
   finished_at            timestamptz check (finished_at >= started_at),
   note                   text,
+  crowd_level            smallint check (crowd_level between 1 and 5),  -- Migration 0007: wie voll beim Gehen
   created_at             timestamptz not null,
   updated_at             timestamptz not null,
   deleted_at             timestamptz,

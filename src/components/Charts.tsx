@@ -1,0 +1,383 @@
+import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react'
+import { formatShortDate, niceTicks } from '../lib/chart'
+
+// Small hand-built SVG/HTML charts for the Stats tab. Colors come from the --viz-* tokens in
+// index.css (light and dark). Marks: 2px lines, 8px dots with a 2px surface ring, columns
+// at most 24px with a 4px rounded top, hairline solid gridlines.
+
+/** Width of an element, updated on resize. */
+function useWidth<T extends HTMLElement>(): [React.RefObject<T | null>, number] {
+  const ref = useRef<T>(null)
+  const [width, setWidth] = useState(0)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const ro = new ResizeObserver(([entry]) => setWidth(Math.round(entry!.contentRect.width)))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  return [ref, width]
+}
+
+
+function Tooltip({ x, width, children }: { x: number; width: number; children: ReactNode }) {
+  // Keep the box inside the chart: anchor left, centre or right depending on position
+  const side = x < width * 0.3 ? 'left' : x > width * 0.7 ? 'right' : 'center'
+  const style =
+    side === 'left' ? { left: Math.max(0, x - 12) } : side === 'right' ? { right: Math.max(0, width - x - 12) } : { left: x, transform: 'translateX(-50%)' }
+  return (
+    <div
+      role="status"
+      className="pointer-events-none absolute top-0 z-10 rounded-md border border-neutral-200 bg-white px-2 py-1 text-xs whitespace-nowrap shadow-sm tabular-nums dark:border-neutral-700 dark:bg-neutral-900"
+      style={style}
+    >
+      {children}
+    </div>
+  )
+}
+
+// --- line chart -------------------------------------------------------------------
+
+export interface LinePoint {
+  /** Timestamp (ms) */
+  x: number
+  y: number
+  tooltip: ReactNode
+}
+
+interface LineProps {
+  points: LinePoint[]
+  formatY: (v: number) => string
+  height?: number
+  /** Accessible summary of the chart */
+  label: string
+}
+
+export function LineChart({ points, formatY, height = 190, label }: LineProps) {
+  const [ref, width] = useWidth<HTMLDivElement>()
+  const [active, setActive] = useState<number | null>(null)
+
+  const pad = { top: 28, right: 12, bottom: 22, left: 40 }
+  const ys = points.map((p) => p.y)
+  const lo = Math.min(...ys)
+  const hi = Math.max(...ys)
+  const spread = hi - lo || hi * 0.1 || 1
+  const ticks = niceTicks(Math.max(0, lo - spread * 0.15), hi + spread * 0.15)
+  const y0 = ticks[0]!
+  const y1 = ticks[ticks.length - 1]!
+  const x0 = points[0]?.x ?? 0
+  const x1 = points[points.length - 1]?.x ?? 1
+  const iw = Math.max(1, width - pad.left - pad.right)
+  const ih = height - pad.top - pad.bottom
+  const sx = (x: number) => pad.left + (x1 === x0 ? iw / 2 : ((x - x0) / (x1 - x0)) * iw)
+  const sy = (y: number) => pad.top + ih - ((y - y0) / (y1 - y0 || 1)) * ih
+
+  const path = points.map((p, i) => `${i ? 'L' : 'M'}${sx(p.x).toFixed(1)},${sy(p.y).toFixed(1)}`).join('')
+  const area = points.length > 1 ? `${path}L${sx(x1).toFixed(1)},${pad.top + ih}L${sx(x0).toFixed(1)},${pad.top + ih}Z` : ''
+
+  function pick(e: PointerEvent<SVGSVGElement>) {
+    const r = e.currentTarget.getBoundingClientRect()
+    const mx = e.clientX - r.left
+    let best = 0
+    points.forEach((p, i) => {
+      if (Math.abs(sx(p.x) - mx) < Math.abs(sx(points[best]!.x) - mx)) best = i
+    })
+    setActive(best)
+  }
+
+  // Date ticks: first, last and (if room) the middle point
+  const xTicks = points.length > 2 && width > 260 ? [points[0]!, points[Math.floor(points.length / 2)]!, points.at(-1)!] : points.length ? [points[0]!, points.at(-1)!] : []
+  const last = points.at(-1)
+  const act = active !== null ? points[active] : undefined
+
+  return (
+    <div ref={ref} className="relative" style={{ height }}>
+      {width > 0 && (
+        <svg
+          width={width}
+          height={height}
+          role="img"
+          aria-label={label}
+          className="touch-pan-y select-none"
+          onPointerMove={pick}
+          onPointerDown={pick}
+          onPointerLeave={(e) => e.pointerType === 'mouse' && setActive(null)}
+        >
+          {ticks.map((t) => (
+            <g key={t}>
+              <line x1={pad.left} x2={width - pad.right} y1={sy(t)} y2={sy(t)} stroke="var(--viz-grid)" strokeWidth={1} />
+              <text x={pad.left - 6} y={sy(t)} dy="0.32em" textAnchor="end" fontSize={11} fill="var(--viz-muted)">
+                {formatY(t)}
+              </text>
+            </g>
+          ))}
+          {xTicks.map((p, i) => (
+            <text
+              key={i}
+              x={sx(p.x)}
+              y={height - 6}
+              fontSize={11}
+              fill="var(--viz-muted)"
+              textAnchor={i === 0 ? 'start' : i === xTicks.length - 1 ? 'end' : 'middle'}
+            >
+              {formatShortDate(p.x)}
+            </text>
+          ))}
+          {area && <path d={area} fill="var(--viz-s1-wash)" />}
+          <path d={path} fill="none" stroke="var(--viz-s1)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+          {act && <line x1={sx(act.x)} x2={sx(act.x)} y1={pad.top} y2={pad.top + ih} stroke="var(--viz-muted)" strokeWidth={1} />}
+          {points.map((p, i) => (
+            <circle
+              key={i}
+              cx={sx(p.x)}
+              cy={sy(p.y)}
+              r={i === active ? 5 : 4}
+              fill="var(--viz-s1)"
+              stroke="var(--viz-surface)"
+              strokeWidth={2}
+            />
+          ))}
+          {/* Direct label on the last point only */}
+          {last && active === null && (
+            <text x={sx(last.x)} y={sy(last.y) - 10} textAnchor="end" fontSize={12} fontWeight={600} fill="var(--viz-text)">
+              {formatY(last.y)}
+            </text>
+          )}
+        </svg>
+      )}
+      {act && (
+        <Tooltip x={sx(act.x)} width={width}>
+          {act.tooltip}
+        </Tooltip>
+      )}
+    </div>
+  )
+}
+
+// --- column chart -----------------------------------------------------------------
+
+export interface Column {
+  key: string
+  /** Axis label (shown selectively) */
+  label: string
+  value: number
+  tooltip: ReactNode
+}
+
+interface ColumnProps {
+  columns: Column[]
+  formatY: (v: number) => string
+  height?: number
+  label: string
+}
+
+export function ColumnChart({ columns, formatY, height = 170, label }: ColumnProps) {
+  const [ref, width] = useWidth<HTMLDivElement>()
+  const [active, setActive] = useState<number | null>(null)
+
+  const pad = { top: 28, right: 8, bottom: 22, left: 40 }
+  const ticks = niceTicks(0, Math.max(...columns.map((c) => c.value), 0))
+  const top = ticks[ticks.length - 1]!
+  const iw = Math.max(1, width - pad.left - pad.right)
+  const ih = height - pad.top - pad.bottom
+  const band = iw / Math.max(1, columns.length)
+  const bw = Math.min(24, Math.max(2, band - 2)) // 2px surface gap between touching columns
+  const sy = (v: number) => pad.top + ih - (v / (top || 1)) * ih
+  const labelEvery = Math.max(1, Math.ceil(columns.length / Math.max(1, Math.floor(iw / 44))))
+
+  function pick(e: PointerEvent<SVGSVGElement>) {
+    const r = e.currentTarget.getBoundingClientRect()
+    const i = Math.floor((e.clientX - r.left - pad.left) / band)
+    setActive(i >= 0 && i < columns.length ? i : null)
+  }
+
+  const act = active !== null ? columns[active] : undefined
+
+  return (
+    <div ref={ref} className="relative" style={{ height }}>
+      {width > 0 && (
+        <svg
+          width={width}
+          height={height}
+          role="img"
+          aria-label={label}
+          className="touch-pan-y select-none"
+          onPointerMove={pick}
+          onPointerDown={pick}
+          onPointerLeave={(e) => e.pointerType === 'mouse' && setActive(null)}
+        >
+          {ticks.map((t) => (
+            <g key={t}>
+              <line x1={pad.left} x2={width - pad.right} y1={sy(t)} y2={sy(t)} stroke="var(--viz-grid)" strokeWidth={1} />
+              <text x={pad.left - 6} y={sy(t)} dy="0.32em" textAnchor="end" fontSize={11} fill="var(--viz-muted)">
+                {formatY(t)}
+              </text>
+            </g>
+          ))}
+          {columns.map((c, i) => {
+            const cx = pad.left + band * i + band / 2
+            const h = Math.max(0, pad.top + ih - sy(c.value))
+            const r = Math.min(4, bw / 2, h)
+            const x = cx - bw / 2
+            const yTop = pad.top + ih - h
+            // Rounded data end, square at the baseline
+            const d = h > 0 ? `M${x},${pad.top + ih}V${yTop + r}Q${x},${yTop} ${x + r},${yTop}H${x + bw - r}Q${x + bw},${yTop} ${x + bw},${yTop + r}V${pad.top + ih}Z` : ''
+            return (
+              <g key={c.key}>
+                {d && <path d={d} fill="var(--viz-s1)" opacity={active === null || active === i ? 1 : 0.55} />}
+                {i % labelEvery === 0 && (
+                  <text x={cx} y={height - 6} textAnchor="middle" fontSize={11} fill="var(--viz-muted)">
+                    {c.label}
+                  </text>
+                )}
+              </g>
+            )
+          })}
+        </svg>
+      )}
+      {act && (
+        <Tooltip x={pad.left + band * active! + band / 2} width={width}>
+          {act.tooltip}
+        </Tooltip>
+      )}
+    </div>
+  )
+}
+
+// --- horizontal bars --------------------------------------------------------------
+
+export interface HBar {
+  key: string
+  label: string
+  value: number
+  valueLabel: string
+}
+
+export function HBarChart({ bars }: { bars: HBar[] }) {
+  const max = Math.max(...bars.map((b) => b.value), 1)
+  return (
+    <ul className="flex flex-col gap-1.5">
+      {bars.map((b) => (
+        <li key={b.key} className="grid grid-cols-[7.5rem_1fr_2.5rem] items-center gap-2 text-sm">
+          <span className="truncate text-neutral-700 dark:text-neutral-300">{b.label}</span>
+          <span className="h-3">
+            <span
+              className="block h-3 rounded-r-[4px]"
+              style={{ width: `${(b.value / max) * 100}%`, minWidth: 2, background: 'var(--viz-s1)' }}
+            />
+          </span>
+          <span className="text-right tabular-nums">{b.valueLabel}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+// --- side comparison (butterfly) ---------------------------------------------------
+
+export interface SidePair {
+  key: string
+  label: string
+  left: number
+  right: number
+  note: string
+}
+
+export function SideChart({ pairs }: { pairs: SidePair[] }) {
+  const max = Math.max(...pairs.flatMap((p) => [p.left, p.right]), 1)
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-center gap-4 text-xs text-neutral-500 dark:text-neutral-400">
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: 'var(--viz-s1)' }} /> Left
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: 'var(--viz-s2)' }} /> Right
+        </span>
+      </div>
+      <ul className="flex flex-col gap-3">
+        {pairs.map((p) => (
+          <li key={p.key}>
+            <div className="mb-1 flex items-baseline justify-between gap-2 text-sm">
+              <span className="truncate">{p.label}</span>
+              <span className="shrink-0 text-xs text-neutral-500 tabular-nums dark:text-neutral-400">{p.note}</span>
+            </div>
+            <div className="grid grid-cols-[2.5rem_1fr_1fr_2.5rem] items-center gap-0.5 text-xs tabular-nums">
+              <span className="text-neutral-600 dark:text-neutral-300">{p.left}</span>
+              <span className="flex h-3 justify-end">
+                <span className="block h-3 rounded-l-[4px]" style={{ width: `${(p.left / max) * 100}%`, background: 'var(--viz-s1)' }} />
+              </span>
+              <span className="h-3">
+                <span className="block h-3 rounded-r-[4px]" style={{ width: `${(p.right / max) * 100}%`, background: 'var(--viz-s2)' }} />
+              </span>
+              <span className="text-right text-neutral-600 dark:text-neutral-300">{p.right}</span>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+// --- heatmap ------------------------------------------------------------------------
+
+export interface HeatCell {
+  key: string
+  /** 1..5 bucket for the color, null = no data */
+  level: number | null
+  text: string
+  tooltip: string
+}
+
+interface HeatProps {
+  rows: string[]
+  cols: string[]
+  /** cells[row][col] */
+  cells: HeatCell[][]
+  legend: [string, string]
+}
+
+export function Heatmap({ rows, cols, cells, legend }: HeatProps) {
+  const [active, setActive] = useState<string | null>(null)
+  const act = cells.flat().find((c) => c.key === active)
+  return (
+    <div>
+      <div className="grid gap-[2px] text-[11px]" style={{ gridTemplateColumns: `2.25rem repeat(${cols.length}, minmax(0, 1fr))` }}>
+        <span />
+        {cols.map((c) => (
+          <span key={c} className="text-center text-neutral-500 dark:text-neutral-400">
+            {c}
+          </span>
+        ))}
+        {rows.map((r, ri) => (
+          <div key={r} className="contents">
+            <span className="self-center text-neutral-500 dark:text-neutral-400">{r}</span>
+            {cells[ri]!.map((c) => (
+              <button
+                key={c.key}
+                type="button"
+                aria-label={c.tooltip}
+                onClick={() => setActive(active === c.key ? null : c.key)}
+                className={`flex h-8 items-center justify-center rounded-[4px] font-semibold tabular-nums ${active === c.key ? 'ring-2 ring-neutral-900 dark:ring-neutral-100' : ''}`}
+                style={{
+                  background: c.level === null ? 'var(--viz-empty)' : `var(--viz-seq-${c.level})`,
+                  color: c.level === null ? 'var(--viz-muted)' : `var(--viz-seq-ink-${c.level})`,
+                }}
+              >
+                {c.text}
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+        <span>{legend[0]}</span>
+        {[1, 2, 3, 4, 5].map((l) => (
+          <span key={l} className="inline-block h-3 w-5 rounded-[3px]" style={{ background: `var(--viz-seq-${l})` }} />
+        ))}
+        <span>{legend[1]}</span>
+      </div>
+      <p className="mt-1 min-h-5 text-xs text-neutral-600 tabular-nums dark:text-neutral-300">{act ? act.tooltip : 'Tap a cell for details.'}</p>
+    </div>
+  )
+}

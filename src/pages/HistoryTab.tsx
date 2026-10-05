@@ -1,9 +1,11 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
+import CrowdPicker from '../components/CrowdPicker'
 import Sheet from '../components/Sheet'
+import { db } from '../lib/db'
 import { exportJson, exportSetsCsv } from '../lib/export'
 import { deleteWorkout, finishedWorkouts, workoutDetail, type WorkoutSummary } from '../lib/history'
-import { describeSet, formatDuration } from '../lib/workout'
+import { describeSet, formatDuration, updateWorkout } from '../lib/workout'
 
 const dateFormat = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
 const timeFormat = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
@@ -59,8 +61,10 @@ export default function HistoryTab() {
 
 function WorkoutDetailSheet({ summary, onClose }: { summary: WorkoutSummary; onClose: () => void }) {
   const detail = useLiveQuery(() => workoutDetail(summary.workout.id), [summary.workout.id])
+  // Live row, so the crowd rating updates while the sheet is open
+  const live = useLiveQuery(() => db.workout.get(summary.workout.id), [summary.workout.id])
   const [confirm, setConfirm] = useState(false)
-  const w = summary.workout
+  const w = live ?? summary.workout
 
   return (
     <Sheet title={`${w.template_name_snapshot ?? 'Workout'} · ${dateFormat.format(new Date(w.started_at))}`} onClose={onClose}>
@@ -87,6 +91,9 @@ function WorkoutDetailSheet({ summary, onClose }: { summary: WorkoutSummary; onC
           </li>
         ))}
       </ul>
+      <div className="mt-6">
+        <CrowdPicker value={w.crowd_level ?? null} onChange={(v) => void updateWorkout(w, { crowd_level: v })} />
+      </div>
       {confirm ? (
         <div className="mt-6 flex gap-2">
           <button onClick={() => setConfirm(false)} className="flex-1 rounded-lg py-2 text-sm">

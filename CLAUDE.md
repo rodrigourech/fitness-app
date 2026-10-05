@@ -11,7 +11,7 @@ Persönliche Fitness-App als Ersatz für die Strong App: Trainingsvorlagen, Trai
 
 - React, TypeScript (strict), Vite, PWA
 - Lokal: Dexie (IndexedDB); Backend: Neon (Postgres, Neon Auth, Data API, Row Level Security)
-- Hosting: Vercel oder Cloudflare Pages, nur Gratistarife
+- Hosting: GitHub Pages (öffentliches Build-Repo fitness-app-web), Auth-Proxy als Neon Function; siehe docs/hosting.md
 
 ## Architekturregeln
 

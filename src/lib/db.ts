@@ -70,6 +70,8 @@ export interface Workout extends SyncColumns {
   started_at: string
   finished_at: string | null
   note: string | null
+  /** How crowded the gym was when leaving: 1 = empty … 5 = packed (migration 0007) */
+  crowd_level?: number | null
 }
 
 export interface WorkoutExercise extends SyncColumns {
