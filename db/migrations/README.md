@@ -19,4 +19,4 @@ Ohne diesen Schritt liefert die Data API neue Spalten nicht aus und lehnt sie be
 | 0005_drop_exercise_catalog.sql | Katalog als Datei: Fremdschlüssel source_id und Tabelle exercise_catalog entfernt | 4. Oktober 2026 (geprüft 5. Oktober) |
 | 0006_exercise_notes_safe.sql | Wie 0004, setzt Notizen aber nur, wo noch keine bestehen (in der App bearbeitete Notizen bleiben) | 5. Oktober 2026 (geprüft: 14 Notizen, 0 Kommentare) |
 | 0007_workout_crowd.sql | workout.crowd_level (1–5): wie voll das Gym beim Gehen war | 5. Oktober 2026, refresh-schema ausgeführt |
-| 0008_restore_strong_history.sql | Nur Daten: stellt die zwei aus Strong übernommenen Trainings (28. September, 2. Oktober) wieder her, Sätze mit completed_at; wiederholbar | ausstehend |
+| 0008_restore_strong_history.sql | Nur Daten: stellt die zwei aus Strong übernommenen Trainings (28. September, 2. Oktober) wieder her, Sätze mit completed_at; wiederholbar | 5. Oktober 2026 (die beiden Trainings waren am 5. Oktober um 09:00 in der App gelöscht worden) |
