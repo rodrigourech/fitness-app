@@ -5,6 +5,8 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // BASE_PATH is set by the GitHub Pages build (e.g. /fitness-app-web/); locally the app runs at /
 const base = process.env.BASE_PATH ?? '/'
+// APP_VARIANT=beta: test build of a feature branch (see .github/workflows/deploy.yml)
+const beta = process.env.APP_VARIANT === 'beta'
 
 export default defineConfig({
   base,
@@ -15,8 +17,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Fitness App',
-        short_name: 'Fitness',
+        name: beta ? 'Fitness App Beta' : 'Fitness App',
+        short_name: beta ? 'Fitness Beta' : 'Fitness',
         description: 'Personal workout log',
         lang: 'en',
         start_url: base,
@@ -32,7 +34,7 @@ export default defineConfig({
       },
       workbox: {
         // The beta build lives under <base>beta/ with its own service worker; never answer it with this app
-        navigateFallbackDenylist: [/\/beta\//],
+        navigateFallbackDenylist: beta ? [] : [/\/beta\//],
       },
     }),
   ],

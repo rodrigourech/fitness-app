@@ -60,6 +60,9 @@ function measureOf(s: WorkoutSet): Measure {
 
 /** Starts a workout from a template. Inputs are prefilled with the last performance, else the template targets. */
 export async function startWorkout(templateId: string, userId: string): Promise<Workout> {
+  // Only one running workout: a minimised one is continued instead of starting a second
+  const running = await getActiveWorkout()
+  if (running) return running
   const template = await db.template.get(templateId)
   if (!template) throw new Error('Template not found')
   const ts = now()
@@ -267,6 +270,7 @@ export function effective(ex: Exercise, byId: Map<string, Exercise>) {
     focusMuscles: ex.focus_muscles ?? parent?.focus_muscles ?? [],
     focusCue: ex.focus_cue ?? parent?.focus_cue ?? null,
     restS: ex.default_rest_s ?? parent?.default_rest_s ?? null,
+    weightStep: ex.weight_step ?? parent?.weight_step ?? null,
   }
 }
 

@@ -10,8 +10,8 @@ interface Props {
 export default function CrowdPicker({ value, onChange }: Props) {
   return (
     <fieldset className="flex flex-col gap-1.5">
-      <legend className="mb-1.5 text-sm text-neutral-500 dark:text-neutral-400">
-        Gym crowd when leaving{value !== null && <span className="text-neutral-900 dark:text-neutral-100"> · {CROWD_LABEL[value]}</span>}
+      <legend className="mb-1.5 text-sm text-zinc-500 dark:text-zinc-400">
+        Gym crowd when leaving{value !== null && <span className="text-zinc-900 dark:text-zinc-100"> · {CROWD_LABEL[value]}</span>}
       </legend>
       <div className="grid grid-cols-5 gap-1.5">
         {[1, 2, 3, 4, 5].map((n) => {
@@ -26,8 +26,8 @@ export default function CrowdPicker({ value, onChange }: Props) {
               onClick={() => onChange(active ? null : n)}
               className={`h-10 rounded-md text-base font-semibold tabular-nums ${
                 active
-                  ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
-                  : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'
+                  ? 'bg-accent text-accent-fg'
+                  : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'
               }`}
             >
               {n}
@@ -35,7 +35,7 @@ export default function CrowdPicker({ value, onChange }: Props) {
           )
         })}
       </div>
-      <div className="flex justify-between text-xs text-neutral-500 dark:text-neutral-400">
+      <div className="flex justify-between text-xs text-zinc-500 dark:text-zinc-400">
         <span>1 = empty</span>
         <span>5 = packed</span>
       </div>

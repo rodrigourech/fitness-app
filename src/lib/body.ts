@@ -1,13 +1,36 @@
-import { db, type BodyWeight } from './db'
+import { db, type BodyCondition, type BodyWeight } from './db'
 import { saveRows } from './sync'
 
+export const CONDITION_LABEL: Record<BodyCondition, string> = {
+  morning_fasted: 'Morning, fasted',
+  after_workout: 'After workout',
+  after_meal: 'After meal',
+  other: 'Other',
+}
+
 /** Saves the weight for a day; an existing entry of that day is updated. */
-export async function saveBodyWeight(userId: string, measuredOn: string, kg: number): Promise<void> {
+export async function saveBodyWeight(
+  userId: string,
+  measuredOn: string,
+  kg: number,
+  condition: BodyCondition | null = null,
+  note: string | null = null,
+): Promise<void> {
   const existing = (await db.body_weight.where('measured_on').equals(measuredOn).toArray()).find((b) => b.deleted_at === null)
   const ts = new Date().toISOString()
   const row: BodyWeight = existing
-    ? { ...existing, weight_kg: kg }
-    : { id: crypto.randomUUID(), user_id: userId, measured_on: measuredOn, weight_kg: kg, created_at: ts, updated_at: ts, deleted_at: null }
+    ? { ...existing, weight_kg: kg, condition, note }
+    : {
+        id: crypto.randomUUID(),
+        user_id: userId,
+        measured_on: measuredOn,
+        weight_kg: kg,
+        condition,
+        note,
+        created_at: ts,
+        updated_at: ts,
+        deleted_at: null,
+      }
   await saveRows('body_weight', [row])
 }
 

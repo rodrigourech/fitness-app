@@ -4,7 +4,7 @@ import { bodyWeightSeries, saveBodyWeight } from './body'
 import { db, type WorkoutSet } from './db'
 import { deleteWorkout, finishedWorkouts } from './history'
 import { importSeedIfNeeded } from './seed'
-import { bestBefore, effectiveReps, epley, recordsOf, shouldIncrease, targetRepsFor, volume } from './stats'
+import { bestBefore, effectiveReps, epley, recordsOf, shouldIncrease, suggestWeight, targetRepsFor, volume } from './stats'
 import { setTemplateExerciseVariant } from './template'
 import { finishWorkout, startWorkout, toggleSetDone } from './workout'
 
@@ -93,5 +93,21 @@ describe('history and body weight', () => {
     const te = (await db.template_exercise.where('template_id').equals(day1.id).toArray()).find((x) => x.position === 2)!
     await setTemplateExerciseVariant(te, low.id)
     expect((await db.template_exercise.get(te.id))!.exercise_id).toBe(low.id)
+  })
+})
+
+describe('weight suggestion', () => {
+  const prev = [
+    set({ set_type: 'warmup', weight: 20, reps: 10 }),
+    set({ weight: 30, reps: 10 }),
+    set({ weight: 30, reps: 10, rir: 2 }),
+  ]
+
+  it('adds the weight step to the heaviest working weight', () => {
+    expect(suggestWeight(prev, 2.5)).toEqual({ lastWeight: 30, reps: [10, 10], next: 32.5 })
+  })
+
+  it('gives no number without a weight step', () => {
+    expect(suggestWeight(prev, null)).toEqual({ lastWeight: 30, reps: [10, 10], next: null })
   })
 })

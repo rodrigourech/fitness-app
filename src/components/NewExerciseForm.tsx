@@ -19,7 +19,7 @@ const TYPES: { value: TrackingType; label: string }[] = [
 ]
 
 const input =
-  'rounded-lg border border-neutral-300 bg-transparent px-3 py-2 text-base outline-none focus:border-neutral-900 dark:border-neutral-700 dark:focus:border-neutral-100'
+  'rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-base outline-none focus:border-zinc-900 dark:border-zinc-700 dark:focus:border-zinc-100'
 
 export default function NewExerciseForm({ userId, initialName = '', onCreated, onCancel }: Props) {
   const mains = useLiveQuery(
@@ -118,16 +118,16 @@ export default function NewExerciseForm({ userId, initialName = '', onCreated, o
       </label>
 
       {suggestions.length > 0 && (
-        <ul aria-label="Catalog suggestions" className="-mt-2 overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
+        <ul aria-label="Catalog suggestions" className="-mt-2 overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
           {suggestions.map((s) => (
             <li key={s.id}>
               <button
                 type="button"
                 onClick={() => pick(s)}
-                className="w-full border-b border-neutral-100 px-3 py-2 text-left last:border-0 hover:bg-neutral-100 dark:border-neutral-800 dark:hover:bg-neutral-800"
+                className="w-full border-b border-zinc-100 px-3 py-2 text-left last:border-0 hover:bg-zinc-100 dark:border-zinc-800 dark:hover:bg-zinc-800"
               >
                 <span className="block text-sm">{s.name}</span>
-                <span className="block text-xs text-neutral-500 dark:text-neutral-400">{describeEntry(s)}</span>
+                <span className="block text-xs text-zinc-500 dark:text-zinc-400">{describeEntry(s)}</span>
               </button>
             </li>
           ))}
@@ -158,8 +158,8 @@ export default function NewExerciseForm({ userId, initialName = '', onCreated, o
                   onClick={() => setType(t.value)}
                   className={`rounded-md px-2 py-2 text-sm ${
                     type === t.value
-                      ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
-                      : 'bg-neutral-100 dark:bg-neutral-800'
+                      ? 'bg-accent text-accent-fg'
+                      : 'bg-zinc-100 dark:bg-zinc-800'
                   }`}
                 >
                   {t.label}
@@ -180,7 +180,7 @@ export default function NewExerciseForm({ userId, initialName = '', onCreated, o
         </>
       )}
       {isVariant && (
-        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
           The variant inherits tracking, rest, muscles and videos from the main exercise. You can change them later.
         </p>
       )}
@@ -192,14 +192,14 @@ export default function NewExerciseForm({ userId, initialName = '', onCreated, o
 
       <div className="flex gap-2">
         {onCancel && (
-          <button type="button" onClick={onCancel} className="flex-1 rounded-lg py-3 text-sm text-neutral-600 dark:text-neutral-300">
+          <button type="button" onClick={onCancel} className="flex-1 rounded-lg py-3 text-sm text-zinc-600 dark:text-zinc-300">
             Cancel
           </button>
         )}
         <button
           type="submit"
           disabled={busy || !name.trim()}
-          className="flex-1 rounded-lg bg-neutral-900 py-3 font-semibold text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+          className="flex-1 rounded-lg bg-accent py-3 font-semibold text-accent-fg disabled:opacity-50"
         >
           Create
         </button>

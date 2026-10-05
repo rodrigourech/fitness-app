@@ -1,11 +1,13 @@
 # Builds the app and publishes the static files to the public repo rodrigourech/fitness-app-web,
 # which serves them with GitHub Pages at https://rodrigourech.github.io/fitness-app-web/
 # Only built files are published; source code and docs stay in this private repo.
+# Branch major-update is published as beta under /fitness-app-web/beta/ (own service worker,
+# own local database fitness-app-beta). A deploy of main replaces everything incl. beta.
 name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, major-update]
   workflow_dispatch:
 
 concurrency:
@@ -33,10 +35,13 @@ jobs:
           grep -q "apirest" dist/assets/index-*.js || { echo "::error::Neon Data API URL missing in build"; exit 1; }
           grep -q "authproxy" dist/assets/index-*.js || { echo "::error::Auth proxy URL missing in build"; exit 1; }
         env:
-          BASE_PATH: /fitness-app-web/
+          BASE_PATH: ${{ github.ref_name == 'main' && '/fitness-app-web/' || '/fitness-app-web/beta/' }}
+          VITE_DB_NAME: ${{ github.ref_name == 'main' && 'fitness-app' || 'fitness-app-beta' }}
+          APP_VARIANT: ${{ github.ref_name == 'main' && 'main' || 'beta' }}
           # The public Neon URLs come from .env.production (committed, not secret).
 
       - name: Publish to fitness-app-web
+        if: github.ref_name == 'main'
         uses: peaceiris/actions-gh-pages@v4
         with:
           personal_token: ${{ secrets.PAGES_DEPLOY_TOKEN }}
@@ -45,3 +50,15 @@ jobs:
           publish_dir: ./dist
           force_orphan: true
           commit_message: Deploy ${{ github.sha }}
+
+      - name: Publish beta to fitness-app-web/beta
+        if: github.ref_name != 'main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          personal_token: ${{ secrets.PAGES_DEPLOY_TOKEN }}
+          external_repository: rodrigourech/fitness-app-web
+          publish_branch: main
+          publish_dir: ./dist
+          destination_dir: beta
+          keep_files: true
+          commit_message: Beta ${{ github.sha }}

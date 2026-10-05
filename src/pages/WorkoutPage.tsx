@@ -9,10 +9,11 @@ import Popover from '../components/Popover'
 import RestTimer from '../components/RestTimer'
 import SyncBadge from '../components/SyncBadge'
 import { useNow } from '../hooks/useNow'
+import { useSwipeDown } from '../hooks/useSwipeDown'
 import { startRest, stopRest } from '../lib/rest'
 import { db, displayName, type Exercise, type ExerciseLink, type Workout, type WorkoutExercise, type WorkoutSet } from '../lib/db'
 import { linkLabel, linksFor } from '../lib/exercise'
-import { bestBefore, recordsOf, shouldIncrease, targetRepsFor, type Best } from '../lib/stats'
+import { bestBefore, recordsOf, shouldIncrease, suggestWeight, targetRepsFor, type Best, type WeightSuggestion } from '../lib/stats'
 import {
   addExerciseToWorkout,
   addSet,
@@ -37,6 +38,8 @@ import {
 interface Props {
   workout: Workout
   onReauth: () => void
+  /** Shrinks the workout to a bar so the rest of the app can be used */
+  onMinimize: () => void
 }
 
 interface ExerciseBlock {
@@ -48,6 +51,8 @@ interface ExerciseBlock {
   links: ExerciseLink[]
   best: Best
   increase: boolean
+  /** Concrete next weight when the progression rule is met */
+  suggestion: WeightSuggestion | null
 }
 
 async function loadBlocks(workoutId: string, templateId: string | null): Promise<ExerciseBlock[]> {
@@ -62,6 +67,7 @@ async function loadBlocks(workoutId: string, templateId: string | null): Promise
     active.map(async (we) => {
       const exercise = byId.get(we.exercise_id)
       const prev = await previousSets(we.exercise_id, workoutId)
+      const increase = shouldIncrease(prev, await targetRepsFor(templateId, we.exercise_id))
       return {
         we,
         exercise,
@@ -72,13 +78,14 @@ async function loadBlocks(workoutId: string, templateId: string | null): Promise
         previous: prev,
         links: exercise ? await linksFor(exercise) : [],
         best: await bestBefore(we.exercise_id, workoutId),
-        increase: shouldIncrease(prev, await targetRepsFor(templateId, we.exercise_id)),
+        increase,
+        suggestion: increase ? suggestWeight(prev, exercise ? effective(exercise, byId).weightStep : null) : null,
       }
     }),
   )
 }
 
-export default function WorkoutPage({ workout, onReauth }: Props) {
+export default function WorkoutPage({ workout, onReauth, onMinimize }: Props) {
   const blocks = useLiveQuery(() => loadBlocks(workout.id, workout.template_id), [workout.id, workout.template_id])
   const exercises = useLiveQuery(() => db.exercise.toArray(), [])
   const now = useNow(1000)
@@ -102,25 +109,42 @@ export default function WorkoutPage({ workout, onReauth }: Props) {
   }
 
   const elapsed = Math.max(0, Math.floor((now - Date.parse(workout.started_at)) / 1000))
+  const swipe = useSwipeDown(onMinimize)
 
   return (
     <main className="mx-auto max-w-xl px-4 pb-32">
       <RestTimer />
+      {/* Drag handle: swipe down to minimise */}
+      <div {...swipe} className="-mx-4 flex touch-none justify-center pt-[max(env(safe-area-inset-top),0.5rem)] pb-1" aria-hidden="true">
+        <span className="h-1.5 w-10 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+      </div>
       <AppBar>
         <SyncBadge onReauth={onReauth} />
       </AppBar>
-      <header className="mb-4 flex items-center justify-between gap-2">
-        <div>
+      <header {...swipe} className="mb-4 flex touch-none items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onMinimize}
+            aria-label="Minimise workout"
+            title="Minimise"
+            className="-ml-1 rounded-md p-1 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+          <div>
           <h1 className="text-2xl font-semibold tracking-tight">{workout.template_name_snapshot ?? 'Workout'}</h1>
-          <p className="text-sm text-neutral-500 tabular-nums dark:text-neutral-400">{formatDuration(elapsed)}</p>
+          <p className="text-sm text-zinc-500 tabular-nums dark:text-zinc-400">{formatDuration(elapsed)}</p>
+          </div>
         </div>
-        <button onClick={() => void askFinish()} className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">
+        <button onClick={() => void askFinish()} className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-accent-fg">
           Finish
         </button>
       </header>
 
       {blocks === undefined ? (
-        <p className="text-neutral-500">Loading …</p>
+        <p className="text-zinc-500">Loading …</p>
       ) : (
         <div className="flex flex-col gap-4">
           {blocks.map((b) => (
@@ -131,18 +155,18 @@ export default function WorkoutPage({ workout, onReauth }: Props) {
 
       <button
         onClick={() => setPicking(true)}
-        className="mt-4 w-full rounded-xl border border-dashed border-neutral-300 py-3 text-sm font-semibold text-neutral-600 dark:border-neutral-700 dark:text-neutral-300"
+        className="mt-4 w-full rounded-xl border border-dashed border-zinc-300 py-3 text-sm font-semibold text-zinc-600 dark:border-zinc-700 dark:text-zinc-300"
       >
         + Add exercise
       </button>
 
       <label className="mt-6 flex flex-col gap-1">
-        <span className="text-sm text-neutral-500 dark:text-neutral-400">Workout note</span>
+        <span className="text-sm text-zinc-500 dark:text-zinc-400">Workout note</span>
         <textarea
           defaultValue={workout.note ?? ''}
           onBlur={(e) => void updateWorkout(workout, { note: e.target.value.trim() || null })}
           rows={2}
-          className="rounded-lg border border-neutral-300 bg-transparent px-3 py-2 text-base outline-none dark:border-neutral-700"
+          className="rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-base outline-none dark:border-zinc-700"
         />
       </label>
 
@@ -160,31 +184,31 @@ export default function WorkoutPage({ workout, onReauth }: Props) {
       {confirm && (
         <div className="fixed inset-0 z-20 flex items-end bg-black/40 sm:items-center sm:justify-center" onClick={() => setConfirm(null)}>
           <div
-            className="w-full rounded-t-2xl bg-white p-5 pb-[max(env(safe-area-inset-bottom),1.25rem)] sm:max-w-sm sm:rounded-2xl dark:bg-neutral-900"
+            className="w-full rounded-t-2xl bg-white p-5 pb-[max(env(safe-area-inset-bottom),1.25rem)] sm:max-w-sm sm:rounded-2xl dark:bg-zinc-900"
             onClick={(e) => e.stopPropagation()}
           >
             {confirm.kind === 'finish' ? (
               <>
                 <h2 className="mb-2 text-lg font-semibold">Finish workout?</h2>
-                <p className="mb-4 text-sm text-neutral-600 dark:text-neutral-300">
+                <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-300">
                   {confirm.open === 0
                     ? 'All sets are checked.'
                     : `${confirm.open} unchecked ${confirm.open === 1 ? 'set' : 'sets'} will be discarded.`}
                 </p>
-                <button onClick={() => void doFinish()} className="w-full rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white">
+                <button onClick={() => void doFinish()} className="w-full rounded-lg bg-accent px-4 py-3 font-semibold text-accent-fg">
                   Finish
                 </button>
               </>
             ) : (
               <>
                 <h2 className="mb-2 text-lg font-semibold">Discard workout?</h2>
-                <p className="mb-4 text-sm text-neutral-600 dark:text-neutral-300">All sets of this workout will be discarded.</p>
+                <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-300">All sets of this workout will be discarded.</p>
                 <button onClick={() => void doCancel()} className="w-full rounded-lg bg-red-600 px-4 py-3 font-semibold text-white">
                   Discard
                 </button>
               </>
             )}
-            <button onClick={() => setConfirm(null)} className="mt-2 w-full rounded-lg px-4 py-3 text-sm text-neutral-600 dark:text-neutral-300">
+            <button onClick={() => setConfirm(null)} className="mt-2 w-full rounded-lg px-4 py-3 text-sm text-zinc-600 dark:text-zinc-300">
               Back
             </button>
           </div>
@@ -207,7 +231,7 @@ export default function WorkoutPage({ workout, onReauth }: Props) {
 }
 
 function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map<string, Exercise>; onOpen: (exerciseId: string) => void }) {
-  const { we, exercise, name, sets, previous, links, best, increase } = block
+  const { we, exercise, name, sets, previous, links, best, increase, suggestion } = block
   const eff = exercise
     ? effective(exercise, byId)
     : { trackingType: 'weight_reps', isUnilateral: false, floor: null, seat: null, footPosition: null, setupNote: null, focusMuscles: [] as string[], focusCue: null, restS: null }
@@ -230,24 +254,33 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
           : 'grid-cols-[1.5rem_1fr_4.25rem_3.75rem_2.75rem]'
 
   return (
-    <section className="rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
+    <section className="card p-3">
       <div className="flex items-start justify-between gap-2">
         <button onClick={() => onOpen(we.exercise_id)} className="text-left">
           <h2 className="font-semibold underline-offset-2 hover:underline">
-            {name} <span className="text-neutral-400">›</span>
+            {name} <span className="text-zinc-400">›</span>
           </h2>
         </button>
         <VideoButton links={links} />
       </div>
-      {eff.setupNote && <p className="text-sm whitespace-pre-line text-neutral-500 dark:text-neutral-400">{eff.setupNote}</p>}
+      {eff.setupNote && <p className="text-sm whitespace-pre-line text-zinc-500 dark:text-zinc-400">{eff.setupNote}</p>}
       {increase && (
-        <p className="mt-1 rounded-md bg-emerald-50 px-2 py-1 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-          ↑ Last time every set hit the target with RIR ≥ 2 – increase the weight.
+        <p className="mt-1 rounded-md bg-accent-soft px-2 py-1 text-sm font-medium text-accent-ink">
+          {suggestion?.next != null ? (
+            <>
+              ↑ Try {suggestion.next} kg{' '}
+              <span className="font-normal opacity-80">
+                · last {suggestion.lastWeight} kg × {suggestion.reps.join(' · ')}
+              </span>
+            </>
+          ) : (
+            '↑ Last time every set hit the target with RIR ≥ 2. Increase the weight.'
+          )}
         </p>
       )}
 
 
-      <div className={`mt-3 grid ${cols} items-center gap-x-1 gap-y-1.5 text-xs text-neutral-500 dark:text-neutral-400`}>
+      <div className={`mt-3 grid ${cols} items-center gap-x-1 gap-y-1.5 text-xs text-zinc-500 dark:text-zinc-400`}>
         <span className="text-center">Set</span>
         <span>Previous</span>
         {tt === 'duration' && <span className="text-center">Time</span>}
@@ -298,7 +331,7 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
               hover
               label={<>RIR ⓘ</>}
               ariaLabel="What is RIR?"
-              triggerClassName="mr-1 text-xs text-neutral-500 underline decoration-dotted underline-offset-2 dark:text-neutral-400"
+              triggerClassName="mr-1 text-xs text-zinc-500 underline decoration-dotted underline-offset-2 dark:text-zinc-400"
             >
               <RirHelp />
             </Popover>
@@ -311,8 +344,8 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
                   onClick={() => void updateSet(lastWorking, { rir: o.value })}
                   className={`h-8 min-w-8 rounded-md px-2 text-sm tabular-nums ${
                     active
-                      ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
-                      : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'
+                      ? 'bg-accent text-accent-fg'
+                      : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'
                   }`}
                 >
                   {o.label}
@@ -324,13 +357,13 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
       )}
 
       <div className="mt-2 flex gap-2">
-        <button onClick={() => void addSet(we)} className="flex-1 rounded-lg bg-neutral-100 py-2 text-sm font-medium dark:bg-neutral-800">
+        <button onClick={() => void addSet(we)} className="flex-1 rounded-lg bg-zinc-100 py-2 text-sm font-medium dark:bg-zinc-800">
           + Add set
         </button>
         {sets.length > 0 && (
           <button
             onClick={() => void removeLastSet(we)}
-            className="rounded-lg px-3 py-2 text-sm text-neutral-500 dark:text-neutral-400"
+            className="rounded-lg px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400"
           >
             Remove set
           </button>
@@ -344,7 +377,7 @@ function RirHelp() {
   return (
     <>
       <span className="mb-1 block font-semibold">RIR – Reps in Reserve</span>
-      <span className="mb-2 block text-neutral-600 dark:text-neutral-300">How many more reps you could have done with clean form.</span>
+      <span className="mb-2 block text-zinc-600 dark:text-zinc-300">How many more reps you could have done with clean form.</span>
       <span className="grid grid-cols-[2rem_1fr] gap-x-2 gap-y-0.5 tabular-nums">
         <b>0</b>
         <span>failure, no rep left</span>
@@ -355,7 +388,7 @@ function RirHelp() {
         <b>4+</b>
         <span>clearly easy</span>
       </span>
-      <span className="mt-2 block text-xs text-neutral-500 dark:text-neutral-400">Target 1–2 · last set only · optional</span>
+      <span className="mt-2 block text-xs text-zinc-500 dark:text-zinc-400">Target 1–2 · last set only · optional</span>
     </>
   )
 }
@@ -375,7 +408,7 @@ function VideoButton({ links }: { links: ExerciseLink[] }) {
     <Popover label={`▶ Videos (${links.length})`} ariaLabel="Choose a video" triggerClassName={cls} align="right">
       {(close) => (
         <span className="flex flex-col">
-          <span className="mb-1 text-xs text-neutral-500 dark:text-neutral-400">Choose a video</span>
+          <span className="mb-1 text-xs text-zinc-500 dark:text-zinc-400">Choose a video</span>
           {links.map((l) => (
             <a
               key={l.id}
@@ -383,7 +416,7 @@ function VideoButton({ links }: { links: ExerciseLink[] }) {
               target="_blank"
               rel="noopener noreferrer"
               onClick={close}
-              className="truncate rounded-md px-2 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              className="truncate rounded-md px-2 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800"
             >
               ▶ {linkLabel(l)}
             </a>
@@ -452,12 +485,12 @@ function SetRow({ set, label, previous, trackingType, unilateral, restSeconds, r
     <>
       <span
         title={records.length ? `Personal record: ${records.join(', ')}` : undefined}
-        className={`flex h-10 flex-col items-center justify-center rounded-md text-sm leading-none font-medium text-neutral-700 dark:text-neutral-200 ${rowTone}`}
+        className={`flex h-10 flex-col items-center justify-center rounded-md text-sm leading-none font-medium text-zinc-700 dark:text-zinc-200 ${rowTone}`}
       >
         {label}
         {records.length > 0 && <span className="mt-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400">PR</span>}
       </span>
-      <span className="flex min-w-0 flex-col text-[11px] leading-tight text-neutral-500 tabular-nums dark:text-neutral-400">
+      <span className="flex min-w-0 flex-col text-[11px] leading-tight text-zinc-500 tabular-nums dark:text-zinc-400">
         <span className="truncate">{previous[0]}</span>
         {previous[1] && <span className="truncate">{previous[1]}</span>}
       </span>
@@ -495,7 +528,7 @@ function SetRow({ set, label, previous, trackingType, unilateral, restSeconds, r
         aria-pressed={done}
         onClick={() => void toggle()}
         className={`flex h-10 items-center justify-center rounded-md text-lg font-bold ${
-          done ? 'bg-emerald-600 text-white' : 'bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500'
+          done ? 'bg-emerald-600 text-white' : 'bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500'
         }`}
       >
         ✓

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getThemePref, setThemePref, type ThemePref } from '../lib/theme'
+import { getAccent, getThemePref, setAccent, setThemePref, type Accent, type ThemePref } from '../lib/theme'
 import Popover from './Popover'
 
 const OPTIONS: { value: ThemePref; label: string }[] = [
@@ -8,9 +8,25 @@ const OPTIONS: { value: ThemePref; label: string }[] = [
   { value: 'dark', label: 'Dark' },
 ]
 
+const ACCENTS: { value: Accent; label: string; color: string }[] = [
+  { value: 'blue', label: 'Blue', color: '#2563eb' },
+  { value: 'green', label: 'Green', color: '#059669' },
+  { value: 'violet', label: 'Violet', color: '#7c3aed' },
+]
+
 /** Sun, moon or half circle (system), drawn with the current text colour. */
 function Icon({ pref }: { pref: ThemePref }) {
-  const common = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true }
+  const common = {
+    width: 18,
+    height: 18,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 2,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+    'aria-hidden': true,
+  }
   if (pref === 'light')
     return (
       <svg {...common}>
@@ -32,12 +48,16 @@ function Icon({ pref }: { pref: ThemePref }) {
   )
 }
 
-/** Theme switch for the app bar: System, Light or Dark. */
+/** Appearance switch for the app bar: System, Light or Dark, plus the accent colour. */
 export default function ThemeToggle() {
   const [pref, setPref] = useState<ThemePref>(getThemePref)
+  const [accent, setAccentState] = useState<Accent>(getAccent)
 
   useEffect(() => {
-    const sync = () => setPref(getThemePref())
+    const sync = () => {
+      setPref(getThemePref())
+      setAccentState(getAccent())
+    }
     window.addEventListener('themechange', sync)
     return () => window.removeEventListener('themechange', sync)
   }, [])
@@ -45,12 +65,13 @@ export default function ThemeToggle() {
   return (
     <Popover
       align="right"
-      ariaLabel={`Theme: ${pref}`}
+      ariaLabel={`Appearance: ${pref}, ${accent}`}
       label={<Icon pref={pref} />}
-      triggerClassName="rounded-md p-1.5 text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
+      triggerClassName="rounded-md p-1.5 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
     >
-      {(close) => (
-        <span role="radiogroup" aria-label="Theme" className="flex w-36 flex-col gap-0.5">
+      <span className="flex w-40 flex-col gap-0.5">
+        <span className="px-2 pb-1 text-xs text-zinc-500 dark:text-zinc-400">Appearance</span>
+        <span role="radiogroup" aria-label="Theme" className="flex flex-col gap-0.5">
           {OPTIONS.map((o) => (
             <button
               key={o.value}
@@ -59,10 +80,9 @@ export default function ThemeToggle() {
               onClick={() => {
                 setThemePref(o.value)
                 setPref(o.value)
-                close()
               }}
               className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm ${
-                pref === o.value ? 'bg-neutral-100 font-semibold dark:bg-neutral-800' : ''
+                pref === o.value ? 'bg-zinc-100 font-semibold dark:bg-zinc-800' : ''
               }`}
             >
               <Icon pref={o.value} />
@@ -70,7 +90,27 @@ export default function ThemeToggle() {
             </button>
           ))}
         </span>
-      )}
+        <span className="mt-2 px-2 pb-1 text-xs text-zinc-500 dark:text-zinc-400">Accent</span>
+        <span role="radiogroup" aria-label="Accent colour" className="flex gap-2 px-2">
+          {ACCENTS.map((a) => (
+            <button
+              key={a.value}
+              role="radio"
+              aria-checked={accent === a.value}
+              aria-label={a.label}
+              title={a.label}
+              onClick={() => {
+                setAccent(a.value)
+                setAccentState(a.value)
+              }}
+              className={`h-7 w-7 rounded-full ring-offset-2 ring-offset-white dark:ring-offset-zinc-900 ${
+                accent === a.value ? 'ring-2 ring-zinc-900 dark:ring-zinc-100' : ''
+              }`}
+              style={{ background: a.color }}
+            />
+          ))}
+        </span>
+      </span>
     </Popover>
   )
 }

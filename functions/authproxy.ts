@@ -9,15 +9,31 @@
 //   /sign-in   { email, password } -> { token, jwt, user, expiresAt }
 //   /session   { token }           -> { token, jwt, user, expiresAt }   (token may be renewed)
 //   /sign-out  { token }           -> 204
+//   /photo/upload    body = encrypted bytes, headers x-session-token, x-photo-id -> 204
+//   /photo/download  { token, id } -> encrypted bytes
+//   /photo/delete    { token, id } -> 204
+// Photos are encrypted in the app before upload; the proxy only stores and returns opaque bytes
+// in the private bucket (key <user id>/<photo id>) and never sees the passphrase or the image.
+
+import { AwsClient } from 'aws4fetch'
 
 const COOKIE = '__Secure-neon-auth.session_token'
 const MAX_FIELD = 2048
+const MAX_PHOTO_BYTES = 4 * 1024 * 1024
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export interface ProxyEnv {
   /** Neon Auth base URL, e.g. https://ep-....neonauth....neon.tech/neondb/auth */
   AUTH_URL?: string
   /** Comma-separated list of allowed browser origins. */
   ALLOWED_ORIGINS?: string
+  /** Private bucket for encrypted progress photos (declared in neon.ts) */
+  PHOTO_BUCKET?: string
+  /** Injected by Neon when a bucket is declared */
+  AWS_ACCESS_KEY_ID?: string
+  AWS_SECRET_ACCESS_KEY?: string
+  AWS_ENDPOINT_URL_S3?: string
+  AWS_REGION?: string
 }
 
 export interface SessionResult {
@@ -33,7 +49,7 @@ function corsHeaders(origin: string): Record<string, string> {
   return {
     'access-control-allow-origin': origin,
     'access-control-allow-methods': 'POST, OPTIONS',
-    'access-control-allow-headers': 'content-type',
+    'access-control-allow-headers': 'content-type, x-session-token, x-photo-id',
     'access-control-max-age': '86400',
     vary: 'Origin',
   }
@@ -112,10 +128,42 @@ export async function handle(req: Request, env: ProxyEnv, f: Fetch = fetch): Pro
   if (req.method !== 'POST') return reply({ error: 'Method not allowed.' }, 405, origin)
   if (!auth) return reply({ error: 'Proxy not configured.' }, 500, origin)
 
-  const body: unknown = await req.json().catch(() => null)
   const route = new URL(req.url).pathname.replace(/\/+$/, '')
 
+  // Upload carries raw bytes, all other routes JSON
+  if (route.endsWith('/photo/upload')) {
+    try {
+      return await photoUpload(req, env, auth, origin, f)
+    } catch (err) {
+      return reply({ error: `Upload failed: ${err instanceof Error ? err.message : String(err)}` }, 502, origin)
+    }
+  }
+
+  const body: unknown = await req.json().catch(() => null)
+
   try {
+    if (route.endsWith('/photo/download') || route.endsWith('/photo/delete')) {
+      const token = field(body, 'token')
+      const id = field(body, 'id')
+      if (!token || !id || !UUID.test(id)) return reply({ error: 'Token and photo id required.' }, 400, origin)
+      const store = photoStore(env, f)
+      if (!store) return reply({ error: 'Photo storage not configured.' }, 500, origin)
+      const s = await session(auth, origin, token, f)
+      if (!('jwt' in s)) return reply({ error: s.error }, s.status, origin)
+      const key = `${s.user.id}/${id.toLowerCase()}`
+      if (route.endsWith('/photo/delete')) {
+        await store('DELETE', key)
+        return reply(null, 204, origin)
+      }
+      const res = await store('GET', key)
+      if (res.status === 404) return reply({ error: 'Photo not found.' }, 404, origin)
+      if (!res.ok) return reply({ error: `Storage error (HTTP ${res.status})` }, 502, origin)
+      return new Response(await res.arrayBuffer(), {
+        status: 200,
+        headers: { ...corsHeaders(origin), 'content-type': 'application/octet-stream', 'cache-control': 'no-store' },
+      })
+    }
+
     if (route.endsWith('/sign-in')) {
       const email = field(body, 'email')
       const password = field(body, 'password')
@@ -159,6 +207,48 @@ export async function handle(req: Request, env: ProxyEnv, f: Fetch = fetch): Pro
   }
 
   return reply({ error: 'Not found.' }, 404, origin)
+}
+
+type Store = (method: 'PUT' | 'GET' | 'DELETE', key: string, body?: ArrayBuffer) => Promise<Response>
+
+/** Signed S3 requests against the private photo bucket (path style, as Neon requires). */
+function photoStore(env: ProxyEnv, f: Fetch): Store | null {
+  const { AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_ENDPOINT_URL_S3, AWS_REGION, PHOTO_BUCKET } = env
+  if (!AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY || !AWS_ENDPOINT_URL_S3 || !PHOTO_BUCKET) return null
+  const aws = new AwsClient({
+    accessKeyId: AWS_ACCESS_KEY_ID,
+    secretAccessKey: AWS_SECRET_ACCESS_KEY,
+    service: 's3',
+    region: AWS_REGION || 'us-east-1',
+  })
+  const base = `${AWS_ENDPOINT_URL_S3.replace(/\/+$/, '')}/${PHOTO_BUCKET}`
+  return async (method, key, body) => {
+    const init: RequestInit = { method }
+    if (body) {
+      init.body = body
+      init.headers = { 'content-type': 'application/octet-stream' }
+    }
+    return f(await aws.sign(`${base}/${key}`, init))
+  }
+}
+
+async function photoUpload(req: Request, env: ProxyEnv, auth: string, origin: string, f: Fetch): Promise<Response> {
+  const token = req.headers.get('x-session-token')
+  const id = req.headers.get('x-photo-id')
+  if (!token || token.length > MAX_FIELD || !id || !UUID.test(id)) {
+    return reply({ error: 'Token and photo id required.' }, 400, origin)
+  }
+  const store = photoStore(env, f)
+  if (!store) return reply({ error: 'Photo storage not configured.' }, 500, origin)
+  const declared = Number(req.headers.get('content-length') ?? '0')
+  if (declared > MAX_PHOTO_BYTES) return reply({ error: 'Photo too large.' }, 413, origin)
+  const s = await session(auth, origin, token, f)
+  if (!('jwt' in s)) return reply({ error: s.error }, s.status, origin)
+  const bytes = await req.arrayBuffer()
+  if (bytes.byteLength === 0 || bytes.byteLength > MAX_PHOTO_BYTES) return reply({ error: 'Invalid photo size.' }, 413, origin)
+  const res = await store('PUT', `${s.user.id}/${id.toLowerCase()}`, bytes)
+  if (!res.ok) return reply({ error: `Storage error (HTTP ${res.status})` }, 502, origin)
+  return reply(null, 204, origin)
 }
 
 export default {

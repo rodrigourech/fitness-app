@@ -5,6 +5,16 @@ const AUTH = 'https://auth.example/neondb/auth'
 const ORIGIN = 'https://rodrigourech.github.io'
 const env: ProxyEnv = { AUTH_URL: AUTH, ALLOWED_ORIGINS: `${ORIGIN},http://localhost:5173` }
 const COOKIE = '__Secure-neon-auth.session_token'
+const S3 = 'https://s3.example/body-photos/'
+const photoEnv: ProxyEnv = {
+  ...env,
+  PHOTO_BUCKET: 'body-photos',
+  AWS_ACCESS_KEY_ID: 'key',
+  AWS_SECRET_ACCESS_KEY: 'secret',
+  AWS_ENDPOINT_URL_S3: 'https://s3.example',
+  AWS_REGION: 'eu-central-1',
+}
+const PHOTO = '0b5c6f2e-3d4a-4f1b-9c8d-7e6f5a4b3c2d'
 
 interface Call {
   url: string
@@ -16,8 +26,9 @@ interface Call {
 /** Fake Neon Auth: one user, session token "tok.sig", optional renewal on get-session. */
 function fakeAuth(opts: { renew?: boolean; jwtHeader?: boolean } = {}) {
   const calls: Call[] = []
+  const objects = new Map<string, ArrayBuffer>()
   const f = (async (input: string | URL | Request, init?: RequestInit) => {
-    const url = String(input)
+    const url = input instanceof Request ? input.url : String(input)
     const headers = new Headers(init?.headers)
     calls.push({ url, method: init?.method ?? 'GET', headers, body: (init?.body as string) ?? null })
     const cookie = headers.get('cookie') ?? ''
@@ -39,9 +50,24 @@ function fakeAuth(opts: { renew?: boolean; jwtHeader?: boolean } = {}) {
     }
     if (url === `${AUTH}/token`) return valid ? Response.json({ token: 'jwt-2' }) : new Response(null, { status: 401 })
     if (url === `${AUTH}/sign-out`) return Response.json({ success: true })
+    if (url.startsWith(S3)) {
+      const req = input as Request
+      const key = url.slice(S3.length)
+      if (!req.headers.get('authorization')?.startsWith('AWS4-HMAC-SHA256')) return new Response(null, { status: 403 })
+      if (req.method === 'PUT') {
+        objects.set(key, await req.arrayBuffer())
+        return new Response(null, { status: 200 })
+      }
+      if (req.method === 'DELETE') {
+        objects.delete(key)
+        return new Response(null, { status: 204 })
+      }
+      const obj = objects.get(key)
+      return obj ? new Response(obj) : new Response(null, { status: 404 })
+    }
     return new Response(null, { status: 404 })
   }) as typeof fetch
-  return { f, calls }
+  return { f, calls, objects }
 }
 
 function post(path: string, body: unknown, origin: string | null = ORIGIN): Request {
@@ -116,5 +142,33 @@ describe('auth proxy', () => {
   it('ignores a cleared session cookie', () => {
     const res = new Response(null, { headers: { 'set-cookie': `${COOKIE}=; Max-Age=0; Path=/` } })
     expect(sessionCookie(res)).toBeNull()
+  })
+
+  it('stores, returns and deletes encrypted photo bytes under the user id', async () => {
+    const { f, objects } = fakeAuth()
+    const upload = new Request('https://proxy.example/photo/upload', {
+      method: 'POST',
+      headers: { origin: ORIGIN, 'x-session-token': 'tok.sig', 'x-photo-id': PHOTO, 'content-type': 'application/octet-stream' },
+      body: new Uint8Array([1, 2, 3]),
+    })
+    expect((await handle(upload, photoEnv, f)).status).toBe(204)
+    expect([...objects.keys()]).toEqual([`u1/${PHOTO}`])
+
+    const down = await handle(post('/photo/download', { token: 'tok.sig', id: PHOTO }), photoEnv, f)
+    expect(down.status).toBe(200)
+    expect([...new Uint8Array(await down.arrayBuffer())]).toEqual([1, 2, 3])
+
+    expect((await handle(post('/photo/delete', { token: 'tok.sig', id: PHOTO }), photoEnv, f)).status).toBe(204)
+    expect(objects.size).toBe(0)
+  })
+
+  it('refuses photos without a valid session or id', async () => {
+    const { f, objects } = fakeAuth()
+    const bad = (headers: Record<string, string>) =>
+      new Request('https://proxy.example/photo/upload', { method: 'POST', headers: { origin: ORIGIN, ...headers }, body: new Uint8Array([1]) })
+    expect((await handle(bad({ 'x-session-token': 'old.sig', 'x-photo-id': PHOTO }), photoEnv, f)).status).toBe(401)
+    expect((await handle(bad({ 'x-session-token': 'tok.sig', 'x-photo-id': '../other/x' }), photoEnv, f)).status).toBe(400)
+    expect((await handle(post('/photo/download', { token: 'tok.sig', id: PHOTO }), env, f)).status).toBe(500)
+    expect(objects.size).toBe(0)
   })
 })

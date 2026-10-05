@@ -1,8 +1,9 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState, type ReactNode } from 'react'
-import { ColumnChart, Heatmap, HBarChart, LineChart, SideChart, Sparkline } from '../components/Charts'
+import { ColumnChart, GoalColumns, Heatmap, HBarChart, LineChart, SideChart, Sparkline } from '../components/Charts'
 import Popover from '../components/Popover'
 import { formatShortDate } from '../lib/chart'
+import { readyToIncrease } from '../lib/progression'
 import { DEFAULT_WEEKLY_GOAL, getWeeklyGoal, saveWeeklyGoal, type WeeklyGoal } from '../lib/settings'
 import {
   CROWD_LABEL,
@@ -28,7 +29,9 @@ import {
 } from '../lib/analytics'
 
 const RANGES: Range[] = ['1m', '3m', '1y', 'all']
-const GOAL_WEEKS = 8
+// Columns show the last 12 weeks, the day calendar the last 4
+const GOAL_WEEKS = 12
+const CALENDAR_WEEKS = 4
 
 function kg(v: number): string {
   return `${Math.round(v).toLocaleString('en-GB')} kg`
@@ -40,16 +43,16 @@ function compactKg(v: number): string {
 
 function Card({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
   return (
-    <section className="relative rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
+    <section className="relative card p-4">
       <h2 className="pr-14 font-semibold">{title}</h2>
-      {subtitle && <p className="pr-14 text-xs text-neutral-500 dark:text-neutral-400">{subtitle}</p>}
+      {subtitle && <p className="pr-14 text-xs text-zinc-500 dark:text-zinc-400">{subtitle}</p>}
       <div className="mt-3">{children}</div>
     </section>
   )
 }
 
 function Empty({ children }: { children: ReactNode }) {
-  return <p className="py-4 text-sm text-neutral-500 dark:text-neutral-400">{children}</p>
+  return <p className="py-4 text-sm text-zinc-500 dark:text-zinc-400">{children}</p>
 }
 
 export default function StatsTab({ userId }: { userId: string }) {
@@ -58,7 +61,7 @@ export default function StatsTab({ userId }: { userId: string }) {
   // Fixed per visit of the tab, so all cards use the same reference time
   const [now] = useState(() => new Date())
 
-  if (data === undefined) return <p className="text-neutral-500">Loading …</p>
+  if (data === undefined) return <p className="text-zinc-500">Loading …</p>
   if (data.workouts.length === 0) return <Empty>No finished workouts yet.</Empty>
 
   const from = rangeStart(range, now, data.workouts)
@@ -67,7 +70,7 @@ export default function StatsTab({ userId }: { userId: string }) {
     <div className="flex flex-col gap-4">
       <GoalCard data={data} now={now} userId={userId} />
 
-      <div role="radiogroup" aria-label="Time range" className="grid grid-cols-4 gap-1 rounded-lg bg-neutral-100 p-1 dark:bg-neutral-900">
+      <div role="radiogroup" aria-label="Time range" className="grid grid-cols-4 gap-1 rounded-xl bg-zinc-200/70 p-1 dark:bg-zinc-900">
         {RANGES.map((r) => (
           <button
             key={r}
@@ -75,7 +78,7 @@ export default function StatsTab({ userId }: { userId: string }) {
             aria-checked={range === r}
             onClick={() => setRange(r)}
             className={`rounded-md py-1.5 text-xs font-semibold ${
-              range === r ? 'bg-white shadow-sm dark:bg-neutral-700' : 'text-neutral-500 dark:text-neutral-400'
+              range === r ? 'bg-white shadow-sm dark:bg-zinc-700' : 'text-zinc-500 dark:text-zinc-400'
             }`}
           >
             {RANGE_LABEL[r]}
@@ -83,6 +86,7 @@ export default function StatsTab({ userId }: { userId: string }) {
         ))}
       </div>
 
+      <ReadyCard />
       <StrengthCard data={data} from={from} />
       <VolumeCard data={data} from={from} now={now} />
       <MuscleCard data={data} now={now} />
@@ -108,17 +112,17 @@ function GoalCard({ data, now, userId }: { data: AnalyticsData; now: Date; userI
       {editing ? (
         <GoalEditor goal={goal} onSave={(g) => void saveWeeklyGoal(userId, g).then(() => setEditing(false))} onCancel={() => setEditing(false)} />
       ) : (
-        <button onClick={() => setEditing(true)} className="absolute top-3 right-3 rounded-md bg-neutral-100 px-2.5 py-1 text-sm font-medium dark:bg-neutral-800">
+        <button onClick={() => setEditing(true)} className="absolute top-3 right-3 rounded-md bg-zinc-100 px-2.5 py-1 text-sm font-medium dark:bg-zinc-800">
           Edit
         </button>
       )}
       <div className="mb-3 flex items-end justify-between gap-3">
         <div>
           <div className="text-4xl font-semibold tabular-nums">{summary.streak}</div>
-          <div className="text-xs text-neutral-500 dark:text-neutral-400">{summary.streak === 1 ? 'week' : 'weeks'} in a row</div>
+          <div className="text-xs text-zinc-500 dark:text-zinc-400">{summary.streak === 1 ? 'week' : 'weeks'} in a row</div>
         </div>
         <div className="text-right text-sm tabular-nums">
-          <div className="text-xs text-neutral-500 dark:text-neutral-400">This week</div>
+          <div className="text-xs text-zinc-500 dark:text-zinc-400">This week</div>
           <div>
             Strength {tw.strength}/{goal.strength} · Run {goal.run > 0 ? `${tw.run}/${goal.run}` : tw.run}
           </div>
@@ -127,23 +131,40 @@ function GoalCard({ data, now, userId }: { data: AnalyticsData; now: Date; userI
       <div className="grid grid-cols-[3.25rem_repeat(7,minmax(0,1fr))_1.25rem] gap-[2px] text-[11px]">
         <span />
         {WEEKDAYS.map((d) => (
-          <span key={d} className="text-center text-neutral-500 dark:text-neutral-400">
+          <span key={d} className="text-center text-zinc-500 dark:text-zinc-400">
             {d[0]}
           </span>
         ))}
         <span />
-        {summary.weeks.map((w) => (
+        {summary.weeks.slice(-CALENDAR_WEEKS).map((w) => (
           <GoalRow key={w.start} week={w} />
         ))}
       </div>
-      <div className="mt-2 flex gap-4 text-xs text-neutral-500 dark:text-neutral-400">
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: 'var(--viz-s1)' }} /> Strength
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: 'var(--viz-s2)' }} /> Run
-        </span>
-        <span>✓ goal met</span>
+      <div className="mt-4">
+        <GoalColumns
+          label={`Strength workouts and runs per week, last ${GOAL_WEEKS} weeks`}
+          goal={goal.strength}
+          legend={['Strength', 'Run']}
+          columns={summary.weeks.map((w) => {
+            const ms = Date.parse(`${w.start}T12:00:00`)
+            return {
+              key: w.start,
+              label: formatShortDate(ms),
+              a: w.strength,
+              b: w.run,
+              met: w.met,
+              tooltip: (
+                <>
+                  <div className="font-semibold">Week of {formatShortDate(ms)}</div>
+                  <div className="text-zinc-500 dark:text-zinc-400">
+                    {w.strength} strength · {w.run} {w.run === 1 ? 'run' : 'runs'}
+                    {w.met ? ' · goal met' : ''}
+                  </div>
+                </>
+              ),
+            }
+          })}
+        />
       </div>
     </Card>
   )
@@ -157,7 +178,7 @@ function Stepper({ label, value, min, max, format, onChange }: {
   format: (n: number) => string
   onChange: (n: number) => void
 }) {
-  const btn = 'h-9 w-9 rounded-md bg-neutral-100 text-lg disabled:opacity-30 dark:bg-neutral-800'
+  const btn = 'h-9 w-9 rounded-md bg-zinc-100 text-lg disabled:opacity-30 dark:bg-zinc-800'
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="text-sm">{label}</span>
@@ -177,7 +198,7 @@ function Stepper({ label, value, min, max, format, onChange }: {
 function GoalEditor({ goal, onSave, onCancel }: { goal: WeeklyGoal; onSave: (g: WeeklyGoal) => void; onCancel: () => void }) {
   const [draft, setDraft] = useState(goal)
   return (
-    <div className="mb-4 flex flex-col gap-2 rounded-lg bg-neutral-50 p-3 dark:bg-neutral-900">
+    <div className="mb-4 flex flex-col gap-2 rounded-xl bg-zinc-100/70 p-3 dark:bg-zinc-800/60">
       <Stepper label="Strength per week" value={draft.strength} min={1} max={7} format={String} onChange={(n) => setDraft({ ...draft, strength: n })} />
       <Stepper
         label="Runs per week"
@@ -187,12 +208,12 @@ function GoalEditor({ goal, onSave, onCancel }: { goal: WeeklyGoal; onSave: (g: 
         format={(n) => (n === 0 ? 'optional' : String(n))}
         onChange={(n) => setDraft({ ...draft, run: n })}
       />
-      <p className="text-xs text-neutral-500 dark:text-neutral-400">Set runs to optional if running should not count. Runs still appear in the calendar.</p>
+      <p className="text-xs text-zinc-500 dark:text-zinc-400">Set runs to optional if running should not count. Runs still appear in the calendar.</p>
       <div className="mt-1 flex gap-2">
         <button onClick={onCancel} className="flex-1 rounded-lg py-2 text-sm">
           Cancel
         </button>
-        <button onClick={() => onSave(draft)} className="flex-1 rounded-lg bg-neutral-900 py-2 text-sm font-semibold text-white dark:bg-neutral-100 dark:text-neutral-900">
+        <button onClick={() => onSave(draft)} className="flex-1 rounded-lg bg-accent py-2 text-sm font-semibold text-accent-fg">
           Save
         </button>
       </div>
@@ -203,7 +224,7 @@ function GoalEditor({ goal, onSave, onCancel }: { goal: WeeklyGoal; onSave: (g: 
 function GoalRow({ week }: { week: GoalWeek }) {
   return (
     <div className="contents">
-      <span className={`self-center tabular-nums ${week.current ? 'font-semibold' : 'text-neutral-500 dark:text-neutral-400'}`}>
+      <span className={`self-center tabular-nums ${week.current ? 'font-semibold' : 'text-zinc-500 dark:text-zinc-400'}`}>
         {formatShortDate(Date.parse(`${week.start}T12:00:00`))}
       </span>
       {week.days.map((d) => {
@@ -229,6 +250,36 @@ function GoalRow({ week }: { week: GoalWeek }) {
         {week.met ? '✓' : ''}
       </span>
     </div>
+  )
+}
+
+// --- ready to increase ----------------------------------------------------------------
+
+function ReadyCard() {
+  const ready = useLiveQuery(readyToIncrease, [])
+  if (ready === undefined) return null
+  return (
+    <Card title="Ready to increase" subtitle="Last workout: every working set hit the target reps and the last set had RIR ≥ 2">
+      {ready.length === 0 ? (
+        <Empty>Nothing yet. The hint needs target reps in the workout and RIR on the last set.</Empty>
+      ) : (
+        <ul className="flex flex-col">
+          {ready.map((r) => (
+            <li key={r.exerciseId} className="flex items-baseline justify-between gap-3 border-t border-zinc-100 py-2 first:border-t-0 dark:border-zinc-800">
+              <span className="min-w-0">
+                <span className="block truncate text-sm">{r.name}</span>
+                <span className="block text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
+                  last {r.lastWeight} kg × {r.reps.join(' · ')}
+                </span>
+              </span>
+              <span className="shrink-0 rounded-md bg-accent-soft px-2 py-1 text-sm font-semibold text-accent-ink tabular-nums">
+                {r.next !== null ? `Try ${r.next} kg` : 'Increase'}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
   )
 }
 
@@ -267,7 +318,7 @@ function StrengthCard({ data, from }: { data: AnalyticsData; from: number }) {
       subtitle={metric === 'weight' ? 'Heaviest working set per workout' : 'Best estimated 1RM per workout (working sets)'}
     >
       <div className="mb-3 flex items-center gap-2">
-        <div role="radiogroup" aria-label="Metric" className="grid flex-1 grid-cols-2 gap-1 rounded-lg bg-neutral-100 p-1 dark:bg-neutral-900">
+        <div role="radiogroup" aria-label="Metric" className="grid flex-1 grid-cols-2 gap-1 rounded-xl bg-zinc-100 p-1 dark:bg-zinc-800">
           {(['weight', 'e1rm'] as Metric[]).map((m) => (
             <button
               key={m}
@@ -275,7 +326,7 @@ function StrengthCard({ data, from }: { data: AnalyticsData; from: number }) {
               aria-checked={metric === m}
               onClick={() => setMetric(m)}
               className={`rounded-md py-1.5 text-xs font-semibold ${
-                metric === m ? 'bg-white shadow-sm dark:bg-neutral-700' : 'text-neutral-500 dark:text-neutral-400'
+                metric === m ? 'bg-white shadow-sm dark:bg-zinc-700' : 'text-zinc-500 dark:text-zinc-400'
               }`}
             >
               {METRIC_LABEL[m]}
@@ -287,7 +338,7 @@ function StrengthCard({ data, from }: { data: AnalyticsData; from: number }) {
           align="right"
           label={<>1RM ⓘ</>}
           ariaLabel="What is 1RM?"
-          triggerClassName="text-xs text-neutral-500 underline decoration-dotted underline-offset-2 dark:text-neutral-400"
+          triggerClassName="text-xs text-zinc-500 underline decoration-dotted underline-offset-2 dark:text-zinc-400"
         >
           <OneRmHelp />
         </Popover>
@@ -298,7 +349,7 @@ function StrengthCard({ data, from }: { data: AnalyticsData; from: number }) {
       ) : (
         <ul className="flex flex-col">
           {rows.map((r) => (
-            <li key={r.mainId} className="border-t border-neutral-100 first:border-t-0 dark:border-neutral-800">
+            <li key={r.mainId} className="border-t border-zinc-100 first:border-t-0 dark:border-zinc-800">
               <button
                 onClick={() => setOpen(open === r.mainId ? null : r.mainId)}
                 aria-expanded={open === r.mainId}
@@ -306,7 +357,7 @@ function StrengthCard({ data, from }: { data: AnalyticsData; from: number }) {
               >
                 <span className="min-w-0">
                   <span className="block truncate text-sm">{r.name}</span>
-                  <span className="block text-xs text-neutral-500 tabular-nums dark:text-neutral-400">{formatChange(r.change)}</span>
+                  <span className="block text-xs text-zinc-500 tabular-nums dark:text-zinc-400">{formatChange(r.change)}</span>
                 </span>
                 <Sparkline values={r.points.map((p) => p.value)} width={72} />
                 <span className="text-right text-sm font-semibold tabular-nums">{formatKg(r.latest)}</span>
@@ -316,7 +367,7 @@ function StrengthCard({ data, from }: { data: AnalyticsData; from: number }) {
           ))}
         </ul>
       )}
-      <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">Change since the first workout in the period. Tap an exercise for details.</p>
+      <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Change since the first workout in the period. Tap an exercise for details.</p>
     </Card>
   )
 }
@@ -335,7 +386,7 @@ function StrengthDetail({ data, mainId, from, metric }: { data: AnalyticsData; m
           aria-label="Variant"
           value={variantId ?? ''}
           onChange={(e) => setVariantId(e.target.value || null)}
-          className="mb-2 w-full rounded-lg border border-neutral-300 bg-transparent px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-950"
+          className="mb-2 w-full rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-950"
         >
           <option value="">All variants</option>
           <option value={option.mainId}>Main only</option>
@@ -351,7 +402,7 @@ function StrengthDetail({ data, mainId, from, metric }: { data: AnalyticsData; m
       ) : (
         <>
           {best && (
-            <p className="mb-1 text-xs text-neutral-500 tabular-nums dark:text-neutral-400">
+            <p className="mb-1 text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
               Best in period{' '}
               {metric === 'weight'
                 ? `${best.weight} kg × ${best.reps} (${formatShortDate(Date.parse(best.date))})`
@@ -361,17 +412,21 @@ function StrengthDetail({ data, mainId, from, metric }: { data: AnalyticsData; m
           <LineChart
             label={`${METRIC_LABEL[metric]} of ${option.name}`}
             formatY={(v) => String(Math.round(v * 10) / 10)}
+            // Weight only changes on an increase: steps; the labels show the reps at that weight
+            step={metric === 'weight'}
             points={series.map((p) => ({
               x: Date.parse(p.date),
               y: p.value,
+              label: metric === 'weight' ? p.repsList.join('·') : `×${p.reps}`,
               tooltip: (
                 <>
                   <div className="font-semibold">{formatKg(p.value)}</div>
-                  <div className="text-neutral-500 dark:text-neutral-400">
-                    {formatShortDate(Date.parse(p.date))} · {p.weight} kg × {p.reps}
+                  <div className="text-zinc-500 dark:text-zinc-400">
+                    {formatShortDate(Date.parse(p.date))} ·{' '}
+                    {metric === 'weight' ? `${p.weight} kg × ${p.repsList.join(' · ')}` : `${p.weight} kg × ${p.reps}`}
                     {metric === 'weight' && ` · est. 1RM ${Math.round(p.e1rm)} kg`}
                   </div>
-                  {p.exerciseId !== option.mainId && <div className="text-neutral-500 dark:text-neutral-400">{data.names.get(p.exerciseId)}</div>}
+                  {p.exerciseId !== option.mainId && <div className="text-zinc-500 dark:text-zinc-400">{data.names.get(p.exerciseId)}</div>}
                 </>
               ),
             }))}
@@ -394,9 +449,9 @@ function VolumeCard({ data, from, now }: { data: AnalyticsData; from: number; no
       ) : (
         <>
           <div className="mb-1 text-sm tabular-nums">
-            <span className="text-xs text-neutral-500 dark:text-neutral-400">Average </span>
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">Average </span>
             <span className="font-semibold">{kg(total / weeks.length)}</span>
-            <span className="text-xs text-neutral-500 dark:text-neutral-400"> per week</span>
+            <span className="text-xs text-zinc-500 dark:text-zinc-400"> per week</span>
           </div>
           <ColumnChart
             label="Training volume per week"
@@ -410,7 +465,7 @@ function VolumeCard({ data, from, now }: { data: AnalyticsData; from: number; no
                 tooltip: (
                   <>
                     <div className="font-semibold">{kg(w.value)}</div>
-                    <div className="text-neutral-500 dark:text-neutral-400">Week of {formatShortDate(ms)}</div>
+                    <div className="text-zinc-500 dark:text-zinc-400">Week of {formatShortDate(ms)}</div>
                   </>
                 ),
               }
@@ -431,7 +486,7 @@ function MuscleCard({ data, now }: { data: AnalyticsData; now: Date }) {
   const key = dayKey(start)
   const rows = setsPerMuscle(data.sets, key)
   const label = offset === 0 ? 'This week' : offset === 1 ? 'Last week' : `Week of ${formatShortDate(start.getTime())}`
-  const nav = 'h-8 w-8 rounded-md bg-neutral-100 text-sm disabled:opacity-30 dark:bg-neutral-800'
+  const nav = 'h-8 w-8 rounded-md bg-zinc-100 text-sm disabled:opacity-30 dark:bg-zinc-800'
 
   return (
     <Card title="Sets per muscle group" subtitle="Working sets: primary muscle 1, secondary 0.5">
@@ -500,7 +555,7 @@ function CrowdCard({ data, from }: { data: AnalyticsData; from: number }) {
           {grid.best && (
             <p className="mb-3 text-sm">
               Quietest so far: <span className="font-semibold">{WEEKDAYS[grid.best.weekday]} {slot(grid.best.slot)}</span>
-              <span className="text-neutral-500 dark:text-neutral-400">
+              <span className="text-zinc-500 dark:text-zinc-400">
                 {' '}
                 · {CROWD_LABEL[Math.round(grid.best.avg!)]} ({grid.best.avg!.toFixed(1)}, {grid.best.count}{' '}
                 {grid.best.count === 1 ? 'rating' : 'ratings'})
@@ -523,7 +578,7 @@ function CrowdCard({ data, from }: { data: AnalyticsData; from: number }) {
               })),
             )}
           />
-          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
             {grid.ratings} {grid.ratings === 1 ? 'rating' : 'ratings'} in this period. Times are when the workout was finished.
           </p>
         </>

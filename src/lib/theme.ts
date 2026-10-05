@@ -2,9 +2,33 @@
 // index.html applies the stored theme before the first paint, so there is no flash.
 
 export type ThemePref = 'system' | 'light' | 'dark'
+export type Accent = 'blue' | 'green' | 'violet'
 
 const KEY = 'theme'
-const COLORS = { light: '#ffffff', dark: '#0a0a0a' } as const
+const ACCENT_KEY = 'accent'
+// Browser/status bar colour = page background (see --page in index.css)
+const COLORS = { light: '#f4f4f5', dark: '#09090b' } as const
+
+export function getAccent(): Accent {
+  try {
+    const v = localStorage.getItem(ACCENT_KEY)
+    return v === 'green' || v === 'violet' ? v : 'blue'
+  } catch {
+    return 'blue'
+  }
+}
+
+/** Sets the accent colour (data-accent on <html>), stored per device. */
+export function setAccent(accent: Accent): void {
+  try {
+    if (accent === 'blue') localStorage.removeItem(ACCENT_KEY)
+    else localStorage.setItem(ACCENT_KEY, accent)
+  } catch {
+    // Storage blocked: applies until the app is closed
+  }
+  document.documentElement.dataset.accent = accent
+  window.dispatchEvent(new Event('themechange'))
+}
 
 export function getThemePref(): ThemePref {
   try {
@@ -40,6 +64,7 @@ export function setThemePref(pref: ThemePref): void {
 /** Applies the theme now and follows OS changes while the preference is "system". */
 export function initTheme(): void {
   applyTheme()
+  document.documentElement.dataset.accent = getAccent()
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
     if (getThemePref() === 'system') applyTheme('system')
   })

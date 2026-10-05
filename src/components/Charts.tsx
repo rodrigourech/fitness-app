@@ -28,7 +28,7 @@ function Tooltip({ x, width, children }: { x: number; width: number; children: R
   return (
     <div
       role="status"
-      className="pointer-events-none absolute top-0 z-10 rounded-md border border-neutral-200 bg-white px-2 py-1 text-xs whitespace-nowrap shadow-sm tabular-nums dark:border-neutral-700 dark:bg-neutral-900"
+      className="pointer-events-none absolute top-0 z-10 rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs whitespace-nowrap shadow-sm tabular-nums dark:border-zinc-700 dark:bg-zinc-900"
       style={style}
     >
       {children}
@@ -43,6 +43,8 @@ export interface LinePoint {
   x: number
   y: number
   tooltip: ReactNode
+  /** Small label above the point (e.g. reps); shown where there is room */
+  label?: string
 }
 
 interface LineProps {
@@ -51,9 +53,29 @@ interface LineProps {
   height?: number
   /** Accessible summary of the chart */
   label: string
+  /** Draw as steps: the value holds until the next point (e.g. weight that only changes on increase) */
+  step?: boolean
 }
 
-export function LineChart({ points, formatY, height = 190, label }: LineProps) {
+const LABEL_CHAR_PX = 6.2
+
+/** Indexes of point labels that fit without overlapping, preferring the most recent ones. */
+function visibleLabels(xs: number[], labels: (string | undefined)[]): Set<number> {
+  const shown = new Set<number>()
+  let leftEdge = Infinity
+  for (let i = xs.length - 1; i >= 0; i--) {
+    const text = labels[i]
+    if (!text) continue
+    const half = (text.length * LABEL_CHAR_PX) / 2
+    if (xs[i]! + half + 4 <= leftEdge) {
+      shown.add(i)
+      leftEdge = xs[i]! - half
+    }
+  }
+  return shown
+}
+
+export function LineChart({ points, formatY, height = 190, label, step = false }: LineProps) {
   const [ref, width] = useWidth<HTMLDivElement>()
   const [active, setActive] = useState<number | null>(null)
 
@@ -72,7 +94,17 @@ export function LineChart({ points, formatY, height = 190, label }: LineProps) {
   const sx = (x: number) => pad.left + (x1 === x0 ? iw / 2 : ((x - x0) / (x1 - x0)) * iw)
   const sy = (y: number) => pad.top + ih - ((y - y0) / (y1 - y0 || 1)) * ih
 
-  const path = points.map((p, i) => `${i ? 'L' : 'M'}${sx(p.x).toFixed(1)},${sy(p.y).toFixed(1)}`).join('')
+  const path = points
+    .map((p, i) =>
+      i === 0
+        ? `M${sx(p.x).toFixed(1)},${sy(p.y).toFixed(1)}`
+        : step
+          ? `H${sx(p.x).toFixed(1)}V${sy(p.y).toFixed(1)}`
+          : `L${sx(p.x).toFixed(1)},${sy(p.y).toFixed(1)}`,
+    )
+    .join('')
+  const hasLabels = points.some((p) => p.label)
+  const shownLabels = hasLabels ? visibleLabels(points.map((p) => sx(p.x)), points.map((p) => p.label)) : new Set<number>()
   const area = points.length > 1 ? `${path}L${sx(x1).toFixed(1)},${pad.top + ih}L${sx(x0).toFixed(1)},${pad.top + ih}Z` : ''
 
   function pick(e: PointerEvent<SVGSVGElement>) {
@@ -137,8 +169,22 @@ export function LineChart({ points, formatY, height = 190, label }: LineProps) {
               strokeWidth={2}
             />
           ))}
-          {/* Direct label on the last point only */}
-          {last && active === null && (
+          {points.map((p, i) =>
+            shownLabels.has(i) ? (
+              <text
+                key={`l${i}`}
+                x={Math.min(Math.max(sx(p.x), pad.left + 12), width - pad.right - 12)}
+                y={sy(p.y) - 10}
+                textAnchor="middle"
+                fontSize={11}
+                fill="var(--viz-muted)"
+              >
+                {p.label}
+              </text>
+            ) : null,
+          )}
+          {/* Direct label on the last point only (when points carry no labels) */}
+          {last && active === null && !hasLabels && (
             <text x={sx(last.x)} y={sy(last.y) - 10} textAnchor="end" fontSize={12} fontWeight={600} fill="var(--viz-text)">
               {formatY(last.y)}
             </text>
@@ -259,7 +305,7 @@ export function HBarChart({ bars }: { bars: HBar[] }) {
     <ul className="flex flex-col gap-1.5">
       {bars.map((b) => (
         <li key={b.key} className="grid grid-cols-[7.5rem_1fr_2.5rem] items-center gap-2 text-sm">
-          <span className="truncate text-neutral-700 dark:text-neutral-300">{b.label}</span>
+          <span className="truncate text-zinc-700 dark:text-zinc-300">{b.label}</span>
           <span className="h-3">
             <span
               className="block h-3 rounded-r-[4px]"
@@ -287,7 +333,7 @@ export function SideChart({ pairs }: { pairs: SidePair[] }) {
   const max = Math.max(...pairs.flatMap((p) => [p.left, p.right]), 1)
   return (
     <div>
-      <div className="mb-2 flex items-center justify-center gap-4 text-xs text-neutral-500 dark:text-neutral-400">
+      <div className="mb-2 flex items-center justify-center gap-4 text-xs text-zinc-500 dark:text-zinc-400">
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: 'var(--viz-s1)' }} /> Left
         </span>
@@ -300,17 +346,17 @@ export function SideChart({ pairs }: { pairs: SidePair[] }) {
           <li key={p.key}>
             <div className="mb-1 flex items-baseline justify-between gap-2 text-sm">
               <span className="truncate">{p.label}</span>
-              <span className="shrink-0 text-xs text-neutral-500 tabular-nums dark:text-neutral-400">{p.note}</span>
+              <span className="shrink-0 text-xs text-zinc-500 tabular-nums dark:text-zinc-400">{p.note}</span>
             </div>
             <div className="grid grid-cols-[2.5rem_1fr_1fr_2.5rem] items-center gap-0.5 text-xs tabular-nums">
-              <span className="text-neutral-600 dark:text-neutral-300">{p.left}</span>
+              <span className="text-zinc-600 dark:text-zinc-300">{p.left}</span>
               <span className="flex h-3 justify-end">
                 <span className="block h-3 rounded-l-[4px]" style={{ width: `${(p.left / max) * 100}%`, background: 'var(--viz-s1)' }} />
               </span>
               <span className="h-3">
                 <span className="block h-3 rounded-r-[4px]" style={{ width: `${(p.right / max) * 100}%`, background: 'var(--viz-s2)' }} />
               </span>
-              <span className="text-right text-neutral-600 dark:text-neutral-300">{p.right}</span>
+              <span className="text-right text-zinc-600 dark:text-zinc-300">{p.right}</span>
             </div>
           </li>
         ))}
@@ -345,20 +391,20 @@ export function Heatmap({ rows, cols, cells, legend }: HeatProps) {
       <div className="grid gap-[2px] text-[11px]" style={{ gridTemplateColumns: `2.25rem repeat(${cols.length}, minmax(0, 1fr))` }}>
         <span />
         {cols.map((c) => (
-          <span key={c} className="text-center text-neutral-500 dark:text-neutral-400">
+          <span key={c} className="text-center text-zinc-500 dark:text-zinc-400">
             {c}
           </span>
         ))}
         {rows.map((r, ri) => (
           <div key={r} className="contents">
-            <span className="self-center text-neutral-500 dark:text-neutral-400">{r}</span>
+            <span className="self-center text-zinc-500 dark:text-zinc-400">{r}</span>
             {cells[ri]!.map((c) => (
               <button
                 key={c.key}
                 type="button"
                 aria-label={c.tooltip}
                 onClick={() => setActive(active === c.key ? null : c.key)}
-                className={`flex h-8 items-center justify-center rounded-[4px] font-semibold tabular-nums ${active === c.key ? 'ring-2 ring-neutral-900 dark:ring-neutral-100' : ''}`}
+                className={`flex h-8 items-center justify-center rounded-[4px] font-semibold tabular-nums ${active === c.key ? 'ring-2 ring-zinc-900 dark:ring-zinc-100' : ''}`}
                 style={{
                   background: c.level === null ? 'var(--viz-empty)' : `var(--viz-seq-${c.level})`,
                   color: c.level === null ? 'var(--viz-muted)' : `var(--viz-seq-ink-${c.level})`,
@@ -370,14 +416,14 @@ export function Heatmap({ rows, cols, cells, legend }: HeatProps) {
           </div>
         ))}
       </div>
-      <div className="mt-2 flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+      <div className="mt-2 flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
         <span>{legend[0]}</span>
         {[1, 2, 3, 4, 5].map((l) => (
           <span key={l} className="inline-block h-3 w-5 rounded-[3px]" style={{ background: `var(--viz-seq-${l})` }} />
         ))}
         <span>{legend[1]}</span>
       </div>
-      <p className="mt-1 min-h-5 text-xs text-neutral-600 tabular-nums dark:text-neutral-300">{act ? act.tooltip : 'Tap a cell for details.'}</p>
+      <p className="mt-1 min-h-5 text-xs text-zinc-600 tabular-nums dark:text-zinc-300">{act ? act.tooltip : 'Tap a cell for details.'}</p>
     </div>
   )
 }
@@ -398,5 +444,134 @@ export function Sparkline({ values, width = 88, height = 28 }: { values: number[
       {values.length > 1 && <path d={d} fill="none" stroke="var(--viz-s1)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />}
       <circle cx={sx(last)} cy={sy(values[last]!)} r={3} fill="var(--viz-s1)" stroke="var(--viz-surface)" strokeWidth={1.5} />
     </svg>
+  )
+}
+
+// --- weekly goal columns ------------------------------------------------------------
+
+export interface GoalColumn {
+  key: string
+  /** Axis label (shown selectively) */
+  label: string
+  /** Bottom segment (strength workouts) */
+  a: number
+  /** Top segment (runs) */
+  b: number
+  met: boolean
+  tooltip: ReactNode
+}
+
+interface GoalColumnsProps {
+  columns: GoalColumn[]
+  /** Height of the goal line (strength workouts per week) */
+  goal: number
+  legend: [string, string]
+  height?: number
+  label: string
+}
+
+/** Stacked columns per week with a goal line and a check mark under weeks that met the goal. */
+export function GoalColumns({ columns, goal, legend, height = 180, label }: GoalColumnsProps) {
+  const [ref, width] = useWidth<HTMLDivElement>()
+  const [active, setActive] = useState<number | null>(null)
+
+  const pad = { top: 16, right: 34, bottom: 36, left: 24 }
+  const maxV = Math.max(goal, ...columns.map((c) => c.a + c.b), 1)
+  const stepV = maxV <= 6 ? 1 : 2
+  const top = Math.ceil(maxV / stepV) * stepV
+  const ticks: number[] = []
+  for (let v = 0; v <= top; v += stepV) ticks.push(v)
+  const iw = Math.max(1, width - pad.left - pad.right)
+  const ih = height - pad.top - pad.bottom
+  const band = iw / Math.max(1, columns.length)
+  const bw = Math.min(24, Math.max(4, band - 4))
+  const sy = (v: number) => pad.top + ih - (v / top) * ih
+  const labelEvery = Math.max(1, Math.ceil(columns.length / Math.max(1, Math.floor(iw / 48))))
+
+  // Bar path with rounded top corners (radius r), square at the bottom
+  const bar = (x: number, y0: number, y1: number, rounded: boolean) => {
+    const h = y0 - y1
+    if (h <= 0) return ''
+    const r = rounded ? Math.min(4, bw / 2, h) : 0
+    return `M${x},${y0}V${y1 + r}Q${x},${y1} ${x + r},${y1}H${x + bw - r}Q${x + bw},${y1} ${x + bw},${y1 + r}V${y0}Z`
+  }
+
+  function pick(e: PointerEvent<SVGSVGElement>) {
+    const r = e.currentTarget.getBoundingClientRect()
+    const i = Math.floor((e.clientX - r.left - pad.left) / band)
+    setActive(i >= 0 && i < columns.length ? i : null)
+  }
+
+  const act = active !== null ? columns[active] : undefined
+
+  return (
+    <div>
+      <div ref={ref} className="relative" style={{ height }}>
+        {width > 0 && (
+          <svg
+            width={width}
+            height={height}
+            role="img"
+            aria-label={label}
+            className="touch-pan-y select-none"
+            onPointerMove={pick}
+            onPointerDown={pick}
+            onPointerLeave={(e) => e.pointerType === 'mouse' && setActive(null)}
+          >
+            {ticks.map((t) => (
+              <g key={t}>
+                <line x1={pad.left} x2={width - pad.right} y1={sy(t)} y2={sy(t)} stroke="var(--viz-grid)" strokeWidth={1} />
+                <text x={pad.left - 6} y={sy(t)} dy="0.32em" textAnchor="end" fontSize={11} fill="var(--viz-muted)">
+                  {t}
+                </text>
+              </g>
+            ))}
+            {columns.map((c, i) => {
+              const x = pad.left + band * i + (band - bw) / 2
+              const base = sy(0)
+              const ya = sy(c.a)
+              // 2px surface gap between the two segments
+              const yb = sy(c.a + c.b)
+              const dim = active !== null && active !== i ? 0.55 : 1
+              return (
+                <g key={c.key} opacity={dim}>
+                  {c.a > 0 && <path d={bar(x, base, ya, c.b === 0)} fill="var(--viz-s1)" />}
+                  {c.b > 0 && <path d={bar(x, c.a > 0 ? ya - 2 : base, yb, true)} fill="var(--viz-s2)" />}
+                  {c.met && (
+                    <text x={x + bw / 2} y={height - 22} textAnchor="middle" fontSize={12} fontWeight={600} fill="var(--viz-text)">
+                      ✓
+                    </text>
+                  )}
+                  {i % labelEvery === 0 && (
+                    <text x={x + bw / 2} y={height - 5} textAnchor="middle" fontSize={11} fill="var(--viz-muted)">
+                      {c.label}
+                    </text>
+                  )}
+                </g>
+              )
+            })}
+            {/* Goal line */}
+            <line x1={pad.left} x2={width - pad.right} y1={sy(goal)} y2={sy(goal)} stroke="var(--viz-text)" strokeWidth={1.5} opacity={0.7} />
+            <text x={width - pad.right + 4} y={sy(goal)} dy="0.32em" fontSize={11} fontWeight={600} fill="var(--viz-text)">
+              Goal
+            </text>
+          </svg>
+        )}
+        {act && (
+          <Tooltip x={pad.left + band * active! + band / 2} width={width}>
+            {act.tooltip}
+          </Tooltip>
+        )}
+      </div>
+      <div className="mt-1 flex gap-4 text-xs text-zinc-500 dark:text-zinc-400">
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: 'var(--viz-s1)' }} /> {legend[0]}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: 'var(--viz-s2)' }} /> {legend[1]}
+        </span>
+        <span>✓ goal met</span>
+      </div>
+    </div>
   )
 }

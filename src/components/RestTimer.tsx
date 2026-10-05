@@ -14,7 +14,7 @@ export default function RestTimer() {
   return (
     <div
       className={`sticky top-0 z-10 -mx-4 mb-3 flex items-center justify-between gap-2 px-4 py-2 pt-[max(env(safe-area-inset-top),0.5rem)] ${
-        over ? 'bg-emerald-600 text-white' : 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
+        over ? 'bg-emerald-600 text-white' : 'bg-accent text-accent-fg'
       }`}
     >
       <span className="text-sm">{over ? 'Rest over' : 'Rest'}</span>

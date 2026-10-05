@@ -18,22 +18,22 @@ export default function HistoryTab() {
   return (
     <>
       {list === undefined ? (
-        <p className="text-neutral-500">Loading …</p>
+        <p className="text-zinc-500">Loading …</p>
       ) : list.length === 0 ? (
-        <p className="text-neutral-500">No finished workouts yet.</p>
+        <p className="text-zinc-500">No finished workouts yet.</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {list.map((s) => (
             <li key={s.workout.id}>
               <button
                 onClick={() => setOpen(s)}
-                className="w-full rounded-xl border border-neutral-200 p-3 text-left dark:border-neutral-800"
+                className="w-full card p-3 text-left"
               >
                 <span className="flex items-baseline justify-between gap-2">
                   <span className="font-semibold">{s.workout.template_name_snapshot ?? 'Workout'}</span>
-                  <span className="text-sm text-neutral-500 dark:text-neutral-400">{dateFormat.format(new Date(s.workout.started_at))}</span>
+                  <span className="text-sm text-zinc-500 dark:text-zinc-400">{dateFormat.format(new Date(s.workout.started_at))}</span>
                 </span>
-                <span className="mt-1 flex gap-4 text-sm text-neutral-600 tabular-nums dark:text-neutral-300">
+                <span className="mt-1 flex gap-4 text-sm text-zinc-600 tabular-nums dark:text-zinc-300">
                   <span>{s.durationS !== null ? formatDuration(s.durationS) : '–'}</span>
                   <span>{Math.round(s.volume).toLocaleString('en-GB')} kg</span>
                   <span>
@@ -47,10 +47,10 @@ export default function HistoryTab() {
       )}
 
       <div className="mt-6 flex gap-2">
-        <button onClick={() => void exportSetsCsv()} className="flex-1 rounded-lg bg-neutral-100 py-2.5 text-sm font-medium dark:bg-neutral-800">
+        <button onClick={() => void exportSetsCsv()} className="flex-1 rounded-lg bg-zinc-100 py-2.5 text-sm font-medium dark:bg-zinc-800">
           Export sets (CSV)
         </button>
-        <button onClick={() => void exportJson()} className="flex-1 rounded-lg bg-neutral-100 py-2.5 text-sm font-medium dark:bg-neutral-800">
+        <button onClick={() => void exportJson()} className="flex-1 rounded-lg bg-zinc-100 py-2.5 text-sm font-medium dark:bg-zinc-800">
           Export all (JSON)
         </button>
       </div>
@@ -76,17 +76,17 @@ function WorkoutDetailSheet({ summary, onClose }: { summary: WorkoutSummary; onC
         <Tile label="Volume" value={`${Math.round(summary.volume).toLocaleString('en-GB')} kg`} />
       </dl>
       {w.note && (
-        <p className="mb-4 rounded-lg bg-neutral-100 px-3 py-2 text-sm whitespace-pre-line text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+        <p className="mb-4 rounded-lg bg-zinc-100 px-3 py-2 text-sm whitespace-pre-line text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
           {w.note}
         </p>
       )}
 
       {detail === undefined ? (
-        <p className="text-neutral-500">Loading …</p>
+        <p className="text-zinc-500">Loading …</p>
       ) : (
         <ol className="flex flex-col gap-3">
           {detail.map((ex, i) => (
-            <li key={i} className="rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
+            <li key={i} className="card p-3">
               <ExerciseResult ex={ex} />
             </li>
           ))}
@@ -116,8 +116,8 @@ function WorkoutDetailSheet({ summary, onClose }: { summary: WorkoutSummary; onC
 
 function Tile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-neutral-100 px-2.5 py-2 dark:bg-neutral-800">
-      <dt className="text-xs text-neutral-500 dark:text-neutral-400">{label}</dt>
+    <div className="rounded-lg bg-zinc-100 px-2.5 py-2 dark:bg-zinc-800">
+      <dt className="text-xs text-zinc-500 dark:text-zinc-400">{label}</dt>
       <dd className="text-sm font-semibold tabular-nums">{value}</dd>
     </div>
   )
@@ -172,11 +172,11 @@ function ExerciseResult({ ex }: { ex: DetailExercise }) {
     <>
       <div className="mb-2 flex items-baseline justify-between gap-3">
         <h3 className="font-semibold">{ex.name}</h3>
-        <span className="shrink-0 text-xs text-neutral-500 tabular-nums dark:text-neutral-400">{summary}</span>
+        <span className="shrink-0 text-xs text-zinc-500 tabular-nums dark:text-zinc-400">{summary}</span>
       </div>
       <table className="text-sm tabular-nums">
         <thead>
-          <tr className="text-xs text-neutral-500 dark:text-neutral-400">
+          <tr className="text-xs text-zinc-500 dark:text-zinc-400">
             <th className="w-10 py-0.5 text-left font-normal">Set</th>
             {head.map((h) => (
               <th key={h} className="min-w-16 py-0.5 pl-3 text-right font-normal">
@@ -190,7 +190,7 @@ function ExerciseResult({ ex }: { ex: DetailExercise }) {
             const warm = s.set_type === 'warmup'
             if (!warm) n++
             return (
-              <tr key={s.id} className={`border-t border-neutral-100 dark:border-neutral-800 ${warm ? 'text-neutral-500 dark:text-neutral-400' : ''}`}>
+              <tr key={s.id} className={`border-t border-zinc-100 dark:border-zinc-800 ${warm ? 'text-zinc-500 dark:text-zinc-400' : ''}`}>
                 <td className="py-1">{warm ? 'W' : n}</td>
                 {cells(s).map((c, k) => (
                   <td key={k} className="py-1 pl-3 text-right">
@@ -203,7 +203,7 @@ function ExerciseResult({ ex }: { ex: DetailExercise }) {
         </tbody>
       </table>
       {best && best.weight !== null && (
-        <p className="mt-1.5 text-xs text-neutral-500 tabular-nums dark:text-neutral-400">
+        <p className="mt-1.5 text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
           Best set {best.weight} kg × {effectiveReps(best)} · est. 1RM {Math.round(epley(best.weight, effectiveReps(best))!)} kg
         </p>
       )}

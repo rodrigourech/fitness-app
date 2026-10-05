@@ -13,7 +13,7 @@ function base(userId: string, ts: string) {
 
 export async function createTemplate(userId: string, name: string): Promise<string> {
   const ts = now()
-  const t: Template = { id: uuid(), name: name.trim() || 'New template', note: null, ...base(userId, ts) }
+  const t: Template = { id: uuid(), name: name.trim() || 'New workout', note: null, ...base(userId, ts) }
   await saveRows('template', [t])
   return t.id
 }

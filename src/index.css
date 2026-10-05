@@ -18,22 +18,90 @@ body,
 }
 
 body {
-  @apply bg-white text-neutral-900 antialiased dark:bg-neutral-950 dark:text-neutral-100;
+  @apply antialiased;
+  background: var(--page);
+  color: var(--ink);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   -webkit-tap-highlight-color: transparent;
 }
 
+/* App surfaces (visual refresh 5 October 2026): soft page background, raised cards */
+:root {
+  --page: #f4f4f5;
+  --ink: #18181b;
+  --card: #ffffff;
+  --card-border: rgb(228 228 231 / 0.9);
+  --card-shadow: 0 1px 2px rgb(24 24 27 / 0.04), 0 2px 8px rgb(24 24 27 / 0.04);
+}
+
+:root[data-theme="dark"] {
+  --page: #09090b;
+  --ink: #fafafa;
+  --card: #18181b;
+  --card-border: #27272a;
+  --card-shadow: none;
+}
+
+/* Accent colour, chosen per device (src/lib/theme.ts): blue (default), green, violet.
+   fg = text on the accent, soft = tinted background, ink = accent-coloured text on soft */
+:root,
+:root[data-accent="blue"] {
+  --accent: #2563eb;
+  --accent-fg: #ffffff;
+  --accent-soft: #eff6ff;
+  --accent-ink: #1d4ed8;
+}
+:root[data-accent="green"] {
+  --accent: #059669;
+  --accent-soft: #ecfdf5;
+  --accent-ink: #047857;
+}
+:root[data-accent="violet"] {
+  --accent: #7c3aed;
+  --accent-soft: #f5f3ff;
+  --accent-ink: #6d28d9;
+}
+:root[data-theme="dark"] {
+  --accent: #3b82f6;
+  --accent-soft: rgb(59 130 246 / 0.16);
+  --accent-ink: #93c5fd;
+}
+:root[data-theme="dark"][data-accent="green"] {
+  --accent: #059669;
+  --accent-soft: rgb(16 185 129 / 0.16);
+  --accent-ink: #6ee7b7;
+}
+:root[data-theme="dark"][data-accent="violet"] {
+  --accent: #7c3aed;
+  --accent-soft: rgb(139 92 246 / 0.18);
+  --accent-ink: #c4b5fd;
+}
+
+@theme inline {
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+}
+
+@utility card {
+  border-radius: 1rem;
+  border: 1px solid var(--card-border);
+  background: var(--card);
+  box-shadow: var(--card-shadow);
+}
+
 /* Chart tokens (Stats tab). Categorical slots 1/2 and the sequential blue ramp of the dataviz
-   reference palette, validated against the app surfaces (#ffffff light, #0a0a0a dark). */
+   reference palette, validated against the card surfaces (#ffffff light, #18181b dark). */
 :root {
   --viz-surface: #ffffff;
-  --viz-grid: #e5e5e5;
-  --viz-text: #171717;
-  --viz-muted: #737373;
+  --viz-grid: #e4e4e7;
+  --viz-text: #18181b;
+  --viz-muted: #71717a;
   --viz-s1: #2a78d6;
   --viz-s2: #eb6834;
   --viz-s1-wash: rgb(42 120 214 / 0.1);
-  --viz-empty: #f5f5f5;
+  --viz-empty: #f4f4f5;
   --viz-seq-1: #cde2fb;
   --viz-seq-2: #86b6ef;
   --viz-seq-3: #3987e5;
@@ -49,14 +117,14 @@ body {
 
 /* Dark values (data-theme is set by src/lib/theme.ts) */
 :root[data-theme="dark"] {
-  --viz-surface: #0a0a0a;
-  --viz-grid: #262626;
-  --viz-text: #f5f5f5;
-  --viz-muted: #a3a3a3;
+  --viz-surface: #18181b;
+  --viz-grid: #27272a;
+  --viz-text: #fafafa;
+  --viz-muted: #a1a1aa;
   --viz-s1: #3987e5;
   --viz-s2: #d95926;
   --viz-s1-wash: rgb(57 135 229 / 0.12);
-  --viz-empty: #171717;
+  --viz-empty: #27272a;
   /* Near-empty recedes toward the dark surface, packed is brightest */
   --viz-seq-1: #104281;
   --viz-seq-2: #1c5cab;

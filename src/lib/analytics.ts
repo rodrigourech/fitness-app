@@ -228,6 +228,8 @@ export interface ProgressPoint {
   reps: number
   e1rm: number
   exerciseId: string
+  /** Weight: reps of all working sets at the top weight, in set order. 1RM: reps of the best set */
+  repsList: number[]
 }
 
 /**
@@ -242,6 +244,7 @@ export function progressSeries(
   metric: Metric,
 ): ProgressPoint[] {
   const best = new Map<string, ProgressPoint>()
+  const topSets = new Map<string, SetInfo[]>()
   for (const x of sets) {
     if (x.mainId !== mainId || x.trackingType !== 'weight_reps' || x.set.set_type !== 'working') continue
     if (variantId !== null && x.exerciseId !== variantId) continue
@@ -257,11 +260,22 @@ export function progressSeries(
       reps: reps!,
       e1rm: e,
       exerciseId: x.exerciseId,
+      repsList: [reps!],
     }
     const cur = best.get(x.workoutId)
     if (!cur || p.value > cur.value || (p.value === cur.value && p.reps > cur.reps)) best.set(x.workoutId, p)
+    topSets.set(x.workoutId, [...(topSets.get(x.workoutId) ?? []), x])
   }
-  return [...best.values()].sort((a, b) => a.date.localeCompare(b.date))
+  const points = [...best.values()].sort((a, b) => a.date.localeCompare(b.date))
+  if (metric === 'weight') {
+    for (const p of points) {
+      p.repsList = (topSets.get(p.workoutId) ?? [])
+        .filter((x) => x.set.weight === p.weight && x.exerciseId === p.exerciseId)
+        .sort((a, b) => a.set.position - b.set.position)
+        .map((x) => effectiveReps(x.set) ?? 0)
+    }
+  }
+  return points
 }
 
 export interface ProgressRow {

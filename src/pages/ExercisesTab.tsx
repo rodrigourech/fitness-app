@@ -21,11 +21,11 @@ export default function ExercisesTab({ userId }: { userId: string }) {
           placeholder="Search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="min-w-0 flex-1 rounded-lg border border-neutral-300 bg-transparent px-3 py-2 text-base outline-none dark:border-neutral-700"
+          className="min-w-0 flex-1 rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-base outline-none dark:border-zinc-700"
         />
         <button
           onClick={() => setCreating(true)}
-          className="rounded-lg bg-neutral-900 px-4 text-sm font-semibold text-white dark:bg-neutral-100 dark:text-neutral-900"
+          className="rounded-lg bg-accent px-4 text-sm font-semibold text-accent-fg"
         >
           + New
         </button>
@@ -35,13 +35,13 @@ export default function ExercisesTab({ userId }: { userId: string }) {
           <li key={o.id}>
             <button
               onClick={() => setOpen(o.id)}
-              className={`w-full border-b border-neutral-200 py-3 text-left dark:border-neutral-800 ${o.isVariant ? 'pl-4 text-sm text-neutral-600 dark:text-neutral-300' : 'font-medium'}`}
+              className={`w-full border-b border-zinc-200 py-3 text-left dark:border-zinc-800 ${o.isVariant ? 'pl-4 text-sm text-zinc-600 dark:text-zinc-300' : 'font-medium'}`}
             >
               {o.label}
             </button>
           </li>
         ))}
-        {options !== undefined && filtered.length === 0 && <li className="py-2 text-sm text-neutral-500">No match.</li>}
+        {options !== undefined && filtered.length === 0 && <li className="py-2 text-sm text-zinc-500">No match.</li>}
       </ul>
 
       {creating && (

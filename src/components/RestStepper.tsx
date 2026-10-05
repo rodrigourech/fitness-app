@@ -11,7 +11,7 @@ const STEP = 15
 
 /** Rest time in 15 s steps; null means "no rest timer" or "inherit". */
 export default function RestStepper({ value, onChange, fallbackLabel = 'Off' }: Props) {
-  const btn = 'h-9 w-11 rounded-md bg-neutral-100 text-base font-medium dark:bg-neutral-800'
+  const btn = 'h-9 w-11 rounded-md bg-zinc-100 text-base font-medium dark:bg-zinc-800'
   return (
     <div className="flex items-center gap-2">
       <button type="button" aria-label="Shorter rest" className={btn} onClick={() => onChange(value && value > STEP ? value - STEP : null)}>

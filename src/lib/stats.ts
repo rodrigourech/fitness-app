@@ -86,3 +86,22 @@ export async function targetRepsFor(templateId: string | null, exerciseId: strin
   const values = sets.map((s) => s.target_reps_max ?? s.target_reps_min).filter((v): v is number => v !== null)
   return values.length ? Math.max(...values) : null
 }
+
+export interface WeightSuggestion {
+  /** Heaviest working weight of the last workout */
+  lastWeight: number
+  /** Reps of the working sets of the last workout, in order */
+  reps: number[]
+  /** lastWeight + weight step, or null if the exercise has no weight step */
+  next: number | null
+}
+
+/** Concrete next weight for an exercise whose progression rule is met (see shouldIncrease). */
+export function suggestWeight(previous: WorkoutSet[], weightStep: number | null): WeightSuggestion | null {
+  const working = previous.filter((s) => s.set_type === 'working' && s.weight !== null)
+  if (!working.length) return null
+  const lastWeight = Math.max(...working.map((s) => s.weight!))
+  const reps = working.map((s) => effectiveReps(s)).filter((r): r is number => r !== null)
+  const next = weightStep !== null && weightStep > 0 ? Math.round((lastWeight + weightStep) * 100) / 100 : null
+  return { lastWeight, reps, next }
+}

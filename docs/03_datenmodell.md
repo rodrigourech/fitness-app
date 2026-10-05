@@ -224,6 +224,22 @@ create table public.workout (
   synced_at              timestamptz not null default now()
 );
 
+-- Migration 0010: body_weight erhält condition ('morning_fasted' | 'after_workout' | 'after_meal' | 'other') und note
+create table public.body_photo (                  -- Migration 0010, Metadaten; Bild verschlüsselt im Bucket body-photos
+  id          uuid primary key,
+  user_id     text not null default (auth.user_id()),
+  measured_on date not null,
+  pose        text,                                -- 'front' | 'side' | 'back'
+  object_key  text not null,                       -- <user_id>/<id>
+  iv          text not null,                       -- AES-GCM-Nonce (base64)
+  mime        text not null,
+  width       integer, height integer, bytes integer,
+  created_at  timestamptz not null,
+  updated_at  timestamptz not null,
+  deleted_at  timestamptz,
+  synced_at   timestamptz not null default now()
+);
+
 create table public.user_setting (                -- Migration 0009
   id         uuid primary key,                       -- fester Wert pro Schlüssel (siehe src/lib/settings.ts)
   user_id    text not null default (auth.user_id()),

@@ -29,9 +29,9 @@ export default function Login({ onSignedIn }: Props) {
       <h1 className="mb-8 text-3xl font-bold tracking-tight">Fitness App</h1>
       <form onSubmit={submit} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1">
-          <span className="text-sm text-neutral-500 dark:text-neutral-400">Username</span>
+          <span className="text-sm text-zinc-500 dark:text-zinc-400">Username</span>
           <input
-            className="rounded-lg border border-neutral-300 bg-transparent px-3 py-3 text-base outline-none focus:border-neutral-900 dark:border-neutral-700 dark:focus:border-neutral-100"
+            className="rounded-lg border border-zinc-300 bg-transparent px-3 py-3 text-base outline-none focus:border-zinc-900 dark:border-zinc-700 dark:focus:border-zinc-100"
             autoComplete="username"
             autoCapitalize="none"
             autoCorrect="off"
@@ -42,9 +42,9 @@ export default function Login({ onSignedIn }: Props) {
           />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-sm text-neutral-500 dark:text-neutral-400">Password</span>
+          <span className="text-sm text-zinc-500 dark:text-zinc-400">Password</span>
           <input
-            className="rounded-lg border border-neutral-300 bg-transparent px-3 py-3 text-base outline-none focus:border-neutral-900 dark:border-neutral-700 dark:focus:border-neutral-100"
+            className="rounded-lg border border-zinc-300 bg-transparent px-3 py-3 text-base outline-none focus:border-zinc-900 dark:border-zinc-700 dark:focus:border-zinc-100"
             type="password"
             autoComplete="current-password"
             required
@@ -60,7 +60,7 @@ export default function Login({ onSignedIn }: Props) {
         <button
           type="submit"
           disabled={busy}
-          className="mt-2 rounded-lg bg-neutral-900 px-4 py-3 text-base font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+          className="mt-2 rounded-lg bg-accent px-4 py-3 text-base font-medium text-accent-fg disabled:opacity-50"
         >
           {busy ? 'Signing in …' : 'Sign in'}
         </button>

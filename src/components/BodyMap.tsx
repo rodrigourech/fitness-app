@@ -52,11 +52,11 @@ export default function BodyMap({ regions, onToggle }: Props) {
     <div className="grid grid-cols-2 gap-2">
       <figure>
         <View view={ViewSide.FRONT} regions={regions} onToggle={onToggle} />
-        <figcaption className="text-center text-xs text-neutral-500 dark:text-neutral-400">Front</figcaption>
+        <figcaption className="text-center text-xs text-zinc-500 dark:text-zinc-400">Front</figcaption>
       </figure>
       <figure>
         <View view={ViewSide.BACK} regions={regions} onToggle={onToggle} />
-        <figcaption className="text-center text-xs text-neutral-500 dark:text-neutral-400">Back</figcaption>
+        <figcaption className="text-center text-xs text-zinc-500 dark:text-zinc-400">Back</figcaption>
       </figure>
     </div>
   )

@@ -13,7 +13,7 @@ export default function SyncBadge({ onReauth }: Props) {
   const pending = useLiveQuery(() => db.outbox.count(), [], 0)
 
   let text: string
-  let tone = 'text-neutral-500 dark:text-neutral-400'
+  let tone = 'text-zinc-500 dark:text-zinc-400'
   switch (status.phase) {
     case 'syncing':
       text = 'Syncing …'
@@ -42,13 +42,13 @@ export default function SyncBadge({ onReauth }: Props) {
         {(close) => (
           <span className="flex flex-col gap-2">
             <span className="font-semibold">Sync failed</span>
-            <span className="text-xs break-words text-neutral-600 dark:text-neutral-300">{status.error ?? 'Unknown error'}</span>
+            <span className="text-xs break-words text-zinc-600 dark:text-zinc-300">{status.error ?? 'Unknown error'}</span>
             <button
               onClick={() => {
                 close()
                 void syncNow()
               }}
-              className="rounded-md bg-neutral-900 py-1.5 text-sm font-semibold text-white dark:bg-neutral-100 dark:text-neutral-900"
+              className="rounded-md bg-accent py-1.5 text-sm font-semibold text-accent-fg"
             >
               Retry
             </button>

@@ -54,7 +54,7 @@ export default function Popover({ label, ariaLabel, triggerClassName, align = 'l
       {open && (
         <span
           role="dialog"
-          className={`absolute top-full z-20 mt-1 w-64 max-w-[80vw] rounded-lg border border-neutral-200 bg-white p-3 text-left text-sm font-normal text-neutral-800 shadow-lg dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 ${
+          className={`absolute top-full z-20 mt-1 w-64 max-w-[80vw] rounded-xl border border-zinc-200 bg-white p-3 text-left text-sm font-normal text-zinc-800 shadow-lg dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 ${
             align === 'right' ? 'right-0' : 'left-0'
           }`}
         >

@@ -96,9 +96,42 @@ export interface WorkoutSet extends SyncColumns {
   completed_at: string | null
 }
 
+export type BodyCondition = 'morning_fasted' | 'after_workout' | 'after_meal' | 'other'
+
 export interface BodyWeight extends SyncColumns {
   measured_on: string
   weight_kg: number
+  /** Circumstance of the measurement (migration 0010) */
+  condition?: BodyCondition | null
+  note?: string | null
+}
+
+export type PhotoPose = 'front' | 'side' | 'back'
+
+/** Metadata of an encrypted progress photo; the bytes live in the bucket body-photos (migration 0010). */
+export interface BodyPhoto extends SyncColumns {
+  measured_on: string
+  pose: PhotoPose | null
+  object_key: string
+  /** AES-GCM nonce, base64 */
+  iv: string
+  mime: string
+  width: number | null
+  height: number | null
+  bytes: number | null
+}
+
+/** Encrypted photo bytes on this device; uploaded = 0 until the proxy has stored them. */
+export interface PhotoBlob {
+  id: string
+  data: ArrayBuffer
+  uploaded: 0 | 1
+}
+
+/** Device-local secrets, e.g. the non-extractable photo key. Never synchronised. */
+export interface KeyEntry {
+  id: string
+  key: CryptoKey
 }
 
 /** Setting that follows the user across devices (migration 0009); fixed id per key. */
@@ -128,6 +161,7 @@ export const SYNC_TABLES = [
   'workout_set',
   'body_weight',
   'user_setting',
+  'body_photo',
 ] as const
 export type SyncTable = (typeof SYNC_TABLES)[number]
 
@@ -149,7 +183,8 @@ export interface Meta {
   value: string
 }
 
-export const db = new Dexie('fitness-app') as Dexie & {
+// The beta build uses its own local database (VITE_DB_NAME), so it never upgrades the live app's data
+export const db = new Dexie(import.meta.env.VITE_DB_NAME || 'fitness-app') as Dexie & {
   exercise_catalog: EntityTable<CatalogExercise, 'id'>
   exercise: EntityTable<Exercise, 'id'>
   exercise_link: EntityTable<ExerciseLink, 'id'>
@@ -161,6 +196,9 @@ export const db = new Dexie('fitness-app') as Dexie & {
   workout_set: EntityTable<WorkoutSet, 'id'>
   body_weight: EntityTable<BodyWeight, 'id'>
   user_setting: EntityTable<UserSetting, 'id'>
+  body_photo: EntityTable<BodyPhoto, 'id'>
+  photo_blob: EntityTable<PhotoBlob, 'id'>
+  keystore: EntityTable<KeyEntry, 'id'>
   outbox: EntityTable<OutboxEntry, 'seq'>
   sync_state: EntityTable<SyncState, 'table'>
   meta: EntityTable<Meta, 'key'>
@@ -185,6 +223,13 @@ db.version(1).stores({
 // Version 2: user_setting (migration 0009)
 db.version(2).stores({
   user_setting: 'id, key',
+})
+
+// Version 3: progress photos (migration 0010), local encrypted photo cache and key store
+db.version(3).stores({
+  body_photo: 'id, measured_on',
+  photo_blob: 'id, uploaded',
+  keystore: 'id',
 })
 
 export async function getMeta(key: string): Promise<string | undefined> {

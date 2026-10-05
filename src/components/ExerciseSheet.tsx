@@ -2,7 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useState, type FormEvent } from 'react'
 import { db, displayName, type Exercise } from '../lib/db'
 import { addLink, createVariant, linkLabel, linksFor, normalizeUrl, removeLink, updateExercise } from '../lib/exercise'
-import { effective } from '../lib/workout'
+import { effective, parseNumber } from '../lib/workout'
 import { regionName } from '../lib/muscles'
 import BodyMap from './BodyMap'
 import RestStepper from './RestStepper'
@@ -75,12 +75,12 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
       <div
         role="dialog"
         aria-label={displayName(ex, byId)}
-        className="max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl bg-white p-5 pb-[max(env(safe-area-inset-bottom),1.25rem)] sm:max-w-md sm:rounded-2xl dark:bg-neutral-900"
+        className="max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl bg-white p-5 pb-[max(env(safe-area-inset-bottom),1.25rem)] sm:max-w-md sm:rounded-2xl dark:bg-zinc-900"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-start justify-between gap-3">
           <h2 className="text-lg font-semibold">{displayName(ex, byId)}</h2>
-          <button onClick={onClose} className="rounded-md px-2 py-1 text-sm text-neutral-500 dark:text-neutral-400">
+          <button onClick={onClose} className="rounded-md px-2 py-1 text-sm text-zinc-500 dark:text-zinc-400">
             Close
           </button>
         </div>
@@ -122,12 +122,12 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
                 placeholder="New variant, e.g. Rope"
                 value={variantName}
                 onChange={(e) => setVariantName(e.target.value)}
-                className="min-w-0 flex-1 rounded-lg border border-neutral-300 bg-transparent px-3 py-2 text-base outline-none dark:border-neutral-700"
+                className="min-w-0 flex-1 rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-base outline-none dark:border-zinc-700"
               />
               <button
                 type="submit"
                 disabled={!variantName.trim()}
-                className="rounded-lg bg-neutral-900 px-3 text-sm font-semibold text-white disabled:opacity-40 dark:bg-neutral-100 dark:text-neutral-900"
+                className="rounded-lg bg-accent px-3 text-sm font-semibold text-accent-fg disabled:opacity-40"
               >
                 + Add variant
               </button>
@@ -150,11 +150,37 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
               fallbackLabel={parent?.default_rest_s ? `${formatDuration(parent.default_rest_s)} (inh.)` : 'Off'}
             />
           </div>
+
+          <label className="flex items-center justify-between gap-2">
+            <span>
+              <span className="block text-sm font-semibold">Weight step</span>
+              <span className="block text-xs text-zinc-500 dark:text-zinc-400">Used for «Try … kg»</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <input
+                key={ex.weight_step ?? ''}
+                inputMode="decimal"
+                aria-label="Weight step in kg"
+                defaultValue={ex.weight_step ?? ''}
+                placeholder={parent?.weight_step ? `${parent.weight_step} (inh.)` : '–'}
+                onBlur={(e) => {
+                  const n = parseNumber(e.target.value)
+                  if (n === undefined || (n !== null && (n <= 0 || n > 50))) {
+                    e.target.value = ex.weight_step === null ? '' : String(ex.weight_step)
+                    return
+                  }
+                  if (n !== ex.weight_step) void updateExercise(ex, { weight_step: n })
+                }}
+                className="w-20 rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-right text-base outline-none dark:border-zinc-700"
+              />
+              <span className="text-sm text-zinc-500 dark:text-zinc-400">kg</span>
+            </span>
+          </label>
         </section>
 
         <section className="mb-5">
           <h3 className="mb-1 text-sm font-semibold">Muscles to feel</h3>
-          <p className="mb-2 text-xs text-neutral-500 dark:text-neutral-400">
+          <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-400">
             Tap a muscle to add or remove it.{focusInherited ? ' Currently inherited from the main exercise.' : ''}
           </p>
           <BodyMap regions={eff.focusMuscles} onToggle={toggleRegion} />
@@ -178,7 +204,7 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
                 const value = e.target.value.trim() || null
                 if (value !== eff.focusCue) void updateExercise(ex, { focus_cue: value })
               }}
-              className="rounded-lg border border-neutral-300 bg-transparent px-3 py-2 text-base outline-none dark:border-neutral-700"
+              className="rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-base outline-none dark:border-zinc-700"
             />
           </label>
         </section>
@@ -186,7 +212,7 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
         <section>
           <h3 className="mb-2 text-sm font-semibold">Reference videos</h3>
           {links.length === 0 ? (
-            <p className="mb-2 text-sm text-neutral-500 dark:text-neutral-400">No videos yet.</p>
+            <p className="mb-2 text-sm text-zinc-500 dark:text-zinc-400">No videos yet.</p>
           ) : (
             <ul className="mb-3 flex flex-col gap-1.5">
               {links.map((l) => (
@@ -195,10 +221,10 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
                     href={l.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="min-w-0 flex-1 truncate rounded-lg bg-neutral-100 px-3 py-2 text-sm dark:bg-neutral-800"
+                    className="min-w-0 flex-1 truncate rounded-lg bg-zinc-100 px-3 py-2 text-sm dark:bg-zinc-800"
                   >
                     ▶ {linkLabel(l)}
-                    {l.inherited && <span className="ml-1 text-xs text-neutral-500"> (main exercise)</span>}
+                    {l.inherited && <span className="ml-1 text-xs text-zinc-500"> (main exercise)</span>}
                   </a>
                   {!l.inherited && (
                     <button onClick={() => void removeLink(l)} className="px-2 py-2 text-sm text-red-600 dark:text-red-400">
@@ -220,8 +246,8 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
                 setUrl(e.target.value)
                 setUrlError(false)
               }}
-              className={`rounded-lg border bg-transparent px-3 py-2 text-base outline-none dark:border-neutral-700 ${
-                urlError ? 'border-red-500' : 'border-neutral-300'
+              className={`rounded-lg border bg-transparent px-3 py-2 text-base outline-none dark:border-zinc-700 ${
+                urlError ? 'border-red-500' : 'border-zinc-300'
               }`}
             />
             <input
@@ -229,10 +255,10 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
               placeholder="Title (optional)"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="rounded-lg border border-neutral-300 bg-transparent px-3 py-2 text-base outline-none dark:border-neutral-700"
+              className="rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-base outline-none dark:border-zinc-700"
             />
             {urlError && <p className="text-sm text-red-600 dark:text-red-400">Please enter a valid web address.</p>}
-            <button type="submit" className="rounded-lg bg-neutral-900 py-2 text-sm font-semibold text-white dark:bg-neutral-100 dark:text-neutral-900">
+            <button type="submit" className="rounded-lg bg-accent py-2 text-sm font-semibold text-accent-fg">
               Add video
             </button>
           </form>
@@ -243,7 +269,7 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
 }
 
 function chip(active: boolean): string {
-  return active ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900' : 'bg-neutral-100 dark:bg-neutral-800'
+  return active ? 'bg-accent text-accent-fg' : 'bg-zinc-100 dark:bg-zinc-800'
 }
 
 interface TextFieldProps {
@@ -259,7 +285,7 @@ interface TextFieldProps {
 /** Text input that saves on blur; multi-line keeps line breaks. */
 function TextField({ label, value, placeholder, multiline, required, onSave }: TextFieldProps) {
   const className =
-    'rounded-lg border border-neutral-300 bg-transparent px-3 py-2 text-base outline-none focus:border-neutral-900 dark:border-neutral-700 dark:focus:border-neutral-100'
+    'rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-base outline-none focus:border-zinc-900 dark:border-zinc-700 dark:focus:border-zinc-100'
   function save(raw: string) {
     const v = multiline ? raw.replace(/\s+$/, '').replace(/^\s*\n/, '') : raw.trim()
     if (required && !v) return

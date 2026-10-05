@@ -113,6 +113,8 @@ describe('analytics', () => {
     expect(progressSeries(data.sets, 'press', 'press_low', 0, 'e1rm')).toHaveLength(1)
     // Weight: the heaviest working set, warm-ups excluded
     const weight = progressSeries(data.sets, 'press', null, 0, 'weight')
+    // Reps of all working sets at the top weight
+    expect(weight.map((p) => p.repsList)).toEqual([[3], [8]])
     expect(weight.map((p) => [p.value, p.reps])).toEqual([
       [70, 3],
       [65, 8],

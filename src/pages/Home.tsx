@@ -17,6 +17,9 @@ import TemplateEditor from './TemplateEditor'
 interface Props {
   user: LocalUser
   onSignedOut: () => void
+  /** A workout is running (minimised) */
+  running?: boolean
+  onResume?: () => void
 }
 
 interface TemplateCard {
@@ -28,7 +31,8 @@ interface TemplateCard {
 
 type Tab = 'templates' | 'exercises' | 'history' | 'stats' | 'body'
 const TABS: Tab[] = ['templates', 'exercises', 'history', 'stats', 'body']
-const TAB_LABEL: Record<Tab, string> = { templates: 'Templates', exercises: 'Exercises', history: 'History', stats: 'Stats', body: 'Body' }
+// The tab shows the training templates; in the UI they are called workouts (decision 5 October 2026)
+const TAB_LABEL: Record<Tab, string> = { templates: 'Workouts', exercises: 'Exercises', history: 'History', stats: 'Stats', body: 'Body' }
 
 const dateFormat = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'long' })
 
@@ -60,7 +64,7 @@ async function loadTemplates(): Promise<TemplateCard[]> {
     })
 }
 
-export default function Home({ user, onSignedOut }: Props) {
+export default function Home({ user, onSignedOut, running = false, onResume }: Props) {
   const cards = useLiveQuery(loadTemplates, [])
   const [sheet, setSheet] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('templates')
@@ -81,13 +85,13 @@ export default function Home({ user, onSignedOut }: Props) {
         <button
           onClick={() => void handleSignOut()}
           title={`Signed in as ${user.username}`}
-          className="rounded-md px-2 py-1 text-sm text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
+          className="rounded-md px-2 py-1 text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
         >
           Sign out
         </button>
       </AppBar>
 
-      <div role="tablist" className="mb-4 grid grid-cols-5 gap-1 rounded-lg bg-neutral-100 p-1 dark:bg-neutral-900">
+      <div role="tablist" className="mb-4 grid grid-cols-5 gap-1 rounded-xl bg-zinc-200/70 p-1 dark:bg-zinc-900">
         {TABS.map((t) => (
           <button
             key={t}
@@ -95,7 +99,7 @@ export default function Home({ user, onSignedOut }: Props) {
             aria-selected={tab === t}
             onClick={() => setTab(t)}
             className={`rounded-md py-2 text-xs font-semibold sm:text-sm ${
-              tab === t ? 'bg-white shadow-sm dark:bg-neutral-700' : 'text-neutral-500 dark:text-neutral-400'
+              tab === t ? 'bg-white shadow-sm dark:bg-zinc-700' : 'text-zinc-500 dark:text-zinc-400'
             }`}
           >
             {TAB_LABEL[t]}
@@ -112,28 +116,28 @@ export default function Home({ user, onSignedOut }: Props) {
       ) : tab === 'body' ? (
         <BodyTab userId={user.id} />
       ) : cards === undefined ? (
-        <p className="text-neutral-500">Loading …</p>
+        <p className="text-zinc-500">Loading …</p>
       ) : cards.length === 0 ? (
-        <p className="text-neutral-500">No templates yet.</p>
+        <p className="text-zinc-500">No workouts yet.</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {cards.map((c) => (
-            <li key={c.id} className="rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
+            <li key={c.id} className="card p-4">
               <div className="mb-2 flex items-baseline justify-between gap-3">
                 <h2 className="text-lg font-semibold">{c.name}</h2>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                  <span className="text-sm text-zinc-500 dark:text-zinc-400">
                     {c.lastDone ? `last ${dateFormat.format(new Date(c.lastDone))}` : 'never'}
                   </span>
                   <button
                     onClick={() => setEditing(c.id)}
-                    className="rounded-md bg-neutral-100 px-2.5 py-1 text-sm font-medium dark:bg-neutral-800"
+                    className="rounded-md bg-zinc-100 px-2.5 py-1 text-sm font-medium dark:bg-zinc-800"
                   >
                     Edit
                   </button>
                 </div>
               </div>
-              <ol className="text-sm leading-7 text-neutral-600 dark:text-neutral-300">
+              <ol className="text-sm leading-7 text-zinc-600 dark:text-zinc-300">
                 {c.exercises.map((ex, i) => (
                   <li key={i}>
                     <button onClick={() => setSheet(ex.id)} className="text-left hover:underline">
@@ -143,10 +147,10 @@ export default function Home({ user, onSignedOut }: Props) {
                 ))}
               </ol>
               <button
-                onClick={() => void startWorkout(c.id, user.id)}
-                className="mt-3 w-full rounded-lg bg-neutral-900 py-3 text-base font-semibold text-white dark:bg-neutral-100 dark:text-neutral-900"
+                onClick={() => (running ? onResume?.() : void startWorkout(c.id, user.id))}
+                className="mt-3 w-full rounded-lg bg-accent py-3 text-base font-semibold text-accent-fg"
               >
-                Start workout
+                {running ? 'Open running workout' : 'Start workout'}
               </button>
             </li>
           ))}
@@ -155,10 +159,10 @@ export default function Home({ user, onSignedOut }: Props) {
 
       {tab === 'templates' && cards !== undefined && (
         <button
-          onClick={() => void createTemplate(user.id, 'New template').then(setEditing)}
-          className="mt-3 w-full rounded-xl border border-dashed border-neutral-300 py-3 text-sm font-semibold text-neutral-600 dark:border-neutral-700 dark:text-neutral-300"
+          onClick={() => void createTemplate(user.id, 'New workout').then(setEditing)}
+          className="mt-3 w-full rounded-xl border border-dashed border-zinc-300 py-3 text-sm font-semibold text-zinc-600 dark:border-zinc-700 dark:text-zinc-300"
         >
-          + New template
+          + New workout
         </button>
       )}
 

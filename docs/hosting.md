@@ -32,3 +32,11 @@ Neon Auth hält die Sitzung in einem Cookie auf der eigenen Domain. Safari und i
 - In der ausgelieferten App stehen keine persönlichen Daten; die Startdaten in `seed/` werden nur noch für Tests verwendet
 - Beim Build nur `NEON_AUTH_BASE_URL`, `NEON_DATA_API_URL` und `VITE_AUTH_PROXY_URL` setzen, niemals `DATABASE_URL`
 - Wechsel des Hosters ist jederzeit möglich: es sind nur statische Dateien
+
+## **Beta-Version vor einer Freigabe**
+
+- Pushes auf den Branch `major-update` baut der Workflow als Beta und veröffentlicht sie unter https://rodrigourech.github.io/fitness-app-web/beta/
+- Die Beta nutzt eine eigene lokale Datenbank (`VITE_DB_NAME=fitness-app-beta`) und einen eigenen Service Worker, synchronisiert aber mit derselben Neon-Datenbank. Neue Tabellen müssen deshalb vor dem Beta-Test migriert sein
+- Freigabe: `major-update` in `main` mergen und pushen. Der Deploy von `main` ersetzt den ganzen Inhalt von fitness-app-web, die Beta verschwindet damit
+- Zurück zum Stand vor dem Update: `git checkout main`, `git reset --hard v1-vor-update`, `git push --force-with-lease`. Die Datenbank-Erweiterungen bleiben bestehen und stören die alte Version nicht
+

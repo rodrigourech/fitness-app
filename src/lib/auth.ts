@@ -1,4 +1,5 @@
 import { db, getMeta, setMeta } from './db'
+import { lockPhotos } from './photos'
 import { ProxyError, proxySignIn, proxySignOut, storeSession, type ProxySession } from './session'
 
 // Neon Auth only knows e-mail addresses; usernames are mapped to an internal address.
@@ -60,6 +61,8 @@ export async function signOut(): Promise<void> {
   try {
     await proxySignOut()
   } finally {
+    // The photo key stays only while signed in
+    await lockPhotos()
     await db.meta.delete('signed_in')
   }
 }
