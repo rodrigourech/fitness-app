@@ -3,6 +3,7 @@ import { useState } from 'react'
 import AppBar from '../components/AppBar'
 import ExerciseSheet from '../components/ExerciseSheet'
 import SyncBadge from '../components/SyncBadge'
+import ThemeToggle from '../components/ThemeToggle'
 import BodyTab from './BodyTab'
 import ExercisesTab from './ExercisesTab'
 import HistoryTab from './HistoryTab'
@@ -76,6 +77,7 @@ export default function Home({ user, onSignedOut }: Props) {
     <main className="mx-auto max-w-xl px-4 pb-10">
       <AppBar>
         <SyncBadge onReauth={() => void handleSignOut()} />
+        <ThemeToggle />
         <button
           onClick={() => void handleSignOut()}
           title={`Signed in as ${user.username}`}

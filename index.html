@@ -10,6 +10,17 @@
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%icon.svg" />
     <link rel="apple-touch-icon" href="%BASE_URL%apple-touch-icon.png" />
     <title>Fitness App</title>
+    <script>
+      // Apply the theme before the first paint (see src/lib/theme.ts)
+      ;(function () {
+        var pref = null
+        try {
+          pref = localStorage.getItem('theme')
+        } catch (e) {}
+        var dark = pref === 'dark' || (pref !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>
