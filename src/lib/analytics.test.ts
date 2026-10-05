@@ -88,7 +88,8 @@ describe('analytics', () => {
       [set('we1'), set('we1', { completed_at: null }), set('we2', { weight: null, reps: null, distance_km: 5 }), set('we3')],
       exercises,
     )
-    expect(data.sets).toHaveLength(2)
+    // Sets of unfinished workouts are ignored; a missing completed_at (Strong import) is not
+    expect(data.sets).toHaveLength(3)
     expect(data.sets[0]).toMatchObject({ mainId: 'press', primary: ['chest'], trackingType: 'weight_reps' })
     expect(data.workouts.find((w) => w.id === 'w1')).toMatchObject({ strength: true, run: false })
     expect(data.workouts.find((w) => w.id === 'w2')).toMatchObject({ strength: false, run: true })

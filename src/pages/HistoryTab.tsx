@@ -2,10 +2,11 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import CrowdPicker from '../components/CrowdPicker'
 import Sheet from '../components/Sheet'
-import { db } from '../lib/db'
+import { db, type WorkoutSet } from '../lib/db'
 import { exportJson, exportSetsCsv } from '../lib/export'
-import { deleteWorkout, finishedWorkouts, workoutDetail, type WorkoutSummary } from '../lib/history'
-import { describeSet, formatDuration, updateWorkout } from '../lib/workout'
+import { deleteWorkout, finishedWorkouts, workoutDetail, type DetailExercise, type WorkoutSummary } from '../lib/history'
+import { effectiveReps, epley, volume } from '../lib/stats'
+import { formatDuration, formatNumber, paceSeconds, updateWorkout } from '../lib/workout'
 
 const dateFormat = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
 const timeFormat = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
@@ -65,32 +66,33 @@ function WorkoutDetailSheet({ summary, onClose }: { summary: WorkoutSummary; onC
   const live = useLiveQuery(() => db.workout.get(summary.workout.id), [summary.workout.id])
   const [confirm, setConfirm] = useState(false)
   const w = live ?? summary.workout
+  const time = `${timeFormat.format(new Date(w.started_at))}${w.finished_at ? `–${timeFormat.format(new Date(w.finished_at))}` : ''}`
 
   return (
     <Sheet title={`${w.template_name_snapshot ?? 'Workout'} · ${dateFormat.format(new Date(w.started_at))}`} onClose={onClose}>
-      <p className="mb-3 text-sm text-neutral-500 tabular-nums dark:text-neutral-400">
-        {timeFormat.format(new Date(w.started_at))} · {summary.durationS !== null ? formatDuration(summary.durationS) : '–'} ·{' '}
-        {Math.round(summary.volume).toLocaleString('en-GB')} kg
-      </p>
-      {w.note && <p className="mb-3 text-sm whitespace-pre-line">{w.note}</p>}
-      <ul className="flex flex-col gap-3">
-        {(detail ?? []).map((ex, i) => (
-          <li key={i}>
-            <h3 className="font-semibold">{ex.name}</h3>
-            <ol className="text-sm text-neutral-700 tabular-nums dark:text-neutral-300">
-              {ex.sets.map((s, k) => {
-                const [a, b] = describeSet(s, ex.trackingType, ex.unilateral)
-                return (
-                  <li key={s.id}>
-                    {s.set_type === 'warmup' ? 'W' : k + 1}. {a} {b}
-                    {s.rir !== null && <span className="text-neutral-500"> · RIR {s.rir === 4 ? '4+' : s.rir}</span>}
-                  </li>
-                )
-              })}
-            </ol>
-          </li>
-        ))}
-      </ul>
+      <dl className="mb-4 grid grid-cols-3 gap-2">
+        <Tile label="Time" value={time} />
+        <Tile label="Duration" value={summary.durationS !== null ? formatDuration(summary.durationS) : '–'} />
+        <Tile label="Volume" value={`${Math.round(summary.volume).toLocaleString('en-GB')} kg`} />
+      </dl>
+      {w.note && (
+        <p className="mb-4 rounded-lg bg-neutral-100 px-3 py-2 text-sm whitespace-pre-line text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+          {w.note}
+        </p>
+      )}
+
+      {detail === undefined ? (
+        <p className="text-neutral-500">Loading …</p>
+      ) : (
+        <ol className="flex flex-col gap-3">
+          {detail.map((ex, i) => (
+            <li key={i} className="rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
+              <ExerciseResult ex={ex} />
+            </li>
+          ))}
+        </ol>
+      )}
+
       <div className="mt-6">
         <CrowdPicker value={w.crowd_level ?? null} onChange={(v) => void updateWorkout(w, { crowd_level: v })} />
       </div>
@@ -109,5 +111,102 @@ function WorkoutDetailSheet({ summary, onClose }: { summary: WorkoutSummary; onC
         </button>
       )}
     </Sheet>
+  )
+}
+
+function Tile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg bg-neutral-100 px-2.5 py-2 dark:bg-neutral-800">
+      <dt className="text-xs text-neutral-500 dark:text-neutral-400">{label}</dt>
+      <dd className="text-sm font-semibold tabular-nums">{value}</dd>
+    </div>
+  )
+}
+
+function rirLabel(rir: number | null): string {
+  return rir === null ? '' : rir >= 4 ? '4+' : String(rir)
+}
+
+/** One exercise of a finished workout as a compact table with a summary line. */
+function ExerciseResult({ ex }: { ex: DetailExercise }) {
+  const working = ex.sets.filter((s) => s.set_type === 'working')
+  const kind = ex.trackingType
+
+  // Columns depend on the tracking type; empty columns (e.g. weight of bodyweight sets) are hidden
+  const hasWeight = ex.sets.some((s) => s.weight !== null)
+  const hasRir = ex.sets.some((s) => s.rir !== null)
+  const head: string[] =
+    kind === 'duration'
+      ? ['Time']
+      : kind === 'distance_duration'
+        ? ['Distance', 'Time', 'Pace']
+        : [...(hasWeight ? ['kg'] : []), ...(ex.unilateral ? ['Left', 'Right'] : ['Reps']), ...(hasRir ? ['RIR'] : [])]
+
+  function cells(s: WorkoutSet): string[] {
+    if (kind === 'duration') return [formatDuration(s.duration_s) || '–']
+    if (kind === 'distance_duration') {
+      const pace = paceSeconds(s.duration_s, s.distance_km)
+      return [s.distance_km !== null ? `${s.distance_km} km` : '–', formatDuration(s.duration_s) || '–', pace !== null ? `${formatDuration(pace)} /km` : '–']
+    }
+    return [
+      ...(hasWeight ? [s.weight !== null ? formatNumber(s.weight) : '–'] : []),
+      ...(ex.unilateral ? [formatNumber(s.reps_left) || '–', formatNumber(s.reps_right) || '–'] : [formatNumber(s.reps) || '–']),
+      ...(hasRir ? [rirLabel(s.rir)] : []),
+    ]
+  }
+
+  // Summary: working sets, volume and best set (highest estimated 1RM)
+  const vol = volume(ex.sets)
+  let best: WorkoutSet | null = null
+  for (const s of working) {
+    const e = epley(s.weight, effectiveReps(s))
+    if (e !== null && (best === null || e > (epley(best.weight, effectiveReps(best)) ?? 0))) best = s
+  }
+  const summary = [
+    `${working.length} ${working.length === 1 ? 'set' : 'sets'}`,
+    ...(kind === 'weight_reps' && vol > 0 ? [`${Math.round(vol).toLocaleString('en-GB')} kg`] : []),
+  ].join(' · ')
+
+  let n = 0
+  return (
+    <>
+      <div className="mb-2 flex items-baseline justify-between gap-3">
+        <h3 className="font-semibold">{ex.name}</h3>
+        <span className="shrink-0 text-xs text-neutral-500 tabular-nums dark:text-neutral-400">{summary}</span>
+      </div>
+      <table className="text-sm tabular-nums">
+        <thead>
+          <tr className="text-xs text-neutral-500 dark:text-neutral-400">
+            <th className="w-10 py-0.5 text-left font-normal">Set</th>
+            {head.map((h) => (
+              <th key={h} className="min-w-16 py-0.5 pl-3 text-right font-normal">
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {ex.sets.map((s) => {
+            const warm = s.set_type === 'warmup'
+            if (!warm) n++
+            return (
+              <tr key={s.id} className={`border-t border-neutral-100 dark:border-neutral-800 ${warm ? 'text-neutral-500 dark:text-neutral-400' : ''}`}>
+                <td className="py-1">{warm ? 'W' : n}</td>
+                {cells(s).map((c, k) => (
+                  <td key={k} className="py-1 pl-3 text-right">
+                    {c}
+                  </td>
+                ))}
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+      {best && best.weight !== null && (
+        <p className="mt-1.5 text-xs text-neutral-500 tabular-nums dark:text-neutral-400">
+          Best set {best.weight} kg × {effectiveReps(best)} · est. 1RM {Math.round(epley(best.weight, effectiveReps(best))!)} kg
+        </p>
+      )}
+    </>
   )
 }

@@ -57,7 +57,7 @@ const DAY = 86_400_000
 
 // --- loading -----------------------------------------------------------------
 
-/** Completed sets of finished, non-deleted workouts with the effective exercise settings. */
+/** Sets of finished, non-deleted workouts with the effective exercise settings. */
 export async function loadAnalytics(): Promise<AnalyticsData> {
   const [workouts, wes, sets, exercises] = await Promise.all([
     db.workout.toArray(),
@@ -80,7 +80,9 @@ export function buildAnalytics(
 
   const out: SetInfo[] = []
   for (const s of sets) {
-    if (s.deleted_at !== null || s.completed_at === null) continue
+    // All remaining sets of a finished workout count: finishing discards unchecked sets, and
+    // workouts imported from Strong carry no completed_at
+    if (s.deleted_at !== null) continue
     const we = weById.get(s.workout_exercise_id)
     const ex = we && byId.get(we.exercise_id)
     if (!we || !ex) continue
