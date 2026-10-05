@@ -21,4 +21,4 @@ Ohne diesen Schritt liefert die Data API neue Spalten nicht aus und lehnt sie be
 | 0007_workout_crowd.sql | workout.crowd_level (1–5): wie voll das Gym beim Gehen war | 5. Oktober 2026, refresh-schema ausgeführt |
 | 0008_restore_strong_history.sql | Nur Daten: stellt die zwei aus Strong übernommenen Trainings (28. September, 2. Oktober) wieder her, Sätze mit completed_at; wiederholbar | 5. Oktober 2026 (die beiden Trainings waren am 5. Oktober um 09:00 in der App gelöscht worden) |
 | 0009_user_setting.sql | Tabelle user_setting für geräteübergreifende Einstellungen (Wochenziel) | 5. Oktober 2026 (laut Rodrigo vor dem Push ausgeführt) |
-| 0010_body_photo.sql | body_weight.condition und note; Tabelle body_photo (Metadaten verschlüsselter Fortschrittsfotos) | ausstehend, danach refresh-schema |
+| 0010_body_photo.sql | body_weight.condition und note; Tabelle body_photo (Metadaten verschlüsselter Fortschrittsfotos) | 5. Oktober 2026, refresh-schema ausgeführt; Bucket body-photos per neon deploy |
