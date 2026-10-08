@@ -42,6 +42,7 @@ Jede synchronisierte Tabelle hat diese Spalten:
 | `created_at` | `timestamptz` | Gerät | Erstellung |
 | `updated_at` | `timestamptz` | Gerät | letzte Änderung; entscheidet Konflikte (neuerer gewinnt) |
 | `deleted_at` | `timestamptz` | Gerät | Soft Delete; Zeilen werden nie physisch gelöscht |
+| `purged_at` | `timestamptz` | Gerät | Nur body_weight, body_photo, workout (Migration 0011): endgültig aus dem Papierkorb entfernt; die Zeile bleibt als Löschmarkierung |
 | `synced_at` | `timestamptz` | Server (Trigger) | Zeitpunkt der Speicherung auf dem Server; nur für das Abholen |
 
 Warum `updated_at` und `synced_at` getrennt sind: Ein offline erfasster Satz trägt den Zeitpunkt der Erfassung, erreicht den Server aber erst später. Würde ein anderes Gerät nach `updated_at` abholen, verpasste es diesen Satz. Abgeholt wird deshalb nach `synced_at`, entschieden wird nach `updated_at`.

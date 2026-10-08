@@ -72,6 +72,8 @@ export interface Workout extends SyncColumns {
   note: string | null
   /** How crowded the gym was when leaving: 1 = empty … 5 = packed (migration 0007) */
   crowd_level?: number | null
+  /** Removed from the trash for good (migration 0011) */
+  purged_at?: string | null
 }
 
 export interface WorkoutExercise extends SyncColumns {
@@ -104,6 +106,8 @@ export interface BodyWeight extends SyncColumns {
   /** Circumstance of the measurement (migration 0010) */
   condition?: BodyCondition | null
   note?: string | null
+  /** Removed from the trash for good (migration 0011); the row stays as a sync tombstone */
+  purged_at?: string | null
 }
 
 export type PhotoPose = 'front' | 'side' | 'back'
@@ -119,6 +123,8 @@ export interface BodyPhoto extends SyncColumns {
   width: number | null
   height: number | null
   bytes: number | null
+  /** Removed from the trash for good; the encrypted object is deleted in the bucket (migration 0011) */
+  purged_at?: string | null
 }
 
 /** Encrypted photo bytes on this device; uploaded = 0 until the proxy has stored them. */
