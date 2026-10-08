@@ -69,3 +69,10 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
   - Laufendes Training lässt sich minimieren (nach unten wischen oder Pfeil); eine Leiste unten zeigt Dauer und Pause, nur ein laufendes Training gleichzeitig
   - «Templates» heissen in der Oberfläche «Workouts» (Daten unverändert)
   - Neuanstrich: Zinc-Grautöne, Karten auf abgesetztem Hintergrund, Akzentfarbe wählbar (Blau Standard, Grün, Violett) pro Gerät; Pausentimer auf dem Sperrbildschirm verworfen (nur mit nativer App möglich)
+- Papierkorb (8. Oktober 2026), Anlass ein versehentlich gelöschter Gewichtseintrag mit Fotos:
+  - Gelöschte Gewichtseinträge, Fotos und abgeschlossene Trainings bleiben 30 Tage im Papierkorb und lassen sich wiederherstellen. Erreichbar über das Papierkorb-Symbol in der Kopfzeile der Startseite. Abgebrochene (nicht abgeschlossene) Trainings und Vorlagen erscheinen nicht
+  - Löschen setzt wie bisher nur deleted_at. Was zusammen gelöscht wurde, trägt denselben Zeitstempel und wird zusammen wiederhergestellt (Training mit Übungen und Sätzen, Gewichtseintrag mit den Fotos seines Tages). Früher einzeln entfernte Sätze bleiben gelöscht
+  - Ein Gewichtseintrag verschiebt beim Löschen neu auch die Fotos seines Tages in den Papierkorb. Gibt es beim Wiederherstellen bereits einen Eintrag für den Tag, fragt die App nach; bei «Replace» wandert der aktuelle Eintrag in den Papierkorb
+  - «Delete photo» löscht die verschlüsselte Datei nicht mehr sofort im Bucket, sondern erst beim endgültigen Entfernen («Delete permanently», «Empty trash» oder automatisch nach 30 Tagen beim App-Start). Fotos, die vor dem 8. Oktober 2026 gelöscht wurden, sind im Bucket bereits weg und erscheinen deshalb nicht im Papierkorb
+  - Endgültig entfernt heisst purged_at gesetzt (Migration 0011); die Zeile bleibt als Löschmarkierung für den Sync bestehen, weil RLS kein DELETE erlaubt
+  - Nach jedem Löschen zeigt die App sechs Sekunden lang «Moved to trash · Undo». Die Rückfrage vor «Delete workout» erklärt nun, dass das Training in den Papierkorb wandert
