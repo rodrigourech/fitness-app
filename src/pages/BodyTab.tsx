@@ -1,9 +1,11 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
+import PhotoImage from '../components/PhotoImage'
 import Sheet from '../components/Sheet'
 import { bodyWeightSeries, CONDITION_LABEL, deleteBodyWeight, saveBodyWeight, todayLocal } from '../lib/body'
 import { db, type BodyCondition, type BodyPhoto, type PhotoPose } from '../lib/db'
-import { addPhoto, createPhotoKey, deletePhoto, photoKeyState, photosOf, photoUrl, unlockPhotoKey } from '../lib/photos'
+import { addPhoto, createPhotoKey, deletePhoto, photoKeyState, photosOf, unlockPhotoKey } from '../lib/photos'
+import { offerUndo } from '../lib/undo'
 import { parseNumber } from '../lib/workout'
 
 const dateFormat = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
@@ -164,7 +166,8 @@ export default function BodyTab({ userId }: { userId: string }) {
                         aria-label="Delete entry"
                         onClick={(e) => {
                           e.stopPropagation()
-                          void deleteBodyWeight(p.entry)
+                          const label = dateFormat.format(new Date(`${p.entry.measured_on}T12:00:00`))
+                          void deleteBodyWeight(p.entry).then(() => offerUndo(`${label} moved to trash`, p.entry.id))
                         }}
                         className="px-2 text-zinc-400 hover:text-red-600"
                       >
@@ -287,36 +290,6 @@ function DayPhotos({ userId, date }: { userId: string; date: string }) {
   )
 }
 
-/** Decrypts and shows one photo; the object URL is released when the image disappears. */
-function PhotoImage({ photo, className }: { photo: BodyPhoto; className?: string }) {
-  const [url, setUrl] = useState<string | null>(null)
-  const [failed, setFailed] = useState<string | null>(null)
-  useEffect(() => {
-    let alive = true
-    let made: string | null = null
-    photoUrl(photo).then(
-      (u) => {
-        made = u
-        if (alive) setUrl(u)
-        else URL.revokeObjectURL(u)
-      },
-      (err: unknown) => alive && setFailed(err instanceof Error ? err.message : String(err)),
-    )
-    return () => {
-      alive = false
-      if (made) URL.revokeObjectURL(made)
-    }
-  }, [photo])
-  if (failed)
-    return (
-      <span title={failed} className="flex h-full w-full items-center justify-center p-2 text-center text-xs text-zinc-500">
-        {failed}
-      </span>
-    )
-  if (!url) return <span className="flex h-full w-full items-center justify-center text-xs text-zinc-400">…</span>
-  return <img src={url} alt={`Progress photo ${photo.pose ?? ''} ${photo.measured_on}`} className={className} />
-}
-
 function PhotoViewer({ photo, onClose }: { photo: BodyPhoto; onClose: () => void }) {
   const [confirm, setConfirm] = useState(false)
   return (
@@ -333,7 +306,12 @@ function PhotoViewer({ photo, onClose }: { photo: BodyPhoto; onClose: () => void
             Cancel
           </button>
           <button
-            onClick={() => void deletePhoto(photo).then(onClose)}
+            onClick={() =>
+              void deletePhoto(photo).then(() => {
+                offerUndo('Photo moved to trash', photo.id)
+                onClose()
+              })
+            }
             className="flex-1 rounded-lg bg-red-600 py-2 text-sm font-semibold text-white"
           >
             Delete photo

@@ -6,6 +6,7 @@ import { db, type WorkoutSet } from '../lib/db'
 import { exportJson, exportSetsCsv } from '../lib/export'
 import { deleteWorkout, finishedWorkouts, workoutDetail, type DetailExercise, type WorkoutSummary } from '../lib/history'
 import { effectiveReps, epley, volume } from '../lib/stats'
+import { offerUndo } from '../lib/undo'
 import { formatDuration, formatNumber, paceSeconds, updateWorkout } from '../lib/workout'
 
 const dateFormat = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
@@ -97,13 +98,26 @@ function WorkoutDetailSheet({ summary, onClose }: { summary: WorkoutSummary; onC
         <CrowdPicker value={w.crowd_level ?? null} onChange={(v) => void updateWorkout(w, { crowd_level: v })} />
       </div>
       {confirm ? (
-        <div className="mt-6 flex gap-2">
-          <button onClick={() => setConfirm(false)} className="flex-1 rounded-lg py-2 text-sm">
-            Cancel
-          </button>
-          <button onClick={() => void deleteWorkout(w).then(onClose)} className="flex-1 rounded-lg bg-red-600 py-2 text-sm font-semibold text-white">
-            Delete workout
-          </button>
+        <div className="mt-6 card p-3">
+          <p className="mb-3 text-sm">
+            Delete this workout with all its sets? It moves to the trash and can be restored there for 30 days.
+          </p>
+          <div className="flex gap-2">
+            <button onClick={() => setConfirm(false)} className="flex-1 rounded-lg py-2 text-sm">
+              Cancel
+            </button>
+            <button
+              onClick={() =>
+                void deleteWorkout(w).then(() => {
+                  offerUndo('Workout moved to trash', w.id)
+                  onClose()
+                })
+              }
+              className="flex-1 rounded-lg bg-red-600 py-2 text-sm font-semibold text-white"
+            >
+              Delete workout
+            </button>
+          </div>
         </div>
       ) : (
         <button onClick={() => setConfirm(true)} className="mt-6 w-full py-2 text-sm text-red-600 dark:text-red-400">

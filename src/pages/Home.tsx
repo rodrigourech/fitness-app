@@ -13,6 +13,7 @@ import { db, displayName, type Exercise } from '../lib/db'
 import { createTemplate } from '../lib/template'
 import { startWorkout } from '../lib/workout'
 import TemplateEditor from './TemplateEditor'
+import TrashPage from './TrashPage'
 
 interface Props {
   user: LocalUser
@@ -69,6 +70,7 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
   const [sheet, setSheet] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('templates')
   const [editing, setEditing] = useState<string | null>(null)
+  const [trash, setTrash] = useState(false)
 
   async function handleSignOut() {
     await signOut()
@@ -76,12 +78,23 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
   }
 
   if (editing) return <TemplateEditor templateId={editing} onDone={() => setEditing(null)} />
+  if (trash) return <TrashPage onDone={() => setTrash(false)} />
 
   return (
     <main className="mx-auto max-w-xl px-4 pb-10">
       <AppBar>
         <SyncBadge onReauth={() => void handleSignOut()} />
         <ThemeToggle />
+        <button
+          onClick={() => setTrash(true)}
+          aria-label="Trash"
+          title="Trash"
+          className="rounded-md p-1.5 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6" />
+          </svg>
+        </button>
         <button
           onClick={() => void handleSignOut()}
           title={`Signed in as ${user.username}`}

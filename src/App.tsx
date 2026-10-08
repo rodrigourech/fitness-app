@@ -1,10 +1,12 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
 import { getLocalUser, signOut, type LocalUser } from './lib/auth'
-import { uploadPendingPhotos } from './lib/photos'
+import { deletePendingPhotoObjects, uploadPendingPhotos } from './lib/photos'
 import { startBackgroundSync } from './lib/sync'
+import { purgeExpired } from './lib/trash'
 import { getActiveWorkout } from './lib/workout'
 import MiniWorkoutBar from './components/MiniWorkoutBar'
+import UndoToast from './components/UndoToast'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import WorkoutPage from './pages/WorkoutPage'
@@ -26,10 +28,15 @@ export default function App() {
     if (!user) return
     // All data comes from Neon on the first sync; the seed files are no longer shipped with the app
     const stop = startBackgroundSync()
-    // Photos taken offline are uploaded when the connection is back
-    const onOnline = () => void uploadPendingPhotos()
+    // Photos taken offline are uploaded when the connection is back; purged photos are deleted in the bucket
+    const onOnline = () => {
+      void uploadPendingPhotos()
+      void deletePendingPhotoObjects()
+    }
     window.addEventListener('online', onOnline)
     onOnline()
+    // Photos older than 30 days in the trash are removed for good
+    void purgeExpired().catch((err: unknown) => console.error('Trash housekeeping failed', err))
     return () => {
       stop()
       window.removeEventListener('online', onOnline)
@@ -46,6 +53,7 @@ export default function App() {
   if (active && !minimized) return <WorkoutPage workout={active} onReauth={() => void reauth()} onMinimize={() => setMinimizedId(active.id)} />
   return (
     <>
+      <UndoToast raised={active !== undefined} />
       <Home user={user} onSignedOut={() => setUser(null)} running={active !== undefined} onResume={() => setMinimizedId(null)} />
       {active && (
         <>
