@@ -4,7 +4,17 @@ import PhotoImage from '../components/PhotoImage'
 import Sheet from '../components/Sheet'
 import { bodyWeightSeries, CONDITION_LABEL, deleteBodyWeight, saveBodyWeight, todayLocal } from '../lib/body'
 import { db, type BodyCondition, type BodyPhoto, type PhotoPose } from '../lib/db'
-import { addPhoto, createPhotoKey, deletePhoto, photoKeyState, photosOf, unlockPhotoKey } from '../lib/photos'
+import {
+  addPhoto,
+  changePhotoPassphrase,
+  createPhotoKey,
+  deletePhoto,
+  photoKeyState,
+  photosOf,
+  resetPhotoPassphrase,
+  storedPhotoCount,
+  unlockPhotoKey,
+} from '../lib/photos'
 import { offerUndo } from '../lib/undo'
 import { parseNumber } from '../lib/workout'
 
@@ -195,7 +205,7 @@ function DayPhotos({ userId, date }: { userId: string; date: string }) {
   const [pose, setPose] = useState<PhotoPose>('front')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [unlock, setUnlock] = useState(false)
+  const [sheet, setSheet] = useState<'auto' | 'change' | null>(null)
   const [open, setOpen] = useState<BodyPhoto | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -229,7 +239,7 @@ function DayPhotos({ userId, date }: { userId: string; date: string }) {
       {keyState !== 'ready' ? (
         <button
           type="button"
-          onClick={() => setUnlock(true)}
+          onClick={() => setSheet('auto')}
           className="w-full rounded-lg bg-zinc-100 py-2.5 text-sm font-medium dark:bg-zinc-800"
         >
           {keyState === 'none' ? 'Set up photo passphrase' : 'Unlock photos'}
@@ -280,11 +290,15 @@ function DayPhotos({ userId, date }: { userId: string; date: string }) {
             </button>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => void onFile(e.target.files?.[0])} />
           </div>
+          <button type="button" onClick={() => setSheet('change')} className="mt-2 text-xs text-zinc-500 underline-offset-2 hover:underline dark:text-zinc-400">
+            Change passphrase
+          </button>
         </>
       )}
       {error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
 
-      {unlock && keyState && keyState !== 'ready' && <PassphraseSheet mode={keyState} userId={userId} onClose={() => setUnlock(false)} />}
+      {sheet === 'auto' && keyState && keyState !== 'ready' && <PassphraseSheet mode={keyState} userId={userId} onClose={() => setSheet(null)} />}
+      {sheet === 'change' && <PassphraseSheet mode="change" userId={userId} onClose={() => setSheet(null)} />}
       {open && <PhotoViewer photo={open} onClose={() => setOpen(null)} />}
     </div>
   )
@@ -326,16 +340,36 @@ function PhotoViewer({ photo, onClose }: { photo: BodyPhoto; onClose: () => void
   )
 }
 
-function PassphraseSheet({ mode, userId, onClose }: { mode: 'none' | 'locked'; userId: string; onClose: () => void }) {
+type PassphraseMode = 'none' | 'locked' | 'change' | 'reset'
+
+const PASSPHRASE_TITLE: Record<PassphraseMode, string> = {
+  none: 'Set up photo passphrase',
+  locked: 'Unlock photos',
+  change: 'Change photo passphrase',
+  reset: 'Reset photo passphrase',
+}
+
+function PassphraseSheet({ mode: initial, userId, onClose }: { mode: PassphraseMode; userId: string; onClose: () => void }) {
+  const [mode, setMode] = useState<PassphraseMode>(initial)
   const [pass, setPass] = useState('')
   const [repeat, setRepeat] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
+  const count = useLiveQuery(storedPhotoCount, [])
+  const isNew = mode !== 'locked'
+
+  function switchMode(next: PassphraseMode) {
+    setMode(next)
+    setPass('')
+    setRepeat('')
+    setError(null)
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault()
     setError(null)
-    if (mode === 'none') {
+    if (isNew) {
       if (pass.length < 10) return setError('Use at least 10 characters.')
       if (pass !== repeat) return setError('The passphrases do not match.')
     }
@@ -343,36 +377,46 @@ function PassphraseSheet({ mode, userId, onClose }: { mode: 'none' | 'locked'; u
     try {
       if (mode === 'none') {
         await createPhotoKey(userId, pass)
-        onClose()
-      } else if (await unlockPhotoKey(pass)) {
-        onClose()
-      } else {
+      } else if (mode === 'change') {
+        await changePhotoPassphrase(userId, pass, (done, total) => setProgress({ done, total }))
+      } else if (mode === 'reset') {
+        await resetPhotoPassphrase(userId, pass)
+      } else if (!(await unlockPhotoKey(pass))) {
         setError('Wrong passphrase.')
+        return
       }
+      onClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
       setBusy(false)
+      setProgress(null)
     }
   }
 
+  const photos = count === undefined ? 'all' : `${count} ${count === 1 ? 'photo' : 'photos'}`
+  const text: Record<PassphraseMode, string> = {
+    none: 'Photos are encrypted on this device before upload. Only this passphrase can open them, not even the server can. If you forget it, your photos cannot be recovered. Keep it in a password manager.',
+    locked: 'Enter your photo passphrase once on this device.',
+    change: count === 0
+      ? 'There are no photos yet, so only the passphrase changes. Other devices will ask for the new one.'
+      : `All ${photos} (including the trash) are re-encrypted with the new passphrase on this device; the old passphrase is not needed. Other devices will ask for the new one. Keep this screen open until it is done.`,
+    reset: `Without the old passphrase your ${photos} (including the trash) cannot be opened any more. Resetting deletes them for good; the originals in your phone's photo library are not affected. If photos still open on another device, use "Change passphrase" there instead to keep them.`,
+  }
+
   return (
-    <Sheet title={mode === 'none' ? 'Set up photo passphrase' : 'Unlock photos'} onClose={onClose}>
+    <Sheet title={PASSPHRASE_TITLE[mode]} onClose={busy ? () => undefined : onClose}>
       <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-3">
-        <p className="text-sm text-zinc-600 dark:text-zinc-300">
-          {mode === 'none'
-            ? 'Photos are encrypted on this device before upload. Only this passphrase can open them, not even the server can. If you forget it, your photos cannot be recovered. Keep it in a password manager.'
-            : 'Enter your photo passphrase once on this device.'}
-        </p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-300">{text[mode]}</p>
         <input
           type="password"
-          autoComplete={mode === 'none' ? 'new-password' : 'current-password'}
-          placeholder="Photo passphrase"
+          autoComplete={isNew ? 'new-password' : 'current-password'}
+          placeholder={isNew && mode !== 'none' ? 'New passphrase' : 'Photo passphrase'}
           value={pass}
           onChange={(e) => setPass(e.target.value)}
           className={input}
         />
-        {mode === 'none' && (
+        {isNew && (
           <input
             type="password"
             autoComplete="new-password"
@@ -386,10 +430,34 @@ function PassphraseSheet({ mode, userId, onClose }: { mode: 'none' | 'locked'; u
         <button
           type="submit"
           disabled={busy || !pass}
-          className="rounded-lg bg-accent py-2.5 text-sm font-semibold text-accent-fg disabled:opacity-50"
+          className={`rounded-lg py-2.5 text-sm font-semibold disabled:opacity-50 ${
+            mode === 'reset' ? 'bg-red-600 text-white' : 'bg-accent text-accent-fg'
+          }`}
         >
-          {busy ? 'Working …' : mode === 'none' ? 'Create passphrase' : 'Unlock'}
+          {progress
+            ? `Re-encrypting ${progress.done} of ${progress.total} …`
+            : busy
+              ? 'Working …'
+              : mode === 'none'
+                ? 'Create passphrase'
+                : mode === 'change'
+                  ? 'Change passphrase'
+                  : mode === 'reset'
+                    ? count
+                      ? `Delete ${photos} and reset`
+                      : 'Reset passphrase'
+                    : 'Unlock'}
         </button>
+        {mode === 'locked' && (
+          <button type="button" onClick={() => switchMode('reset')} className="py-1 text-sm text-zinc-500 dark:text-zinc-400">
+            Forgot passphrase?
+          </button>
+        )}
+        {mode === 'reset' && initial === 'locked' && (
+          <button type="button" onClick={() => switchMode('locked')} className="py-1 text-sm text-zinc-500 dark:text-zinc-400">
+            Back to unlock
+          </button>
+        )}
       </form>
     </Sheet>
   )
