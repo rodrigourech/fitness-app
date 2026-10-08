@@ -34,8 +34,13 @@ export async function saveBodyWeight(
   await saveRows('body_weight', [row])
 }
 
+/** Moves the entry and the photos of its day to the trash; both share the same deleted_at,
+ * so restoring the entry brings the photos back (see trash.ts). */
 export async function deleteBodyWeight(b: BodyWeight): Promise<void> {
-  await saveRows('body_weight', [{ ...b, deleted_at: new Date().toISOString() }])
+  const ts = new Date().toISOString()
+  const photos = (await db.body_photo.where('measured_on').equals(b.measured_on).toArray()).filter((p) => p.deleted_at === null)
+  if (photos.length) await saveRows('body_photo', photos.map((p) => ({ ...p, deleted_at: ts })))
+  await saveRows('body_weight', [{ ...b, deleted_at: ts }])
 }
 
 export interface BodyWeightPoint {

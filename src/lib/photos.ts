@@ -1,4 +1,4 @@
-import { db, getMeta, type BodyPhoto, type PhotoPose } from './db'
+import { db, getMeta, setMeta, type BodyPhoto, type PhotoPose } from './db'
 import { saveRows } from './sync'
 
 // Encrypted progress photos (decision 5 October 2026, docs/entscheidungen.md).
@@ -231,19 +231,55 @@ export async function photoUrl(photo: BodyPhoto): Promise<string> {
   return URL.createObjectURL(new Blob([plain], { type: photo.mime }))
 }
 
-/** Removes a photo: soft delete of the metadata, the encrypted object is deleted in the bucket. */
+/** Moves a photo to the trash (soft delete). The encrypted object stays in the bucket and on this
+ * device until the photo is purged, so it can be restored (decision 8 October 2026). */
 export async function deletePhoto(photo: BodyPhoto): Promise<void> {
   await saveRows('body_photo', [{ ...photo, deleted_at: new Date().toISOString() }])
-  await db.photo_blob.delete(photo.id)
-  try {
-    await fetch(`${PROXY}/photo/delete`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ token: await sessionToken(), id: photo.id }),
-    })
-  } catch {
-    // Offline: the object stays in the bucket, encrypted and no longer referenced
-  }
+}
+
+const PURGE_QUEUE = 'photo_purge_queue'
+
+/** Queues the encrypted objects of purged photos for deletion and removes the local copies. */
+export async function queuePhotoObjectDeletes(ids: string[]): Promise<void> {
+  if (!ids.length) return
+  const queued = new Set<string>(JSON.parse((await getMeta(PURGE_QUEUE)) ?? '[]') as string[])
+  for (const id of ids) queued.add(id)
+  await setMeta(PURGE_QUEUE, JSON.stringify([...queued]))
+  await db.photo_blob.bulkDelete(ids)
+  void deletePendingPhotoObjects()
+}
+
+let purging: Promise<void> | null = null
+
+/** Deletes queued objects in the bucket; whatever fails (e.g. offline) is retried later. */
+export function deletePendingPhotoObjects(): Promise<void> {
+  purging ??= (async () => {
+    if (!navigator.onLine) return
+    const ids = JSON.parse((await getMeta(PURGE_QUEUE)) ?? '[]') as string[]
+    if (!ids.length) return
+    const token = await getMeta('session_token')
+    if (!token) return
+    const done = new Set<string>()
+    for (const id of ids) {
+      try {
+        const res = await fetch(`${PROXY}/photo/delete`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ token, id }),
+        })
+        if (!res.ok) break
+        done.add(id)
+      } catch {
+        break
+      }
+    }
+    // Re-read: photos may have been queued while the requests ran
+    const rest = (JSON.parse((await getMeta(PURGE_QUEUE)) ?? '[]') as string[]).filter((id) => !done.has(id))
+    await setMeta(PURGE_QUEUE, JSON.stringify(rest))
+  })().finally(() => {
+    purging = null
+  })
+  return purging
 }
 
 export async function photosOf(measuredOn: string): Promise<BodyPhoto[]> {
