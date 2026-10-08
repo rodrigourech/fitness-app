@@ -236,14 +236,24 @@ function DayPhotos({ userId, date }: { userId: string; date: string }) {
         </span>
       </div>
 
-      {keyState !== 'ready' ? (
-        <button
-          type="button"
-          onClick={() => setSheet('auto')}
-          className="w-full rounded-lg bg-zinc-100 py-2.5 text-sm font-medium dark:bg-zinc-800"
-        >
-          {keyState === 'none' ? 'Set up photo passphrase' : 'Unlock photos'}
-        </button>
+      {keyState === undefined ? (
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">Checking photo access …</p>
+      ) : keyState !== 'ready' ? (
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => setSheet('auto')}
+            className="w-full rounded-lg bg-zinc-100 py-2.5 text-sm font-medium dark:bg-zinc-800"
+          >
+            {keyState === 'none' ? 'Set up photo passphrase' : 'Unlock photos'}
+          </button>
+          {keyState === 'locked' && (
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              To change your passphrase and keep your photos, use a device where they are still unlocked,
+              or unlock them here first. If you forgot it, open “Unlock photos” for reset options.
+            </p>
+          )}
+        </div>
       ) : (
         <>
           {photos && photos.length > 0 && (
@@ -290,9 +300,10 @@ function DayPhotos({ userId, date }: { userId: string; date: string }) {
             </button>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => void onFile(e.target.files?.[0])} />
           </div>
-          <button type="button" onClick={() => setSheet('change')} className="mt-2 text-xs text-zinc-500 underline-offset-2 hover:underline dark:text-zinc-400">
+          <button type="button" onClick={() => setSheet('change')} className="mt-3 w-full rounded-lg bg-zinc-100 px-3 py-3 text-sm font-semibold dark:bg-zinc-800">
             Change passphrase
           </button>
+          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Photos are unlocked on this device. You can change the passphrase without entering the old one.</p>
         </>
       )}
       {error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>}

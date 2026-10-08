@@ -14,13 +14,18 @@ Letzte Aktualisierung 8. Oktober 2026
 
 ## Stand
 
-- origin/main (6d14017) ist live, inklusive Papierkorb (30 Tage, Seite «Trash», Undo nach dem Löschen)
+- Die GitHub-Pages-Auslieferung von 039fa7b ist erfolgreich. Live-Bundle am 8. Oktober geprüft: «Change passphrase» und «Forgot passphrase?» sind enthalten
 - Migrationen 0001 bis 0011 sind eingespielt; 0011 (purged_at) am 8. Oktober 2026 geprüft, Schema-Cache aktualisiert
-- Lokal auf main, noch nicht gepusht, 3 Commits (9b58e6f bis a85c7e5) mit «Change passphrase» (Umschlüsselung aller Fotos auf einem entsperrten Gerät) und «Forgot passphrase?» (neue Passphrase, alte Fotos werden gelöscht)
+- Die vier Commits mit «Change passphrase», «Forgot passphrase?» und zentraler Übergabedokumentation sind gepusht. Typprüfung, Lint, alle 83 Tests und Produktionsbuild erfolgreich; Vitest lief wegen temporärer Dateien ausserhalb der Windows-Sandbox
+- Änderungen an docs/STATUS.md sind lokal noch nicht committet. Untracked: .q.mjs und «Claude outputs/»
+- Plan zur Umsetzung der Wunschliste vorgelegt: Übung mit Rückfrage nur im laufenden Training überspringen, RIR bei neuen Kraftsätzen auf 0, «Change password» und Node-24-Actions. Bestätigung und Wahl der Progressionsregel stehen aus; noch keine dieser neuen Funktionen implementiert
+- Browser-/Computer-use-Zugriff scheitert am lokalen Automatisierungsdienst (Node-Kernel beendet sich). Gewichtseintrag und Fotos deshalb nicht über die App verändert
+- Foto-Bereich verbessert: «Change passphrase» als grosser Button bei entsperrten Fotos; bei gesperrten Fotos Erklärung zum Entsperren oder Wechsel auf einem anderen Gerät. Während der Schlüsselprüfung eigener Ladehinweis. Alle 83 Tests, Typprüfung und Lint erfolgreich
+- Neues Home-Menü angefragt. Plan: Home als Startseite, Wochenziel, Start/Resume, letztes Training, Gewichtsverlauf und Schnellzugriffe; Designvorschau mit Beispieldaten vorbereitet. Planfreigabe steht aus
 
 ## Nächste Schritte
 
-1. `git push origin main`, Build abwarten, App neu laden (iPhone ganz schliessen)
+1. Verbesserung des Foto-Bereichs veröffentlichen und App neu laden (iPhone ganz schliessen)
 2. Gewichtseintrag vom 7. Oktober 2026 über den Papierkorb wiederherstellen
 3. Foto-Passphrase ist vergessen. Zeigt ein Gerät die Fotos noch, dort «Change passphrase»; sonst «Unlock photos», dann «Forgot passphrase?»
 
