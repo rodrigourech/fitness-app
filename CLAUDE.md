@@ -4,6 +4,7 @@ Persönliche Fitness-App als Ersatz für die Strong App: Trainingsvorlagen, Trai
 
 ## Referenzen
 
+- docs/STATUS.md: aktueller Stand, nächste Schritte und Wunschliste; zentrale Übergabe für alle Agenten, am Ende jeder Sitzung nachführen
 - docs/00_handover.md: vollständiger Planungsstand mit Funktionsumfang, Analytics-Definitionen, Datenmodell-Entwurf und Startdaten
 - Neue Entscheidungen werden in docs/ nachgeführt; bei Widerspruch gilt die neuere Entscheidung
 
