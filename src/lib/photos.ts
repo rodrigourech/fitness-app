@@ -1,4 +1,4 @@
-import { db, getMeta, setMeta, type BodyPhoto, type PhotoPose } from './db'
+import { db, getMeta, setMeta, type BodyPhoto, type PhotoBlob, type PhotoPose } from './db'
 import { saveRows } from './sync'
 
 // Encrypted progress photos (decision 5 October 2026, docs/entscheidungen.md).
@@ -72,24 +72,62 @@ async function localKey(): Promise<CryptoKey | null> {
   return (await db.keystore.get(KEY_ID))?.key ?? null
 }
 
+async function opensCheck(key: CryptoKey, s: KeySetting): Promise<boolean> {
+  try {
+    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(s.check_iv) }, key, fromB64(s.check))
+    return new TextDecoder().decode(plain) === CHECK_TEXT
+  } catch {
+    return false
+  }
+}
+
+const verified = new WeakMap<CryptoKey, string>()
+
+/**
+ * The key on this device, if it still belongs to the current passphrase. After the passphrase was
+ * changed or reset on another device, the old key no longer opens the check value: photos are locked.
+ */
+async function currentKey(): Promise<CryptoKey | null> {
+  const key = await localKey()
+  if (!key) return null
+  const s = await keySetting()
+  if (!s || verified.get(key) === s.check) return key
+  if (!(await opensCheck(key, s))) return null
+  verified.set(key, s.check)
+  return key
+}
+
 export async function photoKeyState(): Promise<PhotoKeyState> {
-  if (await localKey()) return 'ready'
+  if (await currentKey()) return 'ready'
   return (await keySetting()) ? 'locked' : 'none'
+}
+
+/** New key and the setting value (salt and encrypted check value) for a passphrase. */
+async function newKey(passphrase: string): Promise<{ key: CryptoKey; value: KeySetting }> {
+  const salt = random(16)
+  const key = await deriveKey(passphrase, salt, ITERATIONS)
+  const iv = random(12)
+  const check = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(CHECK_TEXT)))
+  return { key, value: { v: 1, salt: toB64(salt), iterations: ITERATIONS, check_iv: toB64(iv), check: toB64(check) } }
+}
+
+/** Stores the setting for all devices and the key on this device. */
+async function activateKey(userId: string, key: CryptoKey, value: KeySetting): Promise<void> {
+  const existing = await db.user_setting.get(KEY_SETTING_ID)
+  const ts = new Date().toISOString()
+  await saveRows('user_setting', [
+    existing
+      ? { ...existing, value, deleted_at: null }
+      : { id: KEY_SETTING_ID, user_id: userId, key: 'photo_key', value, created_at: ts, updated_at: ts, deleted_at: null },
+  ])
+  await db.keystore.put({ id: KEY_ID, key })
 }
 
 /** Sets up the photo passphrase (first device). */
 export async function createPhotoKey(userId: string, passphrase: string): Promise<void> {
   if (await keySetting()) throw new Error('A photo passphrase already exists. Enter it to unlock.')
-  const salt = random(16)
-  const key = await deriveKey(passphrase, salt, ITERATIONS)
-  const iv = random(12)
-  const check = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(CHECK_TEXT)))
-  const value: KeySetting = { v: 1, salt: toB64(salt), iterations: ITERATIONS, check_iv: toB64(iv), check: toB64(check) }
-  const ts = new Date().toISOString()
-  await saveRows('user_setting', [
-    { id: KEY_SETTING_ID, user_id: userId, key: 'photo_key', value, created_at: ts, updated_at: ts, deleted_at: null },
-  ])
-  await db.keystore.put({ id: KEY_ID, key })
+  const { key, value } = await newKey(passphrase)
+  await activateKey(userId, key, value)
 }
 
 /** Unlocks photos on this device. Returns false for a wrong passphrase. */
@@ -97,12 +135,7 @@ export async function unlockPhotoKey(passphrase: string): Promise<boolean> {
   const s = await keySetting()
   if (!s) throw new Error('No photo passphrase set up yet.')
   const key = await deriveKey(passphrase, fromB64(s.salt), s.iterations)
-  try {
-    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(s.check_iv) }, key, fromB64(s.check))
-    if (new TextDecoder().decode(plain) !== CHECK_TEXT) return false
-  } catch {
-    return false
-  }
+  if (!(await opensCheck(key, s))) return false
   await db.keystore.put({ id: KEY_ID, key })
   return true
 }
@@ -170,7 +203,7 @@ async function download(id: string): Promise<ArrayBuffer> {
 
 /** Shrinks, encrypts and stores a photo for a day; uploads now or as soon as the device is online. */
 export async function addPhoto(userId: string, measuredOn: string, file: Blob, pose: PhotoPose | null): Promise<void> {
-  const key = await localKey()
+  const key = await currentKey()
   if (!key) throw new Error('Photos are locked.')
   const { blob, width, height } = await shrink(file)
   const iv = random(12)
@@ -218,17 +251,101 @@ export function uploadPendingPhotos(): Promise<void> {
   return uploading
 }
 
-/** Decrypted photo as an object URL (revoke it when no longer shown). */
-export async function photoUrl(photo: BodyPhoto): Promise<string> {
-  const key = await localKey()
-  if (!key) throw new Error('Photos are locked.')
+/** Encrypted bytes of a photo: from this device or downloaded (and kept) from the bucket. */
+async function encryptedBytes(photo: BodyPhoto): Promise<ArrayBuffer> {
   let data = (await db.photo_blob.get(photo.id))?.data
   if (!data) {
     data = await download(photo.id)
     await db.photo_blob.put({ id: photo.id, data, uploaded: 1 })
   }
-  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(photo.iv) }, key, data)
-  return URL.createObjectURL(new Blob([plain], { type: photo.mime }))
+  return data
+}
+
+/** Decrypted image bytes of a photo. */
+export async function photoBytes(photo: BodyPhoto): Promise<ArrayBuffer> {
+  const key = await currentKey()
+  if (!key) throw new Error('Photos are locked.')
+  return crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(photo.iv) }, key, await encryptedBytes(photo))
+}
+
+/** Decrypted photo as an object URL (revoke it when no longer shown). */
+export async function photoUrl(photo: BodyPhoto): Promise<string> {
+  return URL.createObjectURL(new Blob([await photoBytes(photo)], { type: photo.mime }))
+}
+
+// --- changing or resetting the passphrase (decision 8 October 2026) --------------------------
+
+/** Photos whose object still exists or may exist (everything not purged, including the trash). */
+async function storedPhotos(): Promise<BodyPhoto[]> {
+  return (await db.body_photo.toArray()).filter((p) => !p.purged_at)
+}
+
+export async function storedPhotoCount(): Promise<number> {
+  return (await storedPhotos()).length
+}
+
+/** Purges photo rows for good and queues their bucket objects for deletion. */
+async function purgePhotos(photos: BodyPhoto[], ts: string): Promise<void> {
+  if (!photos.length) return
+  await saveRows('body_photo', photos.map((p) => ({ ...p, deleted_at: p.deleted_at ?? ts, purged_at: ts })))
+  await queuePhotoObjectDeletes(photos.map((p) => p.id))
+}
+
+/**
+ * Changes the passphrase on a device where photos are unlocked; the old passphrase is not needed.
+ * Every photo is decrypted, encrypted with the new key and uploaded as a new object. Only when all
+ * uploads succeeded does the app switch to the new key in one step (new setting, new photo rows,
+ * old rows purged). If anything fails before, nothing changes. Photos in the trash whose object is
+ * already gone are purged.
+ */
+export async function changePhotoPassphrase(
+  userId: string,
+  passphrase: string,
+  onProgress?: (done: number, total: number) => void,
+): Promise<void> {
+  const oldKey = await currentKey()
+  if (!oldKey) throw new Error('Unlock photos on this device first.')
+  if (navigator.onLine === false) throw new Error('Changing the passphrase needs a connection.')
+  const photos = await storedPhotos()
+  const { key, value } = await newKey(passphrase)
+  const ts = new Date().toISOString()
+  const fresh: BodyPhoto[] = []
+  const blobs: PhotoBlob[] = []
+  onProgress?.(0, photos.length)
+  for (const [i, photo] of photos.entries()) {
+    let plain: ArrayBuffer
+    try {
+      plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(photo.iv) }, oldKey, await encryptedBytes(photo))
+    } catch (err) {
+      // In the trash and no longer stored (deleted before the trash existed): purged below
+      if (photo.deleted_at !== null) continue
+      const reason = err instanceof Error ? err.message : String(err)
+      throw new Error(`The photo of ${photo.measured_on} could not be opened (${reason}). Nothing was changed.`)
+    }
+    const iv = random(12)
+    const data = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, plain)
+    const id = crypto.randomUUID()
+    await upload(id, data)
+    blobs.push({ id, data, uploaded: 1 })
+    fresh.push({ ...photo, id, object_key: `${photo.user_id}/${id}`, iv: toB64(iv), bytes: data.byteLength })
+    onProgress?.(i + 1, photos.length)
+  }
+  // Switch: new key first, so the new rows are readable as soon as they arrive on other devices
+  await activateKey(userId, key, value)
+  await db.photo_blob.bulkPut(blobs)
+  if (fresh.length) await saveRows('body_photo', fresh)
+  await purgePhotos(photos, ts)
+}
+
+/**
+ * Sets a new passphrase when the old one is forgotten and no device has photos unlocked.
+ * All existing photos cannot be opened any more and are deleted for good.
+ */
+export async function resetPhotoPassphrase(userId: string, passphrase: string): Promise<void> {
+  await purgePhotos(await storedPhotos(), new Date().toISOString())
+  await db.keystore.delete(KEY_ID)
+  const { key, value } = await newKey(passphrase)
+  await activateKey(userId, key, value)
 }
 
 /** Moves a photo to the trash (soft delete). The encrypted object stays in the bucket and on this
@@ -254,7 +371,7 @@ let purging: Promise<void> | null = null
 /** Deletes queued objects in the bucket; whatever fails (e.g. offline) is retried later. */
 export function deletePendingPhotoObjects(): Promise<void> {
   purging ??= (async () => {
-    if (!navigator.onLine) return
+    if (navigator.onLine === false) return
     const ids = JSON.parse((await getMeta(PURGE_QUEUE)) ?? '[]') as string[]
     if (!ids.length) return
     const token = await getMeta('session_token')
