@@ -30,7 +30,6 @@ import {
   parseNumber,
   previousSets,
   removeLastSet,
-  skipExercise,
   unskipExercise,
   toggleSetDone,
   updateSet,
@@ -238,8 +237,6 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
     ? effective(exercise, byId)
     : { trackingType: 'weight_reps', isUnilateral: false, floor: null, seat: null, footPosition: null, setupNote: null, focusMuscles: [] as string[], focusCue: null, restS: null }
 
-  const anyDone = sets.some((s) => s.completed_at !== null)
-
   if (we.skipped_at)
     return (
       <section className="card flex items-center justify-between gap-3 p-3 opacity-70">
@@ -280,14 +277,6 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
         </button>
         <span className="flex shrink-0 items-center gap-1">
           <VideoButton links={links} />
-          {!anyDone && (
-            <button
-              onClick={() => void skipExercise(we)}
-              className="rounded-md px-2 py-1 text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-            >
-              Skip
-            </button>
-          )}
         </span>
       </div>
       {eff.setupNote && <p className="text-sm whitespace-pre-line text-zinc-500 dark:text-zinc-400">{eff.setupNote}</p>}
@@ -383,7 +372,7 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
             onClick={() => void removeLastSet(we)}
             className="rounded-lg px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400"
           >
-            Remove set
+            {sets.length === 1 ? 'Remove (skip exercise)' : 'Remove set'}
           </button>
         )}
       </div>

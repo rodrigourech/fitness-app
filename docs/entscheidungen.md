@@ -94,4 +94,4 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
 - Workouts und Home (9. Oktober 2026, Nachtrag):
   - Workout-Karten sind zugeklappt (Name, Anzahl Übungen, zuletzt, «Start» direkt), aufgeklappt mit Übungsliste und «Edit workout». Reihenfolge über «Reorder» frei wählbar, gespeichert als user_setting «template_order» (geräteübergreifend, keine Migration); gilt auch für die Startliste auf Home
   - Home farbiger: Wochenziel blau, Körpergewicht grün, Liste «Increase weight next time» gelb (gleiche Regel wie Ready to increase in Stats), umschaltbares Diagramm (Körpergewicht 7-Tage-Schnitt 90 Tage, Volumen pro Woche, Trainings pro Woche je 12 Wochen); Auswahl pro Gerät gemerkt
-
+  - Kein eigener Skip-Button mehr: Wird im Training der letzte Satz einer Übung entfernt, gilt sie als übersprungen (in der Historie «Skipped», Undo bringt den zuletzt entfernten Satz zurück)

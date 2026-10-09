@@ -240,7 +240,13 @@ export async function removeLastSet(we: WorkoutExercise): Promise<void> {
     .filter((s) => s.deleted_at === null)
     .sort((a, b) => a.position - b.position)
   const target = [...sets].reverse().find((s) => s.completed_at === null) ?? sets.at(-1)
-  if (target) await saveRows('workout_set', [{ ...target, deleted_at: now() }])
+  if (!target) return
+  await saveRows('workout_set', [{ ...target, deleted_at: now() }])
+  // Removing the last set skips the exercise (decision 9 October 2026); it stays in the history as skipped
+  if (sets.length === 1) {
+    const current = (await db.workout_exercise.get(we.id)) ?? we
+    await saveRows('workout_exercise', [{ ...current, skipped_at: now() }])
+  }
 }
 
 export async function updateWorkout(w: Workout, patch: Partial<Workout>): Promise<void> {
@@ -286,9 +292,15 @@ export async function skipExercise(we: WorkoutExercise): Promise<void> {
   await saveRows('workout_exercise', [{ ...current, skipped_at: now() }])
 }
 
+/** Undoes a skip; if no set is left, the most recently removed set comes back. */
 export async function unskipExercise(we: WorkoutExercise): Promise<void> {
   const current = (await db.workout_exercise.get(we.id)) ?? we
   await saveRows('workout_exercise', [{ ...current, skipped_at: null }])
+  const sets = await db.workout_set.where('workout_exercise_id').equals(we.id).toArray()
+  if (sets.some((s) => s.deleted_at === null)) return
+  const last = sets.filter((s) => s.deleted_at !== null).sort((a, b) => b.deleted_at!.localeCompare(a.deleted_at!))[0]
+  if (last) await saveRows('workout_set', [{ ...last, deleted_at: null }])
+  else await addSet(current)
 }
 
 /** Discards the whole workout (soft delete). */

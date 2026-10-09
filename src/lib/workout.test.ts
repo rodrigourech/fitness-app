@@ -202,6 +202,17 @@ describe('decisions 9 October 2026', () => {
     expect((await setsOf(w2.id))['Lying Leg Curl (Machine)']!.sets.map((x) => x.weight)).toEqual([35, 35, 30])
   })
 
+  it('skips an exercise when its last set is removed; undo brings a set back', async () => {
+    const w = await startWorkout(day2, USER)
+    const curl = (await setsOf(w.id))['Lying Leg Curl (Machine)']!
+    for (let i = 0; i < curl.sets.length; i++) await removeLastSet(curl.we)
+    expect((await db.workout_exercise.get(curl.we.id))!.skipped_at).toBeTruthy()
+    await unskipExercise(curl.we)
+    expect((await db.workout_exercise.get(curl.we.id))!.skipped_at).toBeNull()
+    const left = (await db.workout_set.where('workout_exercise_id').equals(curl.we.id).toArray()).filter((s) => s.deleted_at === null)
+    expect(left).toHaveLength(1)
+  })
+
   it('cannot skip an exercise with a completed set; unskip restores it', async () => {
     const w = await startWorkout(day2, USER)
     const curl = (await setsOf(w.id))['Lying Leg Curl (Machine)']!
