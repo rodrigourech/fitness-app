@@ -91,3 +91,7 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
   - Workouts mit den klappbaren Abschnitten Active und Archive. «Delete» archiviert (template.archived_at); im Archiv «Restore» oder «Delete» in den Papierkorb (30 Tage, kehrt beim Wiederherstellen ins Archiv zurück). Kein Umbenennen, das Archivdatum wird angezeigt
   - Neuer Reiter Home als Startseite mit Start/Resume, Wochenziel, Körpergewicht, letztem Training und Schnellzugriffen
   - «Change password» über die neue Proxy-Route /change-password (Neon Auth change-password mit revokeOtherSessions); alle anderen Geräte werden abgemeldet, die Foto-Passphrase bleibt unverändert
+- Workouts und Home (9. Oktober 2026, Nachtrag):
+  - Workout-Karten sind zugeklappt (Name, Anzahl Übungen, zuletzt, «Start» direkt), aufgeklappt mit Übungsliste und «Edit workout». Reihenfolge über «Reorder» frei wählbar, gespeichert als user_setting «template_order» (geräteübergreifend, keine Migration); gilt auch für die Startliste auf Home
+  - Home farbiger: Wochenziel blau, Körpergewicht grün, Liste «Increase weight next time» gelb (gleiche Regel wie Ready to increase in Stats), umschaltbares Diagramm (Körpergewicht 7-Tage-Schnitt 90 Tage, Volumen pro Woche, Trainings pro Woche je 12 Wochen); Auswahl pro Gerät gemerkt
+
