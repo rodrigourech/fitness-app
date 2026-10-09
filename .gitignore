@@ -15,3 +15,7 @@ Thumbs.db
 .neon
 .idea
 *.tsbuildinfo
+
+# Local helper files (never commit)
+.q.mjs
+Claude outputs/

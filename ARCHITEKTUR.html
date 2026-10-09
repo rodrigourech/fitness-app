@@ -30,128 +30,93 @@
 
 <div class="card">
 <svg viewBox="0 0 1060 640" role="img" aria-label="Architekturdiagramm der Fitness-App">
-  <defs>
-    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--mute)"/></marker>
-  </defs>
-  <style>
-    .box { stroke-width:1.5; rx:12; }
-    .b { fill:var(--soft-b); stroke:var(--blue); } .g { fill:var(--soft-g); stroke:var(--green); }
-    .v { fill:var(--soft-v); stroke:var(--violet); } .y { fill:var(--soft-a); stroke:var(--amber); }
-    .zone { fill:none; stroke:var(--line); stroke-dasharray:6 5; rx:16; }
-    .ln { stroke:var(--mute); stroke-width:1.6; fill:none; marker-end:url(#a); }
-    .t { font-size:15px; font-weight:600; } .s { font-size:12.5px; } .z { font-size:12px; font-weight:600; letter-spacing:.06em; }
-  </style>
-
-  <!-- Zones -->
-  <rect class="zone" x="10" y="10" width="300" height="420"/>
-  <text class="z m" x="26" y="34">IHRE GERÄTE</text>
-  <rect class="zone" x="370" y="10" width="300" height="300"/>
-  <text class="z m" x="386" y="34">GITHUB (USA, global verteilt)</text>
-  <rect class="zone" x="730" y="10" width="320" height="620"/>
-  <text class="z m" x="746" y="34">NEON (Frankfurt, EU)</text>
-  <rect class="zone" x="10" y="460" width="660" height="170"/>
-  <text class="z m" x="26" y="484">ENTWICKLUNG (Laptop)</text>
-
-  <!-- Device -->
-  <rect class="box b" x="30" y="50" width="260" height="110"/>
-  <text class="t" x="46" y="76">iPhone / Laptop</text>
-  <text class="s" x="46" y="98">Safari oder Chrome, als App auf dem</text>
-  <text class="s" x="46" y="116">Home-Bildschirm (PWA, offlinefähig)</text>
-  <text class="s m" x="46" y="140">rodrigourech.github.io/fitness-app-web</text>
-
-  <rect class="box b" x="30" y="190" width="260" height="120"/>
-  <text class="t" x="46" y="216">Lokale Datenbank (IndexedDB)</text>
-  <text class="s" x="46" y="238">Kopie aller Daten, jede Änderung</text>
-  <text class="s" x="46" y="256">zuerst hier, dann Sync</text>
-  <text class="s" x="46" y="278">Foto-Schlüssel (nicht auslesbar)</text>
-  <text class="s" x="46" y="296">verschlüsselter Foto-Cache</text>
-
-  <rect class="box b" x="30" y="335" width="260" height="75"/>
-  <text class="t" x="46" y="361">Foto-Passphrase</text>
-  <text class="s" x="46" y="383">nur in Ihrem Kopf / Passwortmanager,</text>
-  <text class="s" x="46" y="400">verlässt das Gerät nie</text>
-
-  <!-- GitHub -->
-  <rect class="box y" x="390" y="50" width="260" height="95"/>
-  <text class="t" x="406" y="76">fitness-app (privat)</text>
-  <text class="s" x="406" y="98">Quellcode, Migrationen, Doku</text>
-  <text class="s m" x="406" y="120">github.com/rodrigourech/fitness-app</text>
-
-  <rect class="box y" x="390" y="160" width="260" height="55"/>
-  <text class="t" x="406" y="184">GitHub Actions</text>
-  <text class="s" x="406" y="203">Test, Build bei Push auf main</text>
-
-  <rect class="box y" x="390" y="230" width="260" height="65"/>
-  <text class="t" x="406" y="254">fitness-app-web (öffentlich)</text>
-  <text class="s" x="406" y="274">nur die gebaute App, keine Daten</text>
-
-  <!-- Neon -->
-  <rect class="box v" x="750" y="50" width="280" height="105"/>
-  <text class="t" x="766" y="76">Auth-Proxy (Neon Function)</text>
-  <text class="s" x="766" y="98">Anmeldung, Passwort ändern,</text>
-  <text class="s" x="766" y="116">kurzlebiges Token für die Data API,</text>
-  <text class="s" x="766" y="134">Foto-Upload und -Download</text>
-
-  <rect class="box v" x="750" y="175" width="280" height="60"/>
-  <text class="t" x="766" y="200">Neon Auth</text>
-  <text class="s" x="766" y="220">Benutzer und Passwort</text>
-
-  <rect class="box g" x="750" y="255" width="280" height="60"/>
-  <text class="t" x="766" y="280">Data API</text>
-  <text class="s" x="766" y="300">REST-Zugang mit Token</text>
-
-  <rect class="box g" x="750" y="335" width="280" height="115"/>
-  <text class="t" x="766" y="361">Postgres «neondb»</text>
-  <text class="s" x="766" y="383">Übungen, Vorlagen, Trainings,</text>
-  <text class="s" x="766" y="401">Gewicht, Einstellungen, Foto-Metadaten</text>
-  <text class="s" x="766" y="423">Row Level Security: nur Ihr Konto</text>
-  <text class="s m" x="766" y="441">Löschen = Markierung (Papierkorb 30 Tage)</text>
-
-  <rect class="box g" x="750" y="470" width="280" height="105"/>
-  <text class="t" x="766" y="496">Bucket «body-photos»</text>
-  <text class="s" x="766" y="518">Fortschrittsfotos, nur verschlüsselt</text>
-  <text class="s" x="766" y="536">(AES-256), Pfad &lt;user-id&gt;/&lt;foto-id&gt;</text>
-  <text class="s m" x="766" y="558">privat, Neon sieht keine Bilder</text>
-
-  <!-- Dev -->
-  <rect class="box y" x="30" y="500" width="300" height="110"/>
-  <text class="t" x="46" y="526">C:\Repository\fitness-app</text>
-  <text class="s" x="46" y="548">git push origin main</text>
-  <text class="s" x="46" y="566">neon deploy (Proxy)</text>
-  <text class="s" x="46" y="584">.env.local: Schlüssel, nie im Repo</text>
-
-  <rect class="box y" x="360" y="500" width="290" height="110"/>
-  <text class="t" x="376" y="526">Neon Console</text>
-  <text class="s" x="376" y="548">SQL Editor: Migrationen</text>
-  <text class="s" x="376" y="566">Data API: Refresh schema cache</text>
-
-  <!-- Arrows -->
-  <path class="ln" d="M390,262 C330,262 330,110 290,110"/>
-  <text class="s m" x="300" y="200" transform="rotate(-90 318 186)">App laden</text>
-  <path class="ln" d="M520,145 L520,160"/>
-  <path class="ln" d="M520,215 L520,230"/>
-  <path class="ln" d="M290,95 C520,20 650,60 750,95"/>
-  <text class="s m" x="560" y="44">1 Anmelden, Token</text>
-  <path class="ln" d="M290,250 C470,330 640,300 750,285"/>
-  <text class="s m" x="470" y="338">2 Sync mit Token (Daten)</text>
-  <path class="ln" d="M290,300 C500,420 560,170 750,140"/>
-  <text class="s m" x="470" y="400">3 Fotos verschlüsselt</text>
-  <path class="ln" d="M890,155 L890,175"/>
-  <path class="ln" d="M890,315 L890,335"/>
-  <path class="ln" d="M1035,120 C1060,300 1060,420 1030,520"/>
-  <path class="ln" d="M330,540 L390,120"/>
-  <path class="ln" d="M330,590 C600,640 700,560 750,100"/>
-  <path class="ln" d="M650,560 C700,520 720,420 750,400"/>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--mute)"/></marker></defs>
+<style>
+.box{stroke-width:1.5;rx:12} .b{fill:var(--soft-b);stroke:var(--blue)} .g{fill:var(--soft-g);stroke:var(--green)} .v{fill:var(--soft-v);stroke:var(--violet)} .y{fill:var(--soft-a);stroke:var(--amber)}
+.zone{fill:none;stroke:var(--line);stroke-dasharray:6 5;rx:16} .ln{stroke:var(--mute);stroke-width:2;fill:none;marker-end:url(#a)} .dash{stroke:var(--mute);stroke-width:1.5;stroke-dasharray:4 4;fill:none}
+.t{font-size:15px;font-weight:600} .s{font-size:12.5px} .z{font-size:12px;font-weight:700;letter-spacing:.06em}
+.badge{fill:#dc2626;stroke:var(--card);stroke-width:3} .bn{fill:#fff !important;font-size:15px;font-weight:800}
+</style>
+<rect class="zone" x="10" y="20" width="1040" height="150"/><text class="z m" x="26" y="42">GITHUB (App-Code)</text>
+<rect class="zone" x="10" y="185" width="300" height="380"/><text class="z m" x="26" y="203">IHRE GERÄTE</text>
+<rect class="zone" x="380" y="185" width="670" height="380"/><text class="z m" x="396" y="203">NEON, FRANKFURT (Daten)</text>
+<rect class="box y" x="30" y="60" width="260" height="90"/>
+<text class="t" x="46" y="86">fitness-app-web (öffentlich)</text>
+<text class="s" x="46" y="108">GitHub Pages: nur die gebaute App</text>
+<text class="s m" x="46" y="138">rodrigourech.github.io/fitness-app-web</text>
+<rect class="box y" x="400" y="60" width="260" height="90"/>
+<text class="t" x="416" y="86">GitHub Actions</text>
+<text class="s" x="416" y="108">Tests und Build bei jedem</text>
+<text class="s" x="416" y="126">Push auf main</text>
+<rect class="box y" x="770" y="60" width="260" height="90"/>
+<text class="t" x="786" y="86">fitness-app (privat)</text>
+<text class="s" x="786" y="108">Quellcode, Migrationen, Doku</text>
+<text class="s m" x="786" y="138">lokal C:\Repository\fitness-app</text>
+<path class="ln" d="M770,105.0 L660,105.0"/>
+<text class="s m" x="715.0" y="83.0" text-anchor="middle">git push</text>
+<path class="ln" d="M400,105.0 L290,105.0"/>
+<text class="s m" x="345.0" y="83.0" text-anchor="middle">veröffentlicht</text>
+<rect class="box b" x="30" y="210" width="260" height="90"/>
+<text class="t" x="46" y="236">iPhone / Laptop</text>
+<text class="s" x="46" y="258">App im Browser oder auf dem</text>
+<text class="s" x="46" y="276">Home-Bildschirm (offlinefähig)</text>
+<rect class="box v" x="400" y="210" width="260" height="90"/>
+<text class="t" x="416" y="236">Auth-Proxy (Neon Function)</text>
+<text class="s" x="416" y="258">Anmeldung, Passwort ändern,</text>
+<text class="s" x="416" y="276">Token für die Data API</text>
+<rect class="box v" x="770" y="210" width="260" height="90"/>
+<text class="t" x="786" y="236">Neon Auth</text>
+<text class="s" x="786" y="258">Benutzer und Passwort</text>
+<rect class="box b" x="30" y="330" width="260" height="90"/>
+<text class="t" x="46" y="356">Lokale Datenbank</text>
+<text class="s" x="46" y="378">Kopie aller Daten, jede Änderung</text>
+<text class="s" x="46" y="396">zuerst hier, dann Sync</text>
+<rect class="box g" x="400" y="330" width="260" height="90"/>
+<text class="t" x="416" y="356">Data API</text>
+<text class="s" x="416" y="378">REST-Zugang, nur mit Token</text>
+<rect class="box g" x="770" y="330" width="260" height="90"/>
+<text class="t" x="786" y="356">Postgres «neondb»</text>
+<text class="s" x="786" y="378">Trainings, Vorlagen, Gewicht,</text>
+<text class="s" x="786" y="396">Foto-Metadaten; nur Ihr Konto</text>
+<rect class="box b" x="30" y="450" width="260" height="90"/>
+<text class="t" x="46" y="476">Foto-Schlüssel</text>
+<text class="s" x="46" y="498">aus Ihrer Passphrase, bleibt</text>
+<text class="s" x="46" y="516">auf dem Gerät, verschlüsselt Fotos</text>
+<rect class="box v" x="400" y="450" width="260" height="90"/>
+<text class="t" x="416" y="476">Auth-Proxy: Foto-Routen</text>
+<text class="s" x="416" y="498">Upload und Download</text>
+<text class="s" x="416" y="516">verschlüsselter Bytes</text>
+<rect class="box g" x="770" y="450" width="260" height="90"/>
+<text class="t" x="786" y="476">Bucket «body-photos»</text>
+<text class="s" x="786" y="498">Fotos nur verschlüsselt,</text>
+<text class="s" x="786" y="516">Neon sieht keine Bilder</text>
+<path class="ln" d="M160.0,150 L160.0,210"/>
+<circle class="badge" cx="160.0" cy="180.0" r="15"/><text class="bn" x="160.0" y="185.0" text-anchor="middle">1</text>
+<text class="s m" x="184.0" y="185.0">App laden</text>
+<path class="ln" d="M290,255.0 L400,255.0"/>
+<circle class="badge" cx="345.0" cy="255.0" r="15"/><text class="bn" x="345.0" y="260.0" text-anchor="middle">2</text>
+<text class="s m" x="345.0" y="233.0" text-anchor="middle">anmelden</text>
+<path class="ln" d="M660,255.0 L770,255.0"/>
+<path class="ln" d="M290,375.0 L400,375.0"/>
+<circle class="badge" cx="345.0" cy="375.0" r="15"/><text class="bn" x="345.0" y="380.0" text-anchor="middle">3</text>
+<text class="s m" x="345.0" y="353.0" text-anchor="middle">synchronisieren</text>
+<path class="ln" d="M660,375.0 L770,375.0"/>
+<path class="ln" d="M290,495.0 L400,495.0"/>
+<circle class="badge" cx="345.0" cy="495.0" r="15"/><text class="bn" x="345.0" y="500.0" text-anchor="middle">4</text>
+<text class="s m" x="345.0" y="473.0" text-anchor="middle">Fotos</text>
+<path class="ln" d="M660,495.0 L770,495.0"/>
+<path class="dash" d="M160.0,300 L160.0,330"/><path class="dash" d="M160.0,420 L160.0,450"/>
+<rect class="box y" x="30" y="580" width="1000" height="44"/>
+<text class="s" x="46" y="607"><tspan font-weight="600">Entwicklung am Laptop</tspan>  ·  git push origin main → GitHub baut und veröffentlicht  ·  neon deploy → Auth-Proxy  ·  Neon Console → Migrationen</text>
 </svg>
 </div>
 
-<h2>Zugriff vom Handy, Schritt für Schritt</h2>
+<h2>Zugriff vom Handy, Schritt für Schritt (Nummern wie im Bild)</h2>
 <ol>
-  <li>Safari öffnet <code>https://rodrigourech.github.io/fitness-app-web/</code>. GitHub Pages liefert nur die App selbst aus (HTML, JavaScript), keine Daten. Über «Zum Home-Bildschirm» wird sie zur App mit eigenem Symbol und läuft danach auch offline.</li>
-  <li>Bei der Anmeldung schickt die App Benutzername und Passwort an den Auth-Proxy in Frankfurt. Der Proxy fragt Neon Auth und gibt ein Sitzungs-Token zurück, das die App lokal speichert.</li>
-  <li>Mit diesem Token holt die App ein kurzlebiges Zugangs-Token und synchronisiert über die Data API mit Postgres. Row Level Security lässt nur Ihre eigenen Zeilen durch.</li>
-  <li>Alles, was Sie erfassen, landet zuerst in der lokalen Datenbank des Handys und wird danach im Hintergrund hochgeladen. Deshalb funktioniert ein Training auch ohne Empfang.</li>
-  <li>Laptop und iPhone sehen denselben Stand, weil beide mit derselben Neon-Datenbank synchronisieren. Bei Konflikten gewinnt die neuere Änderung.</li>
+  <li><b>App laden.</b> Safari öffnet <code>https://rodrigourech.github.io/fitness-app-web/</code>. GitHub Pages liefert nur die App (HTML, JavaScript), keine Daten. Über «Zum Home-Bildschirm» wird sie zur App mit eigenem Symbol und läuft danach auch offline.</li>
+  <li><b>Anmelden.</b> Die App schickt Benutzername und Passwort an den Auth-Proxy in Frankfurt. Der Proxy prüft sie bei Neon Auth und gibt ein Sitzungs-Token zurück, das die App lokal speichert.</li>
+  <li><b>Synchronisieren.</b> Jede Eingabe landet zuerst in der lokalen Datenbank und wird danach mit Token über die Data API mit Postgres abgeglichen. Darum funktioniert ein Training auch ohne Empfang, und Laptop und iPhone sehen denselben Stand.</li>
+  <li><b>Fotos.</b> Das Gerät verkleinert das Bild, entfernt GPS-Daten und verschlüsselt es mit dem Foto-Schlüssel. Erst dann geht es über den Proxy in den Bucket. Zum Anzeigen holt die App die Bytes zurück und entschlüsselt sie auf dem Gerät.</li>
 </ol>
 
 <h2>Wo liegt was</h2>
