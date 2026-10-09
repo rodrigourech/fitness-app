@@ -164,11 +164,10 @@ function signed(v: number): string {
   return `${r > 0 ? '+' : r < 0 ? '−' : '±'}${Math.abs(r).toFixed(1)} kg`
 }
 
-type Trend = 'weight' | 'volume' | 'sessions'
+type Trend = 'weight' | 'training'
 const TRENDS: { key: Trend; label: string }[] = [
   { key: 'weight', label: 'Body weight' },
-  { key: 'volume', label: 'Volume' },
-  { key: 'sessions', label: 'Workouts' },
+  { key: 'training', label: 'Training' },
 ]
 
 /** Small switchable chart on the start page. */
@@ -176,7 +175,7 @@ function TrendCard({ s }: { s: Awaited<ReturnType<typeof loadSummary>> }) {
   const [trend, setTrend] = useState<Trend>(() => {
     try {
       const v = localStorage.getItem('home-trend')
-      return v === 'volume' || v === 'sessions' ? v : 'weight'
+      return v === 'training' ? v : 'weight'
     } catch {
       return 'weight'
     }
@@ -192,7 +191,7 @@ function TrendCard({ s }: { s: Awaited<ReturnType<typeof loadSummary>> }) {
   const weekLabel = (start: string) => dayFormat.format(new Date(`${start}T12:00:00`))
   return (
     <section className="card p-3">
-      <div role="tablist" className="mb-2 grid grid-cols-3 gap-1 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
+      <div role="tablist" className="mb-2 grid grid-cols-2 gap-1 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
         {TRENDS.map((t) => (
           <button
             key={t.key}
@@ -222,19 +221,23 @@ function TrendCard({ s }: { s: Awaited<ReturnType<typeof loadSummary>> }) {
         )
       ) : (
         <ColumnChart
-          label={trend === 'volume' ? 'Training volume per week, last 12 weeks' : 'Workouts per week, last 12 weeks'}
-          height={150}
-          formatY={(v) => (trend === 'volume' ? (v >= 1000 ? `${Math.round(v / 1000)}k` : String(Math.round(v))) : String(v))}
-          columns={(trend === 'volume' ? s.volume : s.sessions).map((w) => ({
-            key: w.start,
-            label: weekLabel(w.start),
-            value: w.value,
-            tooltip: `Week of ${weekLabel(w.start)}: ${trend === 'volume' ? `${Math.round(w.value).toLocaleString('en-GB')} kg` : `${w.value} ${w.value === 1 ? 'workout' : 'workouts'}`}`,
-          }))}
+          label="Training volume and number of workouts per week, last 12 weeks"
+          height={160}
+          formatY={(v) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(Math.round(v)))}
+          columns={s.volume.map((w) => {
+            const n = s.sessions.find((x) => x.start === w.start)?.value ?? 0
+            return {
+              key: w.start,
+              label: weekLabel(w.start),
+              value: w.value,
+              note: n ? `${n}×` : undefined,
+              tooltip: `Week of ${weekLabel(w.start)}: ${Math.round(w.value).toLocaleString('en-GB')} kg · ${n} ${n === 1 ? 'workout' : 'workouts'}`,
+            }
+          })}
         />
       )}
       <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-        {trend === 'weight' ? '7-day average, last 90 days' : 'Last 12 weeks'}
+        {trend === 'weight' ? '7-day average, last 90 days' : 'Volume per week (kg), workouts above each column · last 12 weeks'}
       </p>
     </section>
   )

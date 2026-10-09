@@ -208,6 +208,8 @@ export interface Column {
   label: string
   value: number
   tooltip: ReactNode
+  /** Small label above the column (e.g. number of workouts) */
+  note?: string
 }
 
 interface ColumnProps {
@@ -271,6 +273,11 @@ export function ColumnChart({ columns, formatY, height = 170, label }: ColumnPro
             return (
               <g key={c.key}>
                 {d && <path d={d} fill="var(--viz-s1)" opacity={active === null || active === i ? 1 : 0.55} />}
+                {c.note && (
+                  <text x={cx} y={yTop - 5} textAnchor="middle" fontSize={11} fontWeight={600} fill="var(--viz-text)">
+                    {c.note}
+                  </text>
+                )}
                 {i % labelEvery === 0 && (
                   <text x={cx} y={height - 6} textAnchor="middle" fontSize={11} fill="var(--viz-muted)">
                     {c.label}
