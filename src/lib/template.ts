@@ -35,6 +35,24 @@ export async function activeSets(teId: string): Promise<TemplateSet[]> {
     .sort((a, b) => a.position - b.position)
 }
 
+/** «Delete» in the app archives a workout (decision 9 October 2026); it can be restored from the archive. */
+export async function archiveTemplate(t: Template): Promise<void> {
+  const current = (await db.template.get(t.id)) ?? t
+  await saveRows('template', [{ ...current, archived_at: now() }])
+}
+
+export async function unarchiveTemplate(t: Template): Promise<void> {
+  const current = (await db.template.get(t.id)) ?? t
+  await saveRows('template', [{ ...current, archived_at: null }])
+}
+
+/** Rest override for this workout; null = the exercise's default rest. */
+export async function setTemplateRest(te: TemplateExercise, seconds: number | null): Promise<void> {
+  const current = (await db.template_exercise.get(te.id)) ?? te
+  await saveRows('template_exercise', [{ ...current, rest_s: seconds }])
+}
+
+/** Moves an archived workout to the trash with its exercises and sets (same deleted_at). */
 export async function deleteTemplate(t: Template): Promise<void> {
   const ts = now()
   const tes = await activeExercises(t.id)

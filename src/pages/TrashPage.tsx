@@ -197,6 +197,13 @@ function Title({ item }: { item: TrashItem }) {
       </>
     )
   }
+  if (item.kind === 'template')
+    return (
+      <>
+        <p className="font-semibold">{item.template.name}</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-300">Workout template · {plural(item.exercises, 'exercise')} · returns to the archive</p>
+      </>
+    )
   const w = item.workout
   return (
     <>

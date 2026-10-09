@@ -10,8 +10,11 @@ import HistoryTab from './HistoryTab'
 import StatsTab from './StatsTab'
 import { signOut, type LocalUser } from '../lib/auth'
 import { db, displayName, type Exercise } from '../lib/db'
-import { createTemplate } from '../lib/template'
+import { createTemplate, deleteTemplate, unarchiveTemplate } from '../lib/template'
+import { offerUndo } from '../lib/undo'
 import { startWorkout } from '../lib/workout'
+import ChangePasswordSheet from '../components/ChangePasswordSheet'
+import HomeTab, { type HomeTarget } from './HomeTab'
 import TemplateEditor from './TemplateEditor'
 import TrashPage from './TrashPage'
 
@@ -28,12 +31,14 @@ interface TemplateCard {
   name: string
   exercises: { id: string; name: string }[]
   lastDone: string | null
+  /** Archived workouts are listed in the section Archive (decision 9 October 2026) */
+  archivedAt: string | null
 }
 
-type Tab = 'templates' | 'exercises' | 'history' | 'stats' | 'body'
-const TABS: Tab[] = ['templates', 'exercises', 'history', 'stats', 'body']
+type Tab = 'home' | 'templates' | 'exercises' | 'history' | 'stats' | 'body'
+const TABS: Tab[] = ['home', 'templates', 'exercises', 'history', 'stats', 'body']
 // The tab shows the training templates; in the UI they are called workouts (decision 5 October 2026)
-const TAB_LABEL: Record<Tab, string> = { templates: 'Workouts', exercises: 'Exercises', history: 'History', stats: 'Stats', body: 'Body' }
+const TAB_LABEL: Record<Tab, string> = { home: 'Home', templates: 'Workouts', exercises: 'Exercises', history: 'History', stats: 'Stats', body: 'Body' }
 
 const dateFormat = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'long' })
 
@@ -61,14 +66,26 @@ async function loadTemplates(): Promise<TemplateCard[]> {
         .map((w) => w.started_at)
         .sort()
         .at(-1)
-      return { id: t.id, name: t.name, exercises: items, lastDone: last ?? null }
+      return { id: t.id, name: t.name, exercises: items, lastDone: last ?? null, archivedAt: t.archived_at ?? null }
     })
 }
 
 export default function Home({ user, onSignedOut, running = false, onResume }: Props) {
   const cards = useLiveQuery(loadTemplates, [])
   const [sheet, setSheet] = useState<string | null>(null)
-  const [tab, setTab] = useState<Tab>('templates')
+  const [tab, setTab] = useState<Tab>('home')
+  const [account, setAccount] = useState(false)
+  const [showArchive, setShowArchive] = useState(false)
+  const [showActive, setShowActive] = useState(true)
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const active = cards?.filter((c) => !c.archivedAt)
+  const archived = cards?.filter((c) => c.archivedAt).sort((a, b) => b.archivedAt!.localeCompare(a.archivedAt!))
+
+  function open(target: HomeTarget) {
+    if (target === 'trash') setTrash(true)
+    else if (target === 'account') setAccount(true)
+    else setTab(target)
+  }
   const [editing, setEditing] = useState<string | null>(null)
   const [trash, setTrash] = useState(false)
 
@@ -104,14 +121,14 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
         </button>
       </AppBar>
 
-      <div role="tablist" className="mb-4 grid grid-cols-5 gap-1 rounded-xl bg-zinc-200/70 p-1 dark:bg-zinc-900">
+      <div role="tablist" className="mb-4 grid grid-cols-6 gap-0.5 rounded-xl bg-zinc-200/70 p-1 dark:bg-zinc-900">
         {TABS.map((t) => (
           <button
             key={t}
             role="tab"
             aria-selected={tab === t}
             onClick={() => setTab(t)}
-            className={`rounded-md py-2 text-xs font-semibold sm:text-sm ${
+            className={`rounded-md px-0.5 py-2 text-[11px] font-semibold sm:text-sm ${
               tab === t ? 'bg-white shadow-sm dark:bg-zinc-700' : 'text-zinc-500 dark:text-zinc-400'
             }`}
           >
@@ -128,58 +145,140 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
         <StatsTab userId={user.id} />
       ) : tab === 'body' ? (
         <BodyTab userId={user.id} />
+      ) : tab === 'home' ? (
+        <HomeTab
+          cards={active?.map((c) => ({ id: c.id, name: c.name, lastDone: c.lastDone }))}
+          running={running}
+          onStart={(id) => void startWorkout(id, user.id)}
+          onResume={onResume}
+          onOpen={open}
+        />
       ) : cards === undefined ? (
         <p className="text-zinc-500">Loading …</p>
-      ) : cards.length === 0 ? (
-        <p className="text-zinc-500">No workouts yet.</p>
       ) : (
-        <ul className="flex flex-col gap-3">
-          {cards.map((c) => (
-            <li key={c.id} className="card p-4">
-              <div className="mb-2 flex items-baseline justify-between gap-3">
-                <h2 className="text-lg font-semibold">{c.name}</h2>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-sm text-zinc-500 dark:text-zinc-400">
-                    {c.lastDone ? `last ${dateFormat.format(new Date(c.lastDone))}` : 'never'}
-                  </span>
-                  <button
-                    onClick={() => setEditing(c.id)}
-                    className="rounded-md bg-zinc-100 px-2.5 py-1 text-sm font-medium dark:bg-zinc-800"
-                  >
-                    Edit
-                  </button>
-                </div>
-              </div>
-              <ol className="text-sm leading-7 text-zinc-600 dark:text-zinc-300">
-                {c.exercises.map((ex, i) => (
-                  <li key={i}>
-                    <button onClick={() => setSheet(ex.id)} className="text-left hover:underline">
-                      {ex.name}
+        <>
+          <SectionToggle label="Active" count={active?.length ?? 0} open={showActive} onToggle={() => setShowActive((v) => !v)} />
+          {showActive && (
+            <>
+              {active?.length === 0 && <p className="mb-2 text-zinc-500">No active workouts.</p>}
+              <ul className="flex flex-col gap-3">
+                {active?.map((c) => (
+                  <li key={c.id} className="card p-4">
+                    <div className="mb-2 flex items-baseline justify-between gap-3">
+                      <h2 className="text-lg font-semibold">{c.name}</h2>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                          {c.lastDone ? `last ${dateFormat.format(new Date(c.lastDone))}` : 'never'}
+                        </span>
+                        <button onClick={() => setEditing(c.id)} className="rounded-md bg-zinc-100 px-2.5 py-1 text-sm font-medium dark:bg-zinc-800">
+                          Edit
+                        </button>
+                      </div>
+                    </div>
+                    <ol className="text-sm leading-7 text-zinc-600 dark:text-zinc-300">
+                      {c.exercises.map((ex, i) => (
+                        <li key={i}>
+                          <button onClick={() => setSheet(ex.id)} className="text-left hover:underline">
+                            {ex.name}
+                          </button>
+                        </li>
+                      ))}
+                    </ol>
+                    <button
+                      onClick={() => (running ? onResume?.() : void startWorkout(c.id, user.id))}
+                      className="mt-3 w-full rounded-lg bg-accent py-3 text-base font-semibold text-accent-fg"
+                    >
+                      {running ? 'Open running workout' : 'Start workout'}
                     </button>
                   </li>
                 ))}
-              </ol>
+              </ul>
               <button
-                onClick={() => (running ? onResume?.() : void startWorkout(c.id, user.id))}
-                className="mt-3 w-full rounded-lg bg-accent py-3 text-base font-semibold text-accent-fg"
+                onClick={() => void createTemplate(user.id, 'New workout').then(setEditing)}
+                className="mt-3 w-full rounded-xl border border-dashed border-zinc-300 py-3 text-sm font-semibold text-zinc-600 dark:border-zinc-700 dark:text-zinc-300"
               >
-                {running ? 'Open running workout' : 'Start workout'}
+                + New workout
               </button>
-            </li>
-          ))}
-        </ul>
+            </>
+          )}
+
+          <div className="mt-6">
+            <SectionToggle label="Archive" count={archived?.length ?? 0} open={showArchive} onToggle={() => setShowArchive((v) => !v)} />
+          </div>
+          {showArchive && (
+            <ul className="flex flex-col gap-2">
+              {archived?.length === 0 && <p className="text-sm text-zinc-500">Archived workouts appear here.</p>}
+              {archived?.map((c) => (
+                <li key={c.id} className="card p-3">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="min-w-0">
+                      <span className="block truncate font-semibold">{c.name}</span>
+                      <span className="block text-xs text-zinc-500 dark:text-zinc-400">
+                        Archived {archiveFormat.format(new Date(c.archivedAt!))} · {c.exercises.length} {c.exercises.length === 1 ? 'exercise' : 'exercises'}
+                      </span>
+                    </span>
+                    <span className="flex shrink-0 gap-1">
+                      <button
+                        onClick={() => void db.template.get(c.id).then((row) => row && unarchiveTemplate(row))}
+                        className="rounded-md bg-zinc-100 px-2.5 py-1 text-sm font-medium dark:bg-zinc-800"
+                      >
+                        Restore
+                      </button>
+                      <button onClick={() => setEditing(c.id)} className="rounded-md px-2 py-1 text-sm text-zinc-500 dark:text-zinc-400">
+                        Edit
+                      </button>
+                      <button onClick={() => setConfirmDelete(c.id)} aria-label="Delete" className="rounded-md px-2 py-1 text-sm text-red-600 dark:text-red-400">
+                        Delete
+                      </button>
+                    </span>
+                  </div>
+                  {confirmDelete === c.id && (
+                    <div className="mt-3 border-t border-zinc-100 pt-3 dark:border-zinc-800">
+                      <p className="mb-2 text-sm">Move «{c.name}» to the trash? It can be restored there for 30 days.</p>
+                      <div className="flex gap-2">
+                        <button onClick={() => setConfirmDelete(null)} className="flex-1 rounded-lg py-2 text-sm">
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() =>
+                            void db.template.get(c.id).then(async (row) => {
+                              if (!row) return
+                              await deleteTemplate(row)
+                              setConfirmDelete(null)
+                              offerUndo(`${c.name} moved to trash`, c.id)
+                            })
+                          }
+                          className="flex-1 rounded-lg bg-red-600 py-2 text-sm font-semibold text-white"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
 
-      {tab === 'templates' && cards !== undefined && (
-        <button
-          onClick={() => void createTemplate(user.id, 'New workout').then(setEditing)}
-          className="mt-3 w-full rounded-xl border border-dashed border-zinc-300 py-3 text-sm font-semibold text-zinc-600 dark:border-zinc-700 dark:text-zinc-300"
-        >
-          + New workout
-        </button>
-      )}
-
+      {account && <ChangePasswordSheet onClose={() => setAccount(false)} />}
       {sheet && <ExerciseSheet exerciseId={sheet} onClose={() => setSheet(null)} />}
     </main>
+  )
+}
+
+const archiveFormat = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+
+function SectionToggle({ label, count, open, onToggle }: { label: string; count: number; open: boolean; onToggle: () => void }) {
+  return (
+    <button onClick={onToggle} aria-expanded={open} className="mb-2 flex w-full items-center justify-between py-1 text-left">
+      <span className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">
+        {label} <span className="font-normal">({count})</span>
+      </span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" className={`text-zinc-400 transition-transform ${open ? 'rotate-180' : ''}`}>
+        <path d="M6 9l6 6 6-6" />
+      </svg>
+    </button>
   )
 }

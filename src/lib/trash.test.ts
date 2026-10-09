@@ -4,6 +4,7 @@ import { deleteBodyWeight, saveBodyWeight } from './body'
 import { db, getMeta, type BodyPhoto, type Workout } from './db'
 import { deleteWorkout } from './history'
 import { deletePhoto } from './photos'
+import { archiveTemplate, deleteTemplate } from './template'
 import { daysLeft, purgeExpired, purgeItems, restoreConflict, restoreItem, trashItems } from './trash'
 
 const base = { user_id: 'u1', created_at: '2026-10-08T06:00:00Z', updated_at: '2026-10-08T06:00:00Z', deleted_at: null }
@@ -170,5 +171,25 @@ describe('trash', () => {
     expect(daysLeft('2026-10-08T06:00:00Z', Date.parse('2026-11-06T05:00:00Z'))).toBe(1)
     expect(daysLeft('2026-10-08T06:00:00Z', Date.parse('2026-11-07T05:00:00Z'))).toBe(0)
     expect(daysLeft('2026-09-01T06:00:00Z', Date.parse('2026-11-07T05:00:00Z'))).toBe(0)
+  })
+})
+
+describe('archived workout templates', () => {
+  it('archives, deletes into the trash and restores into the archive', async () => {
+    const ts = '2026-10-09T08:00:00Z'
+    const b = { user_id: 'u1', created_at: ts, updated_at: ts, deleted_at: null }
+    await db.template.put({ ...b, id: 't1', name: 'DAY1', note: null })
+    await db.template_exercise.put({ ...b, id: 'te1', template_id: 't1', exercise_id: 'e1', position: 1, rest_s: null, comment: null })
+    await archiveTemplate((await db.template.get('t1'))!)
+    expect((await db.template.get('t1'))!.archived_at).toBeTruthy()
+
+    await deleteTemplate((await db.template.get('t1'))!)
+    const item = (await trashItems()).find((i) => i.kind === 'template')!
+    expect(item.kind === 'template' && item.exercises).toBe(1)
+    await restoreItem(item)
+    const t = (await db.template.get('t1'))!
+    expect(t.deleted_at).toBeNull()
+    expect(t.archived_at).toBeTruthy()
+    expect((await db.template_exercise.get('te1'))!.deleted_at).toBeNull()
   })
 })

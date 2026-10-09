@@ -8,13 +8,14 @@ import { db, displayName, type Exercise, type TemplateExercise, type TemplateSet
 import {
   activeSets,
   addTemplateExercise,
-  deleteTemplate,
+  archiveTemplate,
   moveTemplateExercise,
   removeTemplateExercise,
   renameTemplate,
   setPlannedSetCount,
   setPlannedTargets,
   setTemplateExerciseVariant,
+  setTemplateRest,
 } from '../lib/template'
 import { effective, formatDuration, formatNumber, parseDuration, parseNumber } from '../lib/workout'
 
@@ -27,6 +28,8 @@ interface Row {
   te: TemplateExercise
   name: string
   trackingType: string
+  /** Default rest of the exercise, shown as placeholder */
+  defaultRest: number | null
   sets: TemplateSet[]
   /** Main exercise and its variants, to switch the variant used in this template */
   family: { id: string; label: string }[]
@@ -52,6 +55,7 @@ async function load(templateId: string) {
         te,
         name: ex ? displayName(ex, byId) : 'Unknown exercise',
         trackingType: ex ? effective(ex, byId).trackingType : 'weight_reps',
+        defaultRest: ex ? effective(ex, byId).restS : null,
         sets: await activeSets(te.id),
         family,
       }
@@ -197,6 +201,24 @@ export default function TemplateEditor({ templateId, onDone }: Props) {
                     />
                   </Target>
                 )}
+                <Target label="Rest" wide>
+                  <Field
+                    label="Rest in this workout"
+                    inputMode="text"
+                    placeholder={r.defaultRest ? formatDuration(r.defaultRest) : 'mm:ss'}
+                    value={formatDuration(r.te.rest_s)}
+                    onCommit={(v) => {
+                      if (!v.trim()) {
+                        void setTemplateRest(r.te, null)
+                        return true
+                      }
+                      const n = parseDuration(v)
+                      if (n === undefined) return false
+                      void setTemplateRest(r.te, n)
+                      return true
+                    }}
+                  />
+                </Target>
                 {r.trackingType !== 'weight_reps' && (
                   <Target label="Time" wide>
                     <Field
@@ -229,22 +251,22 @@ export default function TemplateEditor({ templateId, onDone }: Props) {
 
       {confirmDelete ? (
         <div className="mt-8 rounded-xl border border-red-300 p-3 dark:border-red-900">
-          <p className="mb-3 text-sm">Delete «{template.name}»? Past workouts stay in the history.</p>
+          <p className="mb-3 text-sm">Archive «{template.name}»? It moves to the section Archive and can be restored there. Past workouts stay in the history.</p>
           <div className="flex gap-2">
             <button onClick={() => setConfirmDelete(false)} className="flex-1 rounded-lg py-2 text-sm">
               Cancel
             </button>
             <button
-              onClick={() => void deleteTemplate(template).then(onDone)}
+              onClick={() => void archiveTemplate(template).then(onDone)}
               className="flex-1 rounded-lg bg-red-600 py-2 text-sm font-semibold text-white"
             >
-              Delete
+              Archive
             </button>
           </div>
         </div>
       ) : (
         <button onClick={() => setConfirmDelete(true)} className="mt-8 w-full py-3 text-sm text-red-600 dark:text-red-400">
-          Delete workout
+          Archive workout
         </button>
       )}
 
