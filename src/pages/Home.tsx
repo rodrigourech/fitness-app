@@ -10,6 +10,7 @@ import HistoryTab from './HistoryTab'
 import StatsTab from './StatsTab'
 import { signOut, type LocalUser } from '../lib/auth'
 import { db, displayName, type Exercise } from '../lib/db'
+import { getTemplateOrder, moveTemplate, sortByOrder } from '../lib/settings'
 import { createTemplate, deleteTemplate, unarchiveTemplate } from '../lib/template'
 import { offerUndo } from '../lib/undo'
 import { startWorkout } from '../lib/workout'
@@ -43,17 +44,17 @@ const TAB_LABEL: Record<Tab, string> = { home: 'Home', templates: 'Workouts', ex
 const dateFormat = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'long' })
 
 async function loadTemplates(): Promise<TemplateCard[]> {
-  const [templates, templateExercises, exercises, workouts] = await Promise.all([
+  const [templates, templateExercises, exercises, workouts, order] = await Promise.all([
     db.template.filter((t) => t.deleted_at === null).toArray(),
     db.template_exercise.filter((te) => te.deleted_at === null).toArray(),
     db.exercise.toArray(),
     db.workout.filter((w) => w.deleted_at === null && w.finished_at !== null).toArray(),
+    getTemplateOrder(),
   ])
   const byId = new Map<string, Exercise>(exercises.map((e) => [e.id, e]))
 
-  return templates
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map((t) => {
+  // Order chosen by the user in Workouts (user_setting template_order), else by name
+  return sortByOrder(templates, order).map((t) => {
       const items = templateExercises
         .filter((te) => te.template_id === t.id)
         .sort((a, b) => a.position - b.position)
@@ -67,7 +68,7 @@ async function loadTemplates(): Promise<TemplateCard[]> {
         .sort()
         .at(-1)
       return { id: t.id, name: t.name, exercises: items, lastDone: last ?? null, archivedAt: t.archived_at ?? null }
-    })
+  })
 }
 
 export default function Home({ user, onSignedOut, running = false, onResume }: Props) {
@@ -77,6 +78,8 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
   const [account, setAccount] = useState(false)
   const [showArchive, setShowArchive] = useState(false)
   const [showActive, setShowActive] = useState(true)
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [sorting, setSorting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const active = cards?.filter((c) => !c.archivedAt)
   const archived = cards?.filter((c) => c.archivedAt).sort((a, b) => b.archivedAt!.localeCompare(a.archivedAt!))
@@ -157,41 +160,77 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
         <p className="text-zinc-500">Loading …</p>
       ) : (
         <>
-          <SectionToggle label="Active" count={active?.length ?? 0} open={showActive} onToggle={() => setShowActive((v) => !v)} />
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <SectionToggle label="Active" count={active?.length ?? 0} open={showActive} onToggle={() => setShowActive((v) => !v)} />
+            </div>
+            {showActive && (active?.length ?? 0) > 1 && (
+              <button onClick={() => setSorting((v) => !v)} aria-pressed={sorting} className={`mb-2 rounded-md px-2.5 py-1 text-sm font-medium ${sorting ? 'bg-accent text-accent-fg' : 'bg-zinc-100 dark:bg-zinc-800'}`}>
+                {sorting ? 'Done' : 'Reorder'}
+              </button>
+            )}
+          </div>
           {showActive && (
             <>
               {active?.length === 0 && <p className="mb-2 text-zinc-500">No active workouts.</p>}
               <ul className="flex flex-col gap-3">
-                {active?.map((c) => (
-                  <li key={c.id} className="card p-4">
-                    <div className="mb-2 flex items-baseline justify-between gap-3">
-                      <h2 className="text-lg font-semibold">{c.name}</h2>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-sm text-zinc-500 dark:text-zinc-400">
-                          {c.lastDone ? `last ${dateFormat.format(new Date(c.lastDone))}` : 'never'}
-                        </span>
-                        <button onClick={() => setEditing(c.id)} className="rounded-md bg-zinc-100 px-2.5 py-1 text-sm font-medium dark:bg-zinc-800">
-                          Edit
+                {active?.map((c, idx) => {
+                  const open = expanded.has(c.id)
+                  const ids = active.map((x) => x.id)
+                  return (
+                    <li key={c.id} className="card p-3">
+                      <div className="flex items-center gap-2">
+                        {sorting && (
+                          <span className="flex flex-col">
+                            <button aria-label="Move up" disabled={idx === 0} onClick={() => void moveTemplate(user.id, ids, c.id, -1)} className="h-7 w-8 rounded-md bg-zinc-100 text-sm disabled:opacity-30 dark:bg-zinc-800">
+                              ↑
+                            </button>
+                            <button aria-label="Move down" disabled={idx === ids.length - 1} onClick={() => void moveTemplate(user.id, ids, c.id, 1)} className="mt-1 h-7 w-8 rounded-md bg-zinc-100 text-sm disabled:opacity-30 dark:bg-zinc-800">
+                              ↓
+                            </button>
+                          </span>
+                        )}
+                        <button
+                          onClick={() => setExpanded((s) => { const n = new Set(s); if (n.has(c.id)) n.delete(c.id); else n.add(c.id); return n })}
+                          aria-expanded={open}
+                          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" className={`shrink-0 text-zinc-400 transition-transform ${open ? 'rotate-90' : ''}`}>
+                            <path d="M9 6l6 6-6 6" />
+                          </svg>
+                          <span className="min-w-0">
+                            <span className="block truncate text-base font-semibold">{c.name}</span>
+                            <span className="block text-xs text-zinc-500 dark:text-zinc-400">
+                              {c.exercises.length} {c.exercises.length === 1 ? 'exercise' : 'exercises'} · {c.lastDone ? `last ${dateFormat.format(new Date(c.lastDone))}` : 'never'}
+                            </span>
+                          </span>
+                        </button>
+                        <button
+                          onClick={() => (running ? onResume?.() : void startWorkout(c.id, user.id))}
+                          className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-accent-fg"
+                        >
+                          {running ? 'Open' : 'Start'}
                         </button>
                       </div>
-                    </div>
-                    <ol className="text-sm leading-7 text-zinc-600 dark:text-zinc-300">
-                      {c.exercises.map((ex, i) => (
-                        <li key={i}>
-                          <button onClick={() => setSheet(ex.id)} className="text-left hover:underline">
-                            {ex.name}
+                      {open && (
+                        <div className="mt-2 border-t border-zinc-100 pt-2 dark:border-zinc-800">
+                          <ol className="text-sm leading-7 text-zinc-600 dark:text-zinc-300">
+                            {c.exercises.map((ex, i) => (
+                              <li key={i}>
+                                <button onClick={() => setSheet(ex.id)} className="text-left hover:underline">
+                                  {ex.name}
+                                </button>
+                              </li>
+                            ))}
+                          </ol>
+                          <button onClick={() => setEditing(c.id)} className="mt-2 rounded-md bg-zinc-100 px-3 py-1.5 text-sm font-medium dark:bg-zinc-800">
+                            Edit workout
                           </button>
-                        </li>
-                      ))}
-                    </ol>
-                    <button
-                      onClick={() => (running ? onResume?.() : void startWorkout(c.id, user.id))}
-                      className="mt-3 w-full rounded-lg bg-accent py-3 text-base font-semibold text-accent-fg"
-                    >
-                      {running ? 'Open running workout' : 'Start workout'}
-                    </button>
-                  </li>
-                ))}
+                        </div>
+                      )}
+                    </li>
+                  )
+                })}
               </ul>
               <button
                 onClick={() => void createTemplate(user.id, 'New workout').then(setEditing)}

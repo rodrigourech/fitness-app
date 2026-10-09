@@ -42,3 +42,34 @@ export async function saveWeeklyGoal(userId: string, goal: WeeklyGoal): Promise<
     : { id: WEEKLY_GOAL_ID, user_id: userId, key: 'weekly_goal', value: parseWeeklyGoal(goal), created_at: ts, updated_at: ts, deleted_at: null }
   await saveRows('user_setting', [row])
 }
+
+// --- order of the workouts (decision 9 October 2026) ------------------------------------------
+
+const TEMPLATE_ORDER_ID = '9b2e7c41-5d3a-4f86-a1c9-0e4f8d2b6a17'
+
+export async function getTemplateOrder(): Promise<string[]> {
+  const row = await db.user_setting.get(TEMPLATE_ORDER_ID)
+  const v = row && row.deleted_at === null ? row.value : null
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []
+}
+
+/** Sorts workouts by the stored order; workouts not in the order follow by name. */
+export function sortByOrder<T extends { id: string; name: string }>(items: T[], order: string[]): T[] {
+  const rank = new Map(order.map((id, i) => [id, i]))
+  return [...items].sort((a, b) => (rank.get(a.id) ?? Infinity) - (rank.get(b.id) ?? Infinity) || a.name.localeCompare(b.name))
+}
+
+/** Moves a workout one place up (-1) or down (+1) within the given list and stores the new order. */
+export async function moveTemplate(userId: string, list: string[], id: string, direction: -1 | 1): Promise<void> {
+  const i = list.indexOf(id)
+  const j = i + direction
+  if (i < 0 || j < 0 || j >= list.length) return
+  const next = [...list]
+  ;[next[i], next[j]] = [next[j]!, next[i]!]
+  const existing = await db.user_setting.get(TEMPLATE_ORDER_ID)
+  const ts = new Date().toISOString()
+  const row: UserSetting = existing
+    ? { ...existing, value: next, deleted_at: null }
+    : { id: TEMPLATE_ORDER_ID, user_id: userId, key: 'template_order', value: next, created_at: ts, updated_at: ts, deleted_at: null }
+  await saveRows('user_setting', [row])
+}
