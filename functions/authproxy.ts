@@ -9,6 +9,8 @@
 //   /sign-in   { email, password } -> { token, jwt, user, expiresAt }
 //   /session   { token }           -> { token, jwt, user, expiresAt }   (token may be renewed)
 //   /sign-out  { token }           -> 204
+//   /change-password { token, currentPassword, newPassword } -> { token, jwt, user, expiresAt }
+//              (all other sessions are signed out; the returned session replaces the old one)
 //   /photo/upload    body = encrypted bytes, headers x-session-token, x-photo-id -> 204
 //   /photo/download  { token, id } -> encrypted bytes
 //   /photo/delete    { token, id } -> 204
@@ -188,6 +190,26 @@ export async function handle(req: Request, env: ProxyEnv, f: Fetch = fetch): Pro
       const token = field(body, 'token')
       if (!token) return reply({ error: 'Token required.' }, 400, origin)
       const result = await session(auth, origin, token, f)
+      return 'jwt' in result ? reply(result, 200, origin) : reply({ error: result.error }, result.status, origin)
+    }
+
+    if (route.endsWith('/change-password')) {
+      const token = field(body, 'token')
+      const currentPassword = field(body, 'currentPassword')
+      const newPassword = field(body, 'newPassword')
+      if (!token || !currentPassword || !newPassword) return reply({ error: 'Token and both passwords required.' }, 400, origin)
+      const res = await f(`${auth}/change-password`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', cookie: `${COOKIE}=${token}`, origin },
+        body: JSON.stringify({ currentPassword, newPassword, revokeOtherSessions: true }),
+      })
+      if (!res.ok) {
+        const status = res.status >= 400 && res.status < 500 ? res.status : 502
+        return reply({ error: await readError(res) }, status, origin)
+      }
+      // Revoking the other sessions issues a new session for this device
+      const next = sessionCookie(res) ?? token
+      const result = await session(auth, origin, next, f)
       return 'jwt' in result ? reply(result, 200, origin) : reply({ error: result.error }, result.status, origin)
     }
 

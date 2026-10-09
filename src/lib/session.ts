@@ -101,6 +101,18 @@ export function getJwt(force = false): Promise<string | null> {
   return pending
 }
 
+/**
+ * Changes the password; all other devices are signed out. The new session replaces the current one.
+ * Throws ProxyError (status 400/401 for a wrong current password).
+ */
+export async function proxyChangePassword(currentPassword: string, newPassword: string): Promise<void> {
+  const token = await getMeta('session_token')
+  if (!token) throw new ProxyError('Not signed in.', 401)
+  const res = await call('/change-password', { token, currentPassword, newPassword })
+  if (!res.ok) throw await errorOf(res)
+  await storeSession((await res.json()) as ProxySession)
+}
+
 /** Ends the session at Neon Auth (best effort) and forgets it locally. */
 export async function proxySignOut(): Promise<void> {
   const token = await getMeta('session_token')

@@ -50,6 +50,15 @@ function fakeAuth(opts: { renew?: boolean; jwtHeader?: boolean } = {}) {
     }
     if (url === `${AUTH}/token`) return valid ? Response.json({ token: 'jwt-2' }) : new Response(null, { status: 401 })
     if (url === `${AUTH}/sign-out`) return Response.json({ success: true })
+    if (url === `${AUTH}/change-password`) {
+      if (!valid) return Response.json({ message: 'Unauthorized' }, { status: 401 })
+      const { currentPassword, revokeOtherSessions } = JSON.parse(String(init?.body))
+      if (currentPassword !== 'right') return Response.json({ message: 'Invalid password' }, { status: 400 })
+      return Response.json(
+        { token: 'raw2', user: { id: 'u1' } },
+        { headers: revokeOtherSessions ? { 'set-cookie': `${COOKIE}=new.sig; Path=/; HttpOnly; Secure` } : {} },
+      )
+    }
     if (url.startsWith(S3)) {
       const req = input as Request
       const key = url.slice(S3.length)
@@ -130,6 +139,26 @@ describe('auth proxy', () => {
     const res = await handle(req, env, f)
     expect(res.status).toBe(204)
     expect(res.headers.get('access-control-allow-origin')).toBe('http://localhost:5173')
+  })
+
+  it('changes the password, revokes other sessions and returns the new session', async () => {
+    const { f, calls } = fakeAuth()
+    const res = await handle(post('/change-password', { token: 'tok.sig', currentPassword: 'right', newPassword: 'n3w-secret' }), env, f)
+    expect(res.status).toBe(200)
+    const data = (await res.json()) as { token: string; jwt: string }
+    expect(data.token).toBe('new.sig')
+    expect(data.jwt).toBe('jwt-1')
+    const call = calls.find((c) => c.url === `${AUTH}/change-password`)!
+    expect(JSON.parse(call.body!)).toMatchObject({ revokeOtherSessions: true })
+    expect(call.headers.get('cookie')).toBe(`${COOKIE}=tok.sig`)
+  })
+
+  it('passes a wrong current password through', async () => {
+    const { f } = fakeAuth()
+    const res = await handle(post('/change-password', { token: 'tok.sig', currentPassword: 'wrong', newPassword: 'n3w-secret' }), env, f)
+    expect(res.status).toBe(400)
+    const missing = await handle(post('/change-password', { token: 'tok.sig' }), env, f)
+    expect(missing.status).toBe(400)
   })
 
   it('signs out with the session cookie', async () => {
