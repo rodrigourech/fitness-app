@@ -7,12 +7,15 @@ import {
   cancelWorkout,
   finishWorkout,
   getActiveWorkout,
+  openSetCount,
   parseDuration,
   parseNumber,
   previousSets,
   removeLastSet,
+  skipExercise,
   startWorkout,
   toggleSetDone,
+  unskipExercise,
 } from './workout'
 
 const USER = 'u1'
@@ -165,5 +168,73 @@ describe('add exercise to running workout', () => {
     expect(added.we.rest_s).toBe(120)
     // prefilled from DAY2 history: 35/35/30 kg
     expect(added.sets.map((x) => x.weight)).toEqual([35, 35, 30])
+  })
+})
+
+describe('decisions 9 October 2026', () => {
+  it('starts the last working set with RIR 2 and carries it to an added set', async () => {
+    const w = await startWorkout(day2, USER)
+    const s = await setsOf(w.id)
+    const curl = s['Lying Leg Curl (Machine)']!
+    expect(curl.sets.map((x) => x.rir)).toEqual([null, null, 2])
+    await addSet(curl.we)
+    const after = (await setsOf(w.id))['Lying Leg Curl (Machine)']!.sets
+    expect(after.at(-1)!.rir).toBe(2)
+  })
+
+  it('keeps a skipped exercise in the history without sets and ignores it for the prefill', async () => {
+    const w1 = await startWorkout(day2, USER)
+    const s1 = await setsOf(w1.id)
+    const curl = s1['Lying Leg Curl (Machine)']!
+    await skipExercise(curl.we)
+    expect(await openSetCount(w1.id)).toBe(
+      Object.entries(s1)
+        .filter(([name]) => name !== 'Lying Leg Curl (Machine)')
+        .reduce((n, [, x]) => n + x.sets.length, 0),
+    )
+    await finishWorkout(w1)
+    const we = (await db.workout_exercise.get(curl.we.id))!
+    expect(we.deleted_at).toBeNull()
+    expect(we.skipped_at).not.toBeNull()
+    expect((await db.workout_set.where('workout_exercise_id').equals(we.id).toArray()).every((x) => x.deleted_at !== null)).toBe(true)
+    // The prefill still uses the last real performance (35/35/30 kg)
+    const w2 = await startWorkout(day2, USER)
+    expect((await setsOf(w2.id))['Lying Leg Curl (Machine)']!.sets.map((x) => x.weight)).toEqual([35, 35, 30])
+  })
+
+  it('cannot skip an exercise with a completed set; unskip restores it', async () => {
+    const w = await startWorkout(day2, USER)
+    const curl = (await setsOf(w.id))['Lying Leg Curl (Machine)']!
+    await skipExercise(curl.we)
+    await unskipExercise(curl.we)
+    expect((await db.workout_exercise.get(curl.we.id))!.skipped_at).toBeNull()
+    await toggleSetDone(curl.sets[0]!)
+    await expect(skipExercise(curl.we)).rejects.toThrow()
+  })
+
+  it('prefills a new template from its targets, not from another template', async () => {
+    const curlId = (await db.exercise.toArray()).find((e) => e.name === 'Lying Leg Curl (Machine)')!.id
+    const ts = '2026-10-09T08:00:00Z'
+    const b = { user_id: USER, created_at: ts, updated_at: ts, deleted_at: null }
+    await db.template.put({ ...b, id: 't-new', name: 'Main Day B', note: null })
+    await db.template_exercise.put({ ...b, id: 'te-new', template_id: 't-new', exercise_id: curlId, position: 1, rest_s: 60, comment: null })
+    await db.template_set.bulkPut(
+      [1, 2, 3].map((i) => ({
+        ...b,
+        id: `ts-${i}`,
+        template_exercise_id: 'te-new',
+        position: i,
+        set_type: 'working' as const,
+        target_reps_min: 8,
+        target_reps_max: 10,
+        target_weight: 40,
+        target_duration_s: null,
+        target_distance_km: null,
+      })),
+    )
+    const w = await startWorkout('t-new', USER)
+    const s = (await setsOf(w.id))['Lying Leg Curl (Machine)']!
+    expect(s.sets.map((x) => x.weight)).toEqual([40, 40, 40])
+    expect(s.we.rest_s).toBe(60)
   })
 })

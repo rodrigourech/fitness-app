@@ -273,7 +273,7 @@ function ReadyCard() {
                 </span>
               </span>
               <span className="shrink-0 rounded-md bg-accent-soft px-2 py-1 text-sm font-semibold text-accent-ink tabular-nums">
-                {r.next !== null ? `Try ${r.next} kg` : 'Increase'}
+                Increase weight
               </span>
             </li>
           ))}

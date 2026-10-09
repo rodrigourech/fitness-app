@@ -30,6 +30,8 @@ import {
   parseNumber,
   previousSets,
   removeLastSet,
+  skipExercise,
+  unskipExercise,
   toggleSetDone,
   updateSet,
   updateWorkout,
@@ -66,7 +68,7 @@ async function loadBlocks(workoutId: string, templateId: string | null): Promise
   return Promise.all(
     active.map(async (we) => {
       const exercise = byId.get(we.exercise_id)
-      const prev = await previousSets(we.exercise_id, workoutId)
+      const prev = await previousSets(we.exercise_id, workoutId, templateId)
       const increase = shouldIncrease(prev, await targetRepsFor(templateId, we.exercise_id))
       return {
         we,
@@ -236,6 +238,21 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
     ? effective(exercise, byId)
     : { trackingType: 'weight_reps', isUnilateral: false, floor: null, seat: null, footPosition: null, setupNote: null, focusMuscles: [] as string[], focusCue: null, restS: null }
 
+  const anyDone = sets.some((s) => s.completed_at !== null)
+
+  if (we.skipped_at)
+    return (
+      <section className="card flex items-center justify-between gap-3 p-3 opacity-70">
+        <span className="min-w-0">
+          <span className="block truncate font-semibold line-through decoration-zinc-400">{name}</span>
+          <span className="block text-xs text-zinc-500 dark:text-zinc-400">Skipped in this workout</span>
+        </span>
+        <button onClick={() => void unskipExercise(we)} className="shrink-0 rounded-md bg-zinc-100 px-3 py-1.5 text-sm font-medium dark:bg-zinc-800">
+          Undo
+        </button>
+      </section>
+    )
+
   const prevWorking = previous.filter((s) => s.set_type === 'working')
   // RIR is recorded only for the last working set, below the set rows
   const lastWorking = sets.filter((s) => s.set_type === 'working').at(-1)
@@ -261,20 +278,27 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
             {name} <span className="text-zinc-400">›</span>
           </h2>
         </button>
-        <VideoButton links={links} />
+        <span className="flex shrink-0 items-center gap-1">
+          <VideoButton links={links} />
+          {!anyDone && (
+            <button
+              onClick={() => void skipExercise(we)}
+              className="rounded-md px-2 py-1 text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+            >
+              Skip
+            </button>
+          )}
+        </span>
       </div>
       {eff.setupNote && <p className="text-sm whitespace-pre-line text-zinc-500 dark:text-zinc-400">{eff.setupNote}</p>}
       {increase && (
         <p className="mt-1 rounded-md bg-accent-soft px-2 py-1 text-sm font-medium text-accent-ink">
-          {suggestion?.next != null ? (
-            <>
-              ↑ Try {suggestion.next} kg{' '}
-              <span className="font-normal opacity-80">
-                · last {suggestion.lastWeight} kg × {suggestion.reps.join(' · ')}
-              </span>
-            </>
-          ) : (
-            '↑ Last time every set hit the target with RIR ≥ 2. Increase the weight.'
+          ↑ Increase weight
+          {suggestion && (
+            <span className="font-normal opacity-80">
+              {' '}
+              · last {suggestion.lastWeight} kg × {suggestion.reps.join(' · ')} with RIR ≥ 2
+            </span>
           )}
         </p>
       )}
@@ -317,7 +341,7 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
               previous={describeSet(prev, tt, eff.isUnilateral)}
               trackingType={tt}
               unilateral={eff.isUnilateral}
-              restSeconds={eff.restS ?? we.rest_s}
+              restSeconds={we.rest_s ?? eff.restS}
               records={recordsOf(s, best)}
             />
           )

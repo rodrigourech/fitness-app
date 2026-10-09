@@ -10,11 +10,11 @@ export interface ReadyExercise extends WeightSuggestion {
 
 /**
  * Exercises of the current workouts (templates) whose progression rule is met by the last workout:
- * all working sets reached the target reps and the last one had RIR >= 2.
+ * all working sets reached the target reps and the last one had RIR >= 2. Archived workouts are ignored.
  */
 export async function readyToIncrease(): Promise<ReadyExercise[]> {
   const [templates, tes, exercises] = await Promise.all([
-    db.template.filter((t) => t.deleted_at === null).toArray(),
+    db.template.filter((t) => t.deleted_at === null && !t.archived_at).toArray(),
     db.template_exercise.filter((te) => te.deleted_at === null).toArray(),
     db.exercise.toArray(),
   ])
@@ -27,7 +27,7 @@ export async function readyToIncrease(): Promise<ReadyExercise[]> {
     seen.add(te.exercise_id)
     const ex = byId.get(te.exercise_id)
     if (!ex || effective(ex, byId).trackingType !== 'weight_reps') continue
-    const prev = await previousSets(te.exercise_id)
+    const prev = await previousSets(te.exercise_id, undefined, te.template_id)
     if (!shouldIncrease(prev, await targetRepsFor(te.template_id, te.exercise_id))) continue
     const s = suggestWeight(prev, effective(ex, byId).weightStep)
     if (!s) continue

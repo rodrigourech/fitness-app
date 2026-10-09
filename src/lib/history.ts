@@ -15,7 +15,9 @@ export async function finishedWorkouts(): Promise<WorkoutSummary[]> {
   const workouts = (await db.workout.toArray())
     .filter((w) => w.deleted_at === null && w.finished_at !== null)
     .sort((a, b) => b.started_at.localeCompare(a.started_at))
-  const wes = (await db.workout_exercise.where('workout_id').anyOf(workouts.map((w) => w.id)).toArray()).filter((we) => we.deleted_at === null)
+  const wes = (await db.workout_exercise.where('workout_id').anyOf(workouts.map((w) => w.id)).toArray()).filter(
+    (we) => we.deleted_at === null && !we.skipped_at,
+  )
   const sets = (await db.workout_set.where('workout_exercise_id').anyOf(wes.map((we) => we.id)).toArray()).filter((s) => s.deleted_at === null)
   return workouts.map((w) => {
     const myWes = wes.filter((we) => we.workout_id === w.id)
@@ -33,6 +35,8 @@ export async function finishedWorkouts(): Promise<WorkoutSummary[]> {
 
 export interface DetailExercise {
   name: string
+  /** Skipped as a whole in this workout */
+  skipped: boolean
   trackingType: string
   unilateral: boolean
   sets: WorkoutSet[]
@@ -50,6 +54,7 @@ export async function workoutDetail(workoutId: string): Promise<DetailExercise[]
       const eff = ex ? effective(ex, byId) : null
       return {
         name: ex ? displayName(ex, byId) : 'Unknown exercise',
+        skipped: !!we.skipped_at,
         trackingType: eff?.trackingType ?? 'weight_reps',
         unilateral: eff?.isUnilateral ?? false,
         sets: (await db.workout_set.where('workout_exercise_id').equals(we.id).toArray())

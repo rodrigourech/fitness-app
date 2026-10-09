@@ -143,6 +143,13 @@ function rirLabel(rir: number | null): string {
 
 /** One exercise of a finished workout as a compact table with a summary line. */
 function ExerciseResult({ ex }: { ex: DetailExercise }) {
+  if (ex.skipped)
+    return (
+      <p className="flex items-baseline justify-between gap-2 text-sm">
+        <span className="font-semibold text-zinc-500 line-through decoration-zinc-400 dark:text-zinc-400">{ex.name}</span>
+        <span className="text-xs text-zinc-500 dark:text-zinc-400">Skipped</span>
+      </p>
+    )
   const working = ex.sets.filter((s) => s.set_type === 'working')
   const kind = ex.trackingType
 

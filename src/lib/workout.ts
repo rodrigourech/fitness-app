@@ -17,15 +17,30 @@ export async function getActiveWorkout(): Promise<Workout | undefined> {
 }
 
 /**
- * Sets of the most recent finished workout containing the exercise.
+ * Sets of the most recent finished workout containing the exercise (skipped exercises do not count).
  * In a finished workout every remaining set counts as done (open sets are discarded at finish;
  * imported history has no completed_at).
+ * With templateId, a workout of that template is preferred; other workouts are the fallback
+ * (decision 9 October 2026: a Bonus Day uses lighter weights than the Main Days).
  */
-export async function previousSets(exerciseId: string, excludeWorkoutId?: string): Promise<WorkoutSet[]> {
+export async function previousSets(exerciseId: string, excludeWorkoutId?: string, templateId?: string | null): Promise<WorkoutSet[]> {
+  if (templateId) {
+    const own = await latestSets(exerciseId, excludeWorkoutId, templateId)
+    if (own.length) return own
+  }
+  return latestSets(exerciseId, excludeWorkoutId, null)
+}
+
+/** Like previousSets, but only workouts of this template (no fallback). */
+export async function previousSetsOfTemplate(exerciseId: string, templateId: string, excludeWorkoutId?: string): Promise<WorkoutSet[]> {
+  return latestSets(exerciseId, excludeWorkoutId, templateId)
+}
+
+async function latestSets(exerciseId: string, excludeWorkoutId: string | undefined, templateId: string | null): Promise<WorkoutSet[]> {
   const candidates = await db.workout_exercise
     .where('exercise_id')
     .equals(exerciseId)
-    .filter((we) => we.deleted_at === null && we.workout_id !== excludeWorkoutId)
+    .filter((we) => we.deleted_at === null && !we.skipped_at && we.workout_id !== excludeWorkoutId)
     .toArray()
   if (candidates.length === 0) return []
   const workouts = await db.workout.bulkGet(candidates.map((c) => c.workout_id))
@@ -33,6 +48,7 @@ export async function previousSets(exerciseId: string, excludeWorkoutId?: string
   candidates.forEach((we, i) => {
     const w = workouts[i]
     if (!w || w.deleted_at !== null || w.finished_at === null) return
+    if (templateId && w.template_id !== templateId) return
     if (!best || w.started_at > best.started) best = { we, started: w.started_at }
   })
   if (!best) return []
@@ -44,6 +60,9 @@ export async function previousSets(exerciseId: string, excludeWorkoutId?: string
     .toArray()
   return sets.sort((a, b) => a.position - b.position)
 }
+
+/** RIR the last working set starts with (training plan 9 October 2026: 1–2 in reserve, no failure). */
+export const DEFAULT_RIR = 2
 
 type Measure = Pick<WorkoutSet, 'weight' | 'reps' | 'reps_left' | 'reps_right' | 'duration_s' | 'distance_km'>
 
@@ -96,13 +115,21 @@ export async function startWorkout(templateId: string, userId: string): Promise<
     const planned = (await db.template_set.where('template_exercise_id').equals(te.id).toArray())
       .filter((s) => s.deleted_at === null)
       .sort((a, b) => a.position - b.position)
-    const prev = await previousSets(te.exercise_id)
+    // Prefill: last performance in this template; else the template targets; else any last performance
+    const own = await previousSetsOfTemplate(te.exercise_id, templateId)
+    const hasTargets = planned.some((p) => p.target_weight !== null)
+    const prev = own.length || hasTargets ? own : await previousSets(te.exercise_id)
     const prevWorking = prev.filter((s) => s.set_type === 'working')
+    const prevWarmup = prev.filter((s) => s.set_type === 'warmup')
+    const lastWorking = planned.filter((p) => p.set_type === 'working').at(-1)
 
     let workingIndex = 0
+    let warmupIndex = 0
     for (const p of planned) {
-      const source = p.set_type === 'working' ? (prevWorking[workingIndex] ?? prevWorking.at(-1)) : undefined
-      if (p.set_type === 'working') workingIndex++
+      const source =
+        p.set_type === 'working'
+          ? (prevWorking[workingIndex++] ?? prevWorking.at(-1))
+          : (prevWarmup[warmupIndex++] ?? prevWarmup.at(-1))
       const m: Measure = source
         ? measureOf(source)
         : {
@@ -119,7 +146,7 @@ export async function startWorkout(templateId: string, userId: string): Promise<
         position: p.position,
         set_type: p.set_type,
         ...m,
-        rir: null,
+        rir: p === lastWorking ? DEFAULT_RIR : null,
         completed_at: null,
         ...base(userId, ts),
       })
@@ -159,7 +186,7 @@ export async function addExerciseToWorkout(w: Workout, exerciseId: string): Prom
       position: i + 1,
       set_type: 'working',
       ...(p ? measureOf(p) : { weight: null, reps: null, reps_left: null, reps_right: null, duration_s: null, distance_km: null }),
-      rir: null,
+      rir: i === count - 1 ? DEFAULT_RIR : null,
       completed_at: null,
       ...base(w.user_id, ts),
     }
@@ -199,7 +226,8 @@ export async function addSet(we: WorkoutExercise): Promise<void> {
       reps_right: last?.reps_right ?? null,
       duration_s: last?.duration_s ?? null,
       distance_km: last?.distance_km ?? null,
-      rir: null,
+      // The new set becomes the last working set, which carries the RIR
+      rir: last?.set_type === 'working' ? last.rir : DEFAULT_RIR,
       completed_at: null,
       ...base(we.user_id, ts),
     } satisfies WorkoutSet,
@@ -230,10 +258,11 @@ async function workoutParts(workoutId: string) {
   return { wes, sets }
 }
 
-/** Number of sets that would be discarded when finishing. */
+/** Number of sets that would be discarded when finishing (sets of skipped exercises do not count). */
 export async function openSetCount(workoutId: string): Promise<number> {
-  const { sets } = await workoutParts(workoutId)
-  return sets.filter((s) => s.completed_at === null).length
+  const { wes, sets } = await workoutParts(workoutId)
+  const skipped = new Set(wes.filter((we) => we.skipped_at).map((we) => we.id))
+  return sets.filter((s) => s.completed_at === null && !skipped.has(s.workout_exercise_id)).length
 }
 
 /** Finishes a workout: open sets and exercises without completed sets are discarded. */
@@ -242,10 +271,24 @@ export async function finishWorkout(w: Workout): Promise<void> {
   const { wes, sets } = await workoutParts(w.id)
   const open = sets.filter((s) => s.completed_at === null)
   const doneByExercise = new Set(sets.filter((s) => s.completed_at !== null).map((s) => s.workout_exercise_id))
-  const emptyExercises = wes.filter((we) => !doneByExercise.has(we.id))
+  // Skipped exercises stay (shown as skipped in the history); their open sets are discarded
+  const emptyExercises = wes.filter((we) => !doneByExercise.has(we.id) && !we.skipped_at)
   if (open.length) await saveRows('workout_set', open.map((s) => ({ ...s, deleted_at: ts })))
   if (emptyExercises.length) await saveRows('workout_exercise', emptyExercises.map((we) => ({ ...we, deleted_at: ts })))
   await updateWorkout(w, { finished_at: ts })
+}
+
+/** Skips an exercise as a whole in a running workout; only possible while none of its sets is done. */
+export async function skipExercise(we: WorkoutExercise): Promise<void> {
+  const current = (await db.workout_exercise.get(we.id)) ?? we
+  const sets = await db.workout_set.where('workout_exercise_id').equals(we.id).toArray()
+  if (sets.some((s) => s.deleted_at === null && s.completed_at !== null)) throw new Error('Some sets are already done.')
+  await saveRows('workout_exercise', [{ ...current, skipped_at: now() }])
+}
+
+export async function unskipExercise(we: WorkoutExercise): Promise<void> {
+  const current = (await db.workout_exercise.get(we.id)) ?? we
+  await saveRows('workout_exercise', [{ ...current, skipped_at: null }])
 }
 
 /** Discards the whole workout (soft delete). */
