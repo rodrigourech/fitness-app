@@ -2,7 +2,7 @@
 
 Zentrale Übergabe für alle KI-Agenten und Sitzungen. Zuerst CLAUDE.md lesen (Regeln, Stack, Konventionen), dann diese Datei. Am Ende jeder Sitzung hier nachführen: Stand, offene Punkte, neue Hinweise. Entscheidungen gehören zusätzlich nach docs/entscheidungen.md.
 
-Letzte Aktualisierung 8. Oktober 2026
+Letzte Aktualisierung 9. Oktober 2026
 
 ## Orte
 
@@ -17,25 +17,26 @@ Letzte Aktualisierung 8. Oktober 2026
 - Die GitHub-Pages-Auslieferung von 039fa7b ist erfolgreich. Live-Bundle am 8. Oktober geprüft: «Change passphrase» und «Forgot passphrase?» sind enthalten
 - Migrationen 0001 bis 0011 sind eingespielt; 0011 (purged_at) am 8. Oktober 2026 geprüft, Schema-Cache aktualisiert
 - Die vier Commits mit «Change passphrase», «Forgot passphrase?» und zentraler Übergabedokumentation sind gepusht. Typprüfung, Lint, alle 83 Tests und Produktionsbuild erfolgreich; Vitest lief wegen temporärer Dateien ausserhalb der Windows-Sandbox
-- Änderungen an docs/STATUS.md sind lokal noch nicht committet. Untracked: .q.mjs und «Claude outputs/»
-- Plan zur Umsetzung der Wunschliste vorgelegt: Übung mit Rückfrage nur im laufenden Training überspringen, RIR bei neuen Kraftsätzen auf 0, «Change password» und Node-24-Actions. Bestätigung und Wahl der Progressionsregel stehen aus; noch keine dieser neuen Funktionen implementiert
+- 265f945 (`fix(ui): make photo passphrase controls easier to find`) ist auf main gepusht; Deployment dieser Verbesserung noch nicht abschliessend geprüft. Untracked: .q.mjs und «Claude outputs/»
 - Browser-/Computer-use-Zugriff scheitert am lokalen Automatisierungsdienst (Node-Kernel beendet sich). Gewichtseintrag und Fotos deshalb nicht über die App verändert
-- Foto-Bereich verbessert: «Change passphrase» als grosser Button bei entsperrten Fotos; bei gesperrten Fotos Erklärung zum Entsperren oder Wechsel auf einem anderen Gerät. Während der Schlüsselprüfung eigener Ladehinweis. Alle 83 Tests, Typprüfung und Lint erfolgreich
-- Neues Home-Menü angefragt. Plan: Home als Startseite, Wochenziel, Start/Resume, letztes Training, Gewichtsverlauf und Schnellzugriffe; Designvorschau mit Beispieldaten vorbereitet. Planfreigabe steht aus
+- Foto-Bereich verbessert: «Change passphrase» als grosser Button bei entsperrten Fotos; bei gesperrten Fotos Erklärung zum Entsperren oder Wechsel auf einem anderen Gerät. Während der Schlüsselprüfung eigener Ladehinweis. Alle 83 Tests, Typprüfung, Lint und Produktionsbuild erfolgreich
 
 ## Nächste Schritte
 
-1. Verbesserung des Foto-Bereichs veröffentlichen und App neu laden (iPhone ganz schliessen)
+1. Migrationen 0012 und 0013 einspielen, Schema-Cache aktualisieren, pushen, Auth-Proxy deployen (siehe oben), App neu laden (iPhone ganz schliessen)
 2. Gewichtseintrag vom 7. Oktober 2026 über den Papierkorb wiederherstellen
 3. Foto-Passphrase ist vergessen. Zeigt ein Gerät die Fotos noch, dort «Change passphrase»; sonst «Unlock photos», dann «Forgot passphrase?»
 
+## Umgesetzt am 9. Oktober 2026 (lokal committet, noch nicht gepusht)
+
+- Trainingsplan vom 9. Oktober als Daten-Migration 0013; Progression nach Plan («Increase weight» ohne Zahl, RIR startet bei 2); Übung überspringen; Pause pro Vorlage; Workouts mit Active/Archive; neuer Reiter Home; «Change password». Details in docs/entscheidungen.md
+- Reihenfolge für die Freigabe: 0012 im Neon SQL Editor, dann 0013, dann Data API «Refresh schema cache», danach `git push origin main`
+- Nach dem Push den Auth-Proxy neu deployen (Route /change-password), sonst meldet «Change password» einen Fehler: `neon deploy` wie in docs/hosting.md
+
 ## Wunschliste (noch nicht umsetzen, erst Plan vorlegen)
 
-- Übung im laufenden Training als Ganzes überspringen (nur dieses Training, Vorlage unverändert)
-- RIR standardmässig 0, bei Bedarf manuell erhöhen. Vorher klären, wie das mit der Progressionsregel (RIR mindestens 2 im letzten Satz löst «Try X kg» aus) zusammenspielt
 - Foto-Funktion auf zweitem Gerät testen
 - Safari-Tracking-Schutz auf dem iPhone wieder einschalten
-- «Change password» in der App
 - GitHub Actions auf Node-24-Versionen aktualisieren
 
 ## Arbeitsweise und Hinweise
