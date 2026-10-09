@@ -23,15 +23,14 @@ Letzte Aktualisierung 9. Oktober 2026
 
 ## Nächste Schritte
 
-1. Migrationen 0012 und 0013 einspielen, Schema-Cache aktualisieren, pushen, Auth-Proxy deployen (siehe oben), App neu laden (iPhone ganz schliessen)
+1. App neu laden (iPhone ganz schliessen) und die neuen Funktionen im ersten Training mit dem neuen Plan prüfen
 2. Gewichtseintrag vom 7. Oktober 2026 über den Papierkorb wiederherstellen
 3. Foto-Passphrase ist vergessen. Zeigt ein Gerät die Fotos noch, dort «Change passphrase»; sonst «Unlock photos», dann «Forgot passphrase?»
 
-## Umgesetzt am 9. Oktober 2026 (lokal committet, noch nicht gepusht)
+## Umgesetzt und live am 9. Oktober 2026 (f0a460d)
 
 - Trainingsplan vom 9. Oktober als Daten-Migration 0013; Progression nach Plan («Increase weight» ohne Zahl, RIR startet bei 2); Übung überspringen; Pause pro Vorlage; Workouts mit Active/Archive; neuer Reiter Home; «Change password». Details in docs/entscheidungen.md
-- Reihenfolge für die Freigabe: 0012 im Neon SQL Editor, dann 0013, dann Data API «Refresh schema cache», danach `git push origin main`
-- Nach dem Push den Auth-Proxy neu deployen (Route /change-password), sonst meldet «Change password» einen Fehler: `neon deploy` wie in docs/hosting.md
+- 0012 und 0013 eingespielt und geprüft (Main Day A/B, Bonus Day, Run aktiv; DAY1, DAY2, Lauf archiviert), Schema-Cache aktualisiert, gepusht, Auth-Proxy mit `neon deploy` neu veröffentlicht
 
 ## Wunschliste (noch nicht umsetzen, erst Plan vorlegen)
 

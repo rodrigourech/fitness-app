@@ -23,5 +23,5 @@ Ohne diesen Schritt liefert die Data API neue Spalten nicht aus und lehnt sie be
 | 0009_user_setting.sql | Tabelle user_setting für geräteübergreifende Einstellungen (Wochenziel) | 5. Oktober 2026 (laut Rodrigo vor dem Push ausgeführt) |
 | 0010_body_photo.sql | body_weight.condition und note; Tabelle body_photo (Metadaten verschlüsselter Fortschrittsfotos) | 5. Oktober 2026, refresh-schema ausgeführt; Bucket body-photos per neon deploy |
 | 0011_trash.sql | purged_at für body_weight, body_photo, workout (Papierkorb) | 8. Oktober 2026, refresh-schema ausgeführt |
-| 0012_archive_skip.sql | template.archived_at und purged_at, workout_exercise.skipped_at; alte template_exercise.rest_s geleert | noch nicht eingespielt; vor dem Push ausführen, danach refresh-schema |
-| 0013_plan_2026_10_09.sql | Nur Daten: Trainingsplan vom 9. Oktober (Main Day A/B, Bonus Day, Run), DAY1/DAY2/Lauf archiviert | noch nicht eingespielt; nach 0012 |
+| 0012_archive_skip.sql | template.archived_at und purged_at, workout_exercise.skipped_at; alte template_exercise.rest_s geleert | 9. Oktober 2026, refresh-schema ausgeführt |
+| 0013_plan_2026_10_09.sql | Nur Daten: Trainingsplan vom 9. Oktober (Main Day A/B, Bonus Day, Run), DAY1/DAY2/Lauf archiviert | 9. Oktober 2026, geprüft |
