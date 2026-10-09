@@ -233,7 +233,7 @@ export default function WorkoutPage({ workout, onReauth, onMinimize }: Props) {
 }
 
 function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map<string, Exercise>; onOpen: (exerciseId: string) => void }) {
-  const { we, exercise, name, sets, previous, links, best, increase, suggestion } = block
+  const { we, exercise, name, sets, previous, links, best, increase } = block
   const eff = exercise
     ? effective(exercise, byId)
     : { trackingType: 'weight_reps', isUnilateral: false, floor: null, seat: null, footPosition: null, setupNote: null, focusMuscles: [] as string[], focusCue: null, restS: null }
@@ -294,12 +294,6 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
       {increase && (
         <p className="mt-1 rounded-md bg-accent-soft px-2 py-1 text-sm font-medium text-accent-ink">
           ↑ Increase weight
-          {suggestion && (
-            <span className="font-normal opacity-80">
-              {' '}
-              · last {suggestion.lastWeight} kg × {suggestion.reps.join(' · ')} with RIR ≥ 2
-            </span>
-          )}
         </p>
       )}
 

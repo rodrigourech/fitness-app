@@ -266,12 +266,7 @@ function ReadyCard() {
         <ul className="flex flex-col">
           {ready.map((r) => (
             <li key={r.exerciseId} className="flex items-baseline justify-between gap-3 border-t border-zinc-100 py-2 first:border-t-0 dark:border-zinc-800">
-              <span className="min-w-0">
-                <span className="block truncate text-sm">{r.name}</span>
-                <span className="block text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
-                  last {r.lastWeight} kg × {r.reps.join(' · ')}
-                </span>
-              </span>
+              <span className="min-w-0 truncate text-sm">{r.name}</span>
               <span className="shrink-0 rounded-md bg-accent-soft px-2 py-1 text-sm font-semibold text-accent-ink tabular-nums">
                 Increase weight
               </span>

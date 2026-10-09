@@ -112,11 +112,8 @@ export default function HomeTab({ cards, running, onStart, onResume, onOpen }: P
           <h2 className="mb-1 text-sm font-semibold text-amber-800 dark:text-amber-300">↑ Increase weight next time</h2>
           <ul className="text-sm">
             {s.ready.map((r) => (
-              <li key={r.exerciseId} className="py-1">
-                <span className="block">{r.name}</span>
-                <span className="block text-xs text-zinc-600 tabular-nums dark:text-zinc-400">
-                  last {r.lastWeight} kg × {r.reps.join(' · ')}
-                </span>
+              <li key={r.exerciseId} className="py-0.5">
+                {r.name}
               </li>
             ))}
           </ul>
