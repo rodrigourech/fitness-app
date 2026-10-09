@@ -43,12 +43,17 @@ export interface ExerciseLink extends SyncColumns {
 export interface Template extends SyncColumns {
   name: string
   note: string | null
+  /** Archived instead of deleted (migration 0012); shown in the section Archive */
+  archived_at?: string | null
+  /** Removed from the trash for good (migration 0012) */
+  purged_at?: string | null
 }
 
 export interface TemplateExercise extends SyncColumns {
   template_id: string
   exercise_id: string
   position: number
+  /** Rest override for this template; null = the exercise's default rest (decision 9 October 2026) */
   rest_s: number | null
   comment: string | null
 }
@@ -82,6 +87,8 @@ export interface WorkoutExercise extends SyncColumns {
   position: number
   rest_s: number | null
   comment: string | null
+  /** Skipped as a whole in this workout (migration 0012) */
+  skipped_at?: string | null
 }
 
 export interface WorkoutSet extends SyncColumns {
