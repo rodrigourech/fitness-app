@@ -1,4 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
+import { isBetaSandbox } from './environment'
 
 // Local schema mirrors docs/03_datenmodell.md. Field names match Postgres columns.
 
@@ -32,6 +33,10 @@ export interface Exercise extends SyncColumns {
   /** Regions of the body map to feel (mind-muscle connection); null on a variant = inherit */
   focus_muscles: string[] | null
   focus_cue: string | null
+  /** Null on a variant means inherit (migration 0014). */
+  target_reps?: number | null
+  min_reps?: number | null
+  warm_up?: boolean | null
 }
 
 export interface ExerciseLink extends SyncColumns {
@@ -89,6 +94,10 @@ export interface WorkoutExercise extends SyncColumns {
   comment: string | null
   /** Skipped as a whole in this workout (migration 0012) */
   skipped_at?: string | null
+  /** Training settings copied at workout start (migration 0014). */
+  target_reps?: number | null
+  min_reps?: number | null
+  warm_up?: boolean | null
 }
 
 export interface WorkoutSet extends SyncColumns {
@@ -197,7 +206,8 @@ export interface Meta {
 }
 
 // The beta build uses its own local database (VITE_DB_NAME), so it never upgrades the live app's data
-export const db = new Dexie(import.meta.env.VITE_DB_NAME || 'fitness-app') as Dexie & {
+const databaseName = isBetaSandbox ? 'fitness-app-beta-progression-v1' : (import.meta.env.VITE_DB_NAME || 'fitness-app')
+export const db = new Dexie(databaseName) as Dexie & {
   exercise_catalog: EntityTable<CatalogExercise, 'id'>
   exercise: EntityTable<Exercise, 'id'>
   exercise_link: EntityTable<ExerciseLink, 'id'>

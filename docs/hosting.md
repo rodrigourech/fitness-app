@@ -35,8 +35,13 @@ Neon Auth hält die Sitzung in einem Cookie auf der eigenen Domain. Safari und i
 
 ## **Beta-Version vor einer Freigabe**
 
-- Pushes auf den Branch `major-update` baut der Workflow als Beta und veröffentlicht sie unter https://rodrigourech.github.io/fitness-app-web/beta/
-- Die Beta nutzt eine eigene lokale Datenbank (`VITE_DB_NAME=fitness-app-beta`) und einen eigenen Service Worker, synchronisiert aber mit derselben Neon-Datenbank. Neue Tabellen müssen deshalb vor dem Beta-Test migriert sein
-- Freigabe: `major-update` in `main` mergen und pushen. Der Deploy von `main` ersetzt den ganzen Inhalt von fitness-app-web, die Beta verschwindet damit
-- Zurück zum Stand vor dem Update: `git checkout main`, `git reset --hard v1-vor-update`, `git push --force-with-lease`. Die Datenbank-Erweiterungen bleiben bestehen und stören die alte Version nicht
+- Pushes auf `codex/beta-progression` oder den älteren Branch `major-update` veröffentlicht der Workflow ausschliesslich unter https://rodrigourech.github.io/fitness-app-web/beta/ (`destination_dir: beta`, `keep_files: true`). Live-Dateien werden dabei erhalten
+- Die aktuelle Beta nutzt `VITE_BETA_SANDBOX=true`, eine eigene lokale Datenbank (`fitness-app-beta-progression-v1`) und einen eigenen Service Worker mit Scope `/fitness-app-web/beta/`
+- Beim ersten Anmelden lädt die Beta alle Tabellen einmal lesend von Neon. Erst nach vollständigem Import wird die lokale Kopie freigegeben. Danach werden keine Änderungen hochgeladen und keine weiteren Live-Daten abgeholt. Beta-Daten gelten pro Gerät; sie sind keine geräteübergreifende Testumgebung
+- Neue Übungswerte und die Umstellung von Aufwärmsätzen zu Hinweisen werden ausschliesslich auf dieser Kopie vorbereitet. Foto-Uploads/-Löschungen und Passwortänderungen sind in der Beta gesperrt. Der Auth-Proxy wird nur für Anmeldung und die lesende Datenübernahme genutzt (Abmeldung beendet die separate Beta-Sitzung)
+- Auch `npm run dev` verwendet durch `.env.development` standardmässig die lokale Beta-Isolation. Für einen Beta-Produktionsbuild zusätzlich `APP_VARIANT=beta`, `BASE_PATH=/fitness-app-web/beta/` und `VITE_BETA_SANDBOX=true` setzen. CI übernimmt diese Werte automatisch
+- `build-info.json` im ausgelieferten Verzeichnis enthält Commit, Branch, Variante und die Beta-Isolation; damit lässt sich ein Deployment prüfen
+- Freigabe erst nach Zustimmung: Migration `0014_repetition_progression.sql` auf production einspielen, Data-API-Schema aktualisieren, dann den Beta-Branch in `main` übernehmen und pushen. Testdaten werden nicht automatisch übernommen
+- Verwerfen vor Freigabe: weiterhin die Live-Adresse verwenden und den Beta-Branch nicht mergen. `main` bleibt auf dem bisherigen Stand; production wurde weder migriert noch mit Beta-Testdaten beschrieben. Ein Reset oder Force-Push ist dafür nicht erforderlich
+- Ein späterer Deploy von `main` ersetzt wie bisher das gesamte Build-Repo und entfernt damit `/beta/`
 

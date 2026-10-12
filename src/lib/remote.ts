@@ -1,5 +1,6 @@
 import type { SyncTable } from './db'
 import { getJwt as proxyJwt } from './session'
+import { requireLiveWrites } from './environment'
 
 export type RemoteRow = Record<string, unknown> & { id: string; updated_at: string; synced_at: string }
 
@@ -61,6 +62,7 @@ export const neonRemote: RemoteApi = {
   },
 
   async upsert(table, rows) {
+    requireLiveWrites()
     await request(table, 'on_conflict=id', {
       method: 'POST',
       headers: { 'content-type': 'application/json', prefer: 'resolution=merge-duplicates,return=minimal' },

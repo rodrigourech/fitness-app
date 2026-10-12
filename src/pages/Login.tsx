@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { SignInError, signIn, type LocalUser } from '../lib/auth'
+import { isBetaSandbox } from '../lib/environment'
 
 interface Props {
   onSignedIn: (user: LocalUser) => void
@@ -26,7 +27,8 @@ export default function Login({ onSignedIn }: Props) {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-6">
-      <h1 className="mb-8 text-3xl font-bold tracking-tight">Fitness App</h1>
+      <h1 className="mb-8 text-3xl font-bold tracking-tight">Fitness App{isBetaSandbox ? ' Beta' : ''}</h1>
+      {isBetaSandbox && <p className="mb-5 text-sm text-zinc-500 dark:text-zinc-400">Sign in to load a one-time copy of your live data. Test changes stay on this device and are not shared with other devices. Your live app stays unchanged.</p>}
       <form onSubmit={submit} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1">
           <span className="text-sm text-zinc-500 dark:text-zinc-400">Username</span>

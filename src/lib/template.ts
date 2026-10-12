@@ -1,6 +1,7 @@
 import { db, type Template, type TemplateExercise, type TemplateSet } from './db'
 import { saveRows } from './sync'
 import { effective, previousSets } from './workout'
+import { validRepetitionTargets } from './training'
 
 // Template editing. Workouts copy a template at start, so edits never change past workouts.
 
@@ -90,8 +91,8 @@ export async function addTemplateExercise(templateId: string, exerciseId: string
   const last = (await previousSets(ex.id)).filter((s) => s.set_type === 'working').at(-1)
   const weightReps = eff.trackingType === 'weight_reps'
   const targets: Targets = {
-    target_reps_min: weightReps ? 10 : null,
-    target_reps_max: weightReps ? 10 : null,
+    target_reps_min: null,
+    target_reps_max: null,
     target_weight: weightReps ? (last?.weight ?? null) : null,
     target_duration_s: eff.trackingType === 'weight_reps' ? null : (last?.duration_s ?? null),
     target_distance_km: eff.trackingType === 'distance_duration' ? (last?.distance_km ?? null) : null,
@@ -129,7 +130,7 @@ export async function setTemplateExerciseVariant(te: TemplateExercise, exerciseI
 
 /** Sets the number of planned sets; new sets copy the targets of the last one. */
 export async function setPlannedSetCount(te: TemplateExercise, count: number): Promise<void> {
-  const sets = await activeSets(te.id)
+  const sets = (await activeSets(te.id)).filter((s) => s.set_type === 'working')
   const n = Math.max(1, Math.min(10, count))
   if (n > sets.length) {
     const last = sets.at(-1)
@@ -150,6 +151,19 @@ export async function setPlannedSetCount(te: TemplateExercise, count: number): P
 
 /** Applies the same targets to all planned sets of the exercise. */
 export async function setPlannedTargets(te: TemplateExercise, patch: Partial<Targets>): Promise<void> {
-  const sets = await activeSets(te.id)
+  const sets = (await activeSets(te.id)).filter((s) => s.set_type === 'working')
+  if ('target_reps_min' in patch || 'target_reps_max' in patch) {
+    const all = await db.exercise.toArray()
+    const byId = new Map(all.map((ex) => [ex.id, ex]))
+    const ex = byId.get(te.exercise_id)
+    if (!ex) throw new Error('Exercise not found')
+    const settings = effective(ex, byId)
+    for (const set of sets) {
+      const next = { ...set, ...patch }
+      if (!validRepetitionTargets(next.target_reps_max ?? settings.targetReps, next.target_reps_min ?? settings.minReps)) {
+        throw new Error('Minimum reps must be between 1 and target reps; target reps must be at most 100.')
+      }
+    }
+  }
   if (sets.length) await saveRows('template_set', sets.map((s) => ({ ...s, ...patch })))
 }

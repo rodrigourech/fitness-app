@@ -137,10 +137,6 @@ function Tile({ label, value }: { label: string; value: string }) {
   )
 }
 
-function rirLabel(rir: number | null): string {
-  return rir === null ? '' : rir >= 4 ? '4+' : String(rir)
-}
-
 /** One exercise of a finished workout as a compact table with a summary line. */
 function ExerciseResult({ ex }: { ex: DetailExercise }) {
   if (ex.skipped)
@@ -155,13 +151,12 @@ function ExerciseResult({ ex }: { ex: DetailExercise }) {
 
   // Columns depend on the tracking type; empty columns (e.g. weight of bodyweight sets) are hidden
   const hasWeight = ex.sets.some((s) => s.weight !== null)
-  const hasRir = ex.sets.some((s) => s.rir !== null)
   const head: string[] =
     kind === 'duration'
       ? ['Time']
       : kind === 'distance_duration'
         ? ['Distance', 'Time', 'Pace']
-        : [...(hasWeight ? ['kg'] : []), ...(ex.unilateral ? ['Left', 'Right'] : ['Reps']), ...(hasRir ? ['RIR'] : [])]
+        : [...(hasWeight ? ['kg'] : []), ...(ex.unilateral ? ['Left', 'Right'] : ['Reps'])]
 
   function cells(s: WorkoutSet): string[] {
     if (kind === 'duration') return [formatDuration(s.duration_s) || '–']
@@ -172,7 +167,6 @@ function ExerciseResult({ ex }: { ex: DetailExercise }) {
     return [
       ...(hasWeight ? [s.weight !== null ? formatNumber(s.weight) : '–'] : []),
       ...(ex.unilateral ? [formatNumber(s.reps_left) || '–', formatNumber(s.reps_right) || '–'] : [formatNumber(s.reps) || '–']),
-      ...(hasRir ? [rirLabel(s.rir)] : []),
     ]
   }
 

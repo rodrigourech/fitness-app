@@ -30,12 +30,14 @@ describe('formulas', () => {
     expect(volume([set({ weight: 30, reps: 10 }), set({ weight: 4.5, reps_left: 10, reps_right: 8 }), set({ weight: 20, reps: 10, set_type: 'warmup' })])).toBe(381)
   })
 
-  it('progression needs target reps on all sets and RIR >= 2 on the last', () => {
+  it('progression needs target reps on all work sets and ignores historical RIR', () => {
     const ok = [set({ reps: 10 }), set({ reps: 10, rir: 2 })]
     expect(shouldIncrease(ok, 10)).toBe(true)
     expect(shouldIncrease([set({ reps: 9 }), set({ reps: 10, rir: 3 })], 10)).toBe(false)
-    expect(shouldIncrease([set({ reps: 10 }), set({ reps: 10, rir: 1 })], 10)).toBe(false)
-    expect(shouldIncrease([set({ reps: 10 }), set({ reps: 10, rir: null })], 10)).toBe(false)
+    expect(shouldIncrease([set({ reps: 10 }), set({ reps: 10, rir: 1 })], 10)).toBe(true)
+    expect(shouldIncrease([set({ reps: 10 }), set({ reps: 10, rir: null })], 10)).toBe(true)
+    expect(shouldIncrease([], 10)).toBe(false)
+    expect(shouldIncrease([set({ reps: 10 }), set({ reps: 1, deleted_at: 'deleted' }), set({ reps: 1, set_type: 'warmup' })], 10)).toBe(true)
   })
 })
 
@@ -55,7 +57,7 @@ describe('records', () => {
     const day2 = (await db.template.toArray()).find((t) => t.name === 'DAY2')!
     const crunch = (await db.exercise.toArray()).find((e) => e.name === '−15°')!
     expect(await targetRepsFor(day2.id, crunch.id)).toBe(15)
-    expect(await targetRepsFor(null, crunch.id)).toBeNull()
+    expect(await targetRepsFor(null, crunch.id)).toBe(10)
   })
 })
 

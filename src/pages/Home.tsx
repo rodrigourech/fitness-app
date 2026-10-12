@@ -18,6 +18,8 @@ import ChangePasswordSheet from '../components/ChangePasswordSheet'
 import HomeTab, { type HomeTarget } from './HomeTab'
 import TemplateEditor from './TemplateEditor'
 import TrashPage from './TrashPage'
+import InfoPage from './InfoPage'
+import { isBetaSandbox } from '../lib/environment'
 
 interface Props {
   user: LocalUser
@@ -76,6 +78,7 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
   const [sheet, setSheet] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('home')
   const [account, setAccount] = useState(false)
+  const [info, setInfo] = useState(false)
   const [showArchive, setShowArchive] = useState(false)
   const [showActive, setShowActive] = useState(true)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
@@ -86,6 +89,7 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
 
   function open(target: HomeTarget) {
     if (target === 'trash') setTrash(true)
+    else if (target === 'info') setInfo(true)
     else if (target === 'account') setAccount(true)
     else setTab(target)
   }
@@ -99,10 +103,14 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
 
   if (editing) return <TemplateEditor templateId={editing} onDone={() => setEditing(null)} />
   if (trash) return <TrashPage onDone={() => setTrash(false)} />
+  if (info) return <InfoPage onDone={() => setInfo(false)} />
 
   return (
     <main className="mx-auto max-w-xl px-4 pb-10">
       <AppBar>
+        <button onClick={() => setInfo(true)} className="rounded-md px-2 py-1 text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">
+          Info
+        </button>
         <SyncBadge onReauth={() => void handleSignOut()} />
         <ThemeToggle />
         <button
@@ -301,7 +309,9 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
         </>
       )}
 
-      {account && <ChangePasswordSheet onClose={() => setAccount(false)} />}
+      {account && (isBetaSandbox ? (
+        <div className="mt-4 card p-4 text-sm">Password changes are available in the live app. <button onClick={() => setAccount(false)} className="ml-2 font-semibold text-accent-ink">Close</button></div>
+      ) : <ChangePasswordSheet onClose={() => setAccount(false)} />)}
       {sheet && <ExerciseSheet exerciseId={sheet} onClose={() => setSheet(null)} />}
     </main>
   )

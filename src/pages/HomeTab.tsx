@@ -16,7 +16,7 @@ export interface StartCard {
   lastDone: string | null
 }
 
-export type HomeTarget = 'templates' | 'history' | 'stats' | 'body' | 'trash' | 'account'
+export type HomeTarget = 'templates' | 'history' | 'stats' | 'body' | 'trash' | 'account' | 'info'
 
 interface Props {
   cards: StartCard[] | undefined
@@ -112,8 +112,9 @@ export default function HomeTab({ cards, running, onStart, onResume, onOpen }: P
           <h2 className="mb-1 text-sm font-semibold text-amber-800 dark:text-amber-300">↑ Increase weight next time</h2>
           <ul className="text-sm">
             {s.ready.map((r) => (
-              <li key={r.exerciseId} className="py-0.5">
+              <li key={`${r.templateId}/${r.exerciseId}`} className="py-0.5">
                 {r.name}
+                <span className="block text-xs text-zinc-500 dark:text-zinc-400">{r.templateName}</span>
               </li>
             ))}
           </ul>
@@ -155,6 +156,10 @@ export default function HomeTab({ cards, running, onStart, onResume, onOpen }: P
           </button>
         ))}
       </div>
+      <button onClick={() => onOpen('info')} className="card p-3 text-left">
+        <span className="block text-sm font-semibold">Training guide</span>
+        <span className="block text-xs text-zinc-500 dark:text-zinc-400">Workout hints, rep ranges and the research behind them</span>
+      </button>
     </div>
   )
 }

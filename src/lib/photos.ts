@@ -1,5 +1,6 @@
 import { db, getMeta, setMeta, type BodyPhoto, type PhotoBlob, type PhotoPose } from './db'
 import { saveRows } from './sync'
+import { isBetaSandbox, requireLiveWrites } from './environment'
 
 // Encrypted progress photos (decision 5 October 2026, docs/entscheidungen.md).
 //
@@ -125,6 +126,7 @@ async function activateKey(userId: string, key: CryptoKey, value: KeySetting): P
 
 /** Sets up the photo passphrase (first device). */
 export async function createPhotoKey(userId: string, passphrase: string): Promise<void> {
+  requireLiveWrites()
   if (await keySetting()) throw new Error('A photo passphrase already exists. Enter it to unlock.')
   const { key, value } = await newKey(passphrase)
   await activateKey(userId, key, value)
@@ -180,6 +182,7 @@ async function sessionToken(): Promise<string> {
 }
 
 async function upload(id: string, data: ArrayBuffer): Promise<void> {
+  requireLiveWrites()
   const res = await fetch(`${PROXY}/photo/upload`, {
     method: 'POST',
     headers: { 'content-type': 'application/octet-stream', 'x-session-token': await sessionToken(), 'x-photo-id': id },
@@ -203,6 +206,7 @@ async function download(id: string): Promise<ArrayBuffer> {
 
 /** Shrinks, encrypts and stores a photo for a day; uploads now or as soon as the device is online. */
 export async function addPhoto(userId: string, measuredOn: string, file: Blob, pose: PhotoPose | null): Promise<void> {
+  requireLiveWrites()
   const key = await currentKey()
   if (!key) throw new Error('Photos are locked.')
   const { blob, width, height } = await shrink(file)
@@ -234,6 +238,7 @@ let uploading: Promise<void> | null = null
 
 /** Uploads photos taken offline. Safe to call often. */
 export function uploadPendingPhotos(): Promise<void> {
+  if (isBetaSandbox) return Promise.resolve()
   uploading ??= (async () => {
     if (!navigator.onLine) return
     for (const p of await db.photo_blob.where('uploaded').equals(0).toArray()) {
@@ -303,6 +308,7 @@ export async function changePhotoPassphrase(
   passphrase: string,
   onProgress?: (done: number, total: number) => void,
 ): Promise<void> {
+  requireLiveWrites()
   const oldKey = await currentKey()
   if (!oldKey) throw new Error('Unlock photos on this device first.')
   if (navigator.onLine === false) throw new Error('Changing the passphrase needs a connection.')
@@ -342,6 +348,7 @@ export async function changePhotoPassphrase(
  * All existing photos cannot be opened any more and are deleted for good.
  */
 export async function resetPhotoPassphrase(userId: string, passphrase: string): Promise<void> {
+  requireLiveWrites()
   await purgePhotos(await storedPhotos(), new Date().toISOString())
   await db.keystore.delete(KEY_ID)
   const { key, value } = await newKey(passphrase)
@@ -370,6 +377,7 @@ let purging: Promise<void> | null = null
 
 /** Deletes queued objects in the bucket; whatever fails (e.g. offline) is retried later. */
 export function deletePendingPhotoObjects(): Promise<void> {
+  if (isBetaSandbox) return Promise.resolve()
   purging ??= (async () => {
     if (navigator.onLine === false) return
     const ids = JSON.parse((await getMeta(PURGE_QUEUE)) ?? '[]') as string[]

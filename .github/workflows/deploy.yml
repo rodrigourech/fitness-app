@@ -2,12 +2,12 @@
 # which serves them with GitHub Pages at https://rodrigourech.github.io/fitness-app-web/
 # Only built files are published; source code and docs stay in this private repo.
 # Branch major-update is published as beta under /fitness-app-web/beta/ (own service worker,
-# own local database fitness-app-beta). A deploy of main replaces everything incl. beta.
+# local snapshot with no writes to production). A deploy of main replaces everything incl. beta.
 name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main, major-update]
+    branches: [main, major-update, codex/beta-progression]
   workflow_dispatch:
 
 concurrency:
@@ -32,12 +32,14 @@ jobs:
       - name: Build
         run: |
           npm run build
+          node .github/scripts/build-info.mjs
           grep -q "apirest" dist/assets/index-*.js || { echo "::error::Neon Data API URL missing in build"; exit 1; }
           grep -q "authproxy" dist/assets/index-*.js || { echo "::error::Auth proxy URL missing in build"; exit 1; }
         env:
           BASE_PATH: ${{ github.ref_name == 'main' && '/fitness-app-web/' || '/fitness-app-web/beta/' }}
           VITE_DB_NAME: ${{ github.ref_name == 'main' && 'fitness-app' || 'fitness-app-beta' }}
           APP_VARIANT: ${{ github.ref_name == 'main' && 'main' || 'beta' }}
+          VITE_BETA_SANDBOX: ${{ github.ref_name == 'main' && 'false' || 'true' }}
           # The public Neon URLs come from .env.production (committed, not secret).
 
       - name: Publish to fitness-app-web

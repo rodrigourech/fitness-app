@@ -10,11 +10,17 @@ import UndoToast from './components/UndoToast'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import WorkoutPage from './pages/WorkoutPage'
+import { isBetaSandbox } from './lib/environment'
+import { BETA_READY_KEY } from './lib/beta'
+import { getMeta } from './lib/db'
+import AppBar from './components/AppBar'
+import SyncBadge from './components/SyncBadge'
 
 export default function App() {
   // undefined = still reading local state; null = nobody signed in on this device
   const [user, setUser] = useState<LocalUser | null | undefined>(undefined)
   const active = useLiveQuery(getActiveWorkout, [])
+  const betaReady = useLiveQuery(() => getMeta(BETA_READY_KEY), [])
   // Minimised running workout: the app stays usable, a bar at the bottom leads back.
   // Stored per workout id, so a newly started workout always opens full screen.
   const [minimizedId, setMinimizedId] = useState<string | null>(null)
@@ -50,6 +56,13 @@ export default function App() {
 
   if (user === undefined) return null
   if (user === null) return <Login onSignedIn={setUser} />
+  if (isBetaSandbox && betaReady !== '1') return (
+    <main className="mx-auto max-w-xl px-4">
+      <AppBar><SyncBadge onReauth={() => void reauth()} /></AppBar>
+      <h1 className="text-xl font-semibold">Preparing your beta preview</h1>
+      <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">Loading a copy of your live data. Beta changes will stay on this device. Keep this page open; if loading fails, use the status button above to retry.</p>
+    </main>
+  )
   if (active && !minimized) return <WorkoutPage workout={active} onReauth={() => void reauth()} onMinimize={() => setMinimizedId(active.id)} />
   return (
     <>

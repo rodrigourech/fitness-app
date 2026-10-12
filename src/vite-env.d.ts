@@ -6,6 +6,7 @@ interface ImportMetaEnv {
   readonly NEON_DATA_API_URL: string
   readonly VITE_AUTH_PROXY_URL: string
   readonly VITE_DB_NAME?: string
+  readonly VITE_BETA_SANDBOX?: string
 }
 
 interface ImportMeta {

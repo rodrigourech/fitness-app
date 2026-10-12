@@ -44,9 +44,9 @@ describe('template editing', () => {
     expect(curlSets).toHaveLength(3)
     // last working set of the 2 Oct workout was 30 kg
     expect(curlSets.map((s) => [s.target_reps_min, s.target_weight])).toEqual([
-      [10, 30],
-      [10, 30],
-      [10, 30],
+      [null, 30],
+      [null, 30],
+      [null, 30],
     ])
     expect(await activeSets(tes[1]!.id)).toHaveLength(1)
 

@@ -8,12 +8,15 @@ import Field from '../components/Field'
 import Popover from '../components/Popover'
 import RestTimer from '../components/RestTimer'
 import SyncBadge from '../components/SyncBadge'
+import InfoPage from './InfoPage'
 import { useNow } from '../hooks/useNow'
 import { useSwipeDown } from '../hooks/useSwipeDown'
 import { startRest, stopRest } from '../lib/rest'
 import { db, displayName, type Exercise, type ExerciseLink, type Workout, type WorkoutExercise, type WorkoutSet } from '../lib/db'
 import { linkLabel, linksFor } from '../lib/exercise'
-import { bestBefore, recordsOf, shouldIncrease, suggestWeight, targetRepsFor, type Best, type WeightSuggestion } from '../lib/stats'
+import { bestBefore, recordsOf, type Best } from '../lib/stats'
+import { compareRepetitions, progressionAdvice, type ProgressionAdvice } from '../lib/progression'
+import { repetitionTargets, type RepetitionTargets } from '../lib/training'
 import {
   addExerciseToWorkout,
   addSet,
@@ -28,7 +31,7 @@ import {
   paceSeconds,
   parseDuration,
   parseNumber,
-  previousSets,
+  recentTrainingSessions,
   removeLastSet,
   unskipExercise,
   toggleSetDone,
@@ -51,9 +54,9 @@ interface ExerciseBlock {
   previous: WorkoutSet[]
   links: ExerciseLink[]
   best: Best
-  increase: boolean
-  /** Concrete next weight when the progression rule is met */
-  suggestion: WeightSuggestion | null
+  advice: ProgressionAdvice
+  targets: RepetitionTargets
+  warmUp: boolean
 }
 
 async function loadBlocks(workoutId: string, templateId: string | null): Promise<ExerciseBlock[]> {
@@ -67,20 +70,24 @@ async function loadBlocks(workoutId: string, templateId: string | null): Promise
   return Promise.all(
     active.map(async (we) => {
       const exercise = byId.get(we.exercise_id)
-      const prev = await previousSets(we.exercise_id, workoutId, templateId)
-      const increase = shouldIncrease(prev, await targetRepsFor(templateId, we.exercise_id))
+      const sessions = await recentTrainingSessions(we.exercise_id, templateId, workoutId)
+      const sets = allSets.filter((s) => s.workout_exercise_id === we.id && s.deleted_at === null && s.set_type === 'working').sort((a, b) => a.position - b.position)
+      const te = templateId ? await db.template_exercise.where('template_id').equals(templateId).filter((row) => row.exercise_id === we.exercise_id && row.deleted_at === null).first() : undefined
+      const planned = te ? await db.template_set.where('template_exercise_id').equals(te.id).toArray() : []
+      const defaults = exercise ? repetitionTargets(exercise, byId, planned) : { target: 10, minimum: 7 }
+      const targets = { target: we.target_reps ?? defaults.target, minimum: we.min_reps ?? defaults.minimum }
+      const eff = exercise ? effective(exercise, byId) : undefined
       return {
         we,
         exercise,
         name: exercise ? displayName(exercise, byId) : 'Unknown exercise',
-        sets: allSets
-          .filter((s) => s.workout_exercise_id === we.id && s.deleted_at === null)
-          .sort((a, b) => a.position - b.position),
-        previous: prev,
+        sets,
+        previous: sessions[0]?.sets ?? [],
         links: exercise ? await linksFor(exercise) : [],
         best: await bestBefore(we.exercise_id, workoutId),
-        increase,
-        suggestion: increase ? suggestWeight(prev, exercise ? effective(exercise, byId).weightStep : null) : null,
+        advice: eff?.trackingType === 'weight_reps' ? progressionAdvice(sessions, targets, eff.isUnilateral, sets.length) : null,
+        targets,
+        warmUp: we.warm_up ?? eff?.warmUp ?? false,
       }
     }),
   )
@@ -92,6 +99,7 @@ export default function WorkoutPage({ workout, onReauth, onMinimize }: Props) {
   const now = useNow(1000)
   const [sheet, setSheet] = useState<string | null>(null)
   const [picking, setPicking] = useState(false)
+  const [info, setInfo] = useState(false)
   const [confirm, setConfirm] = useState<null | { kind: 'finish'; open: number } | { kind: 'cancel' }>(null)
   const byId = new Map((exercises ?? []).map((e) => [e.id, e]))
 
@@ -112,6 +120,8 @@ export default function WorkoutPage({ workout, onReauth, onMinimize }: Props) {
   const elapsed = Math.max(0, Math.floor((now - Date.parse(workout.started_at)) / 1000))
   const swipe = useSwipeDown(onMinimize)
 
+  if (info) return <InfoPage onDone={() => setInfo(false)} />
+
   return (
     <main className="mx-auto max-w-xl px-4 pb-32">
       <RestTimer />
@@ -120,6 +130,9 @@ export default function WorkoutPage({ workout, onReauth, onMinimize }: Props) {
         <span className="h-1.5 w-10 rounded-full bg-zinc-300 dark:bg-zinc-700" />
       </div>
       <AppBar>
+        <button onClick={() => setInfo(true)} className="rounded-md px-2 py-1 text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">
+          Info
+        </button>
         <SyncBadge onReauth={onReauth} />
       </AppBar>
       <header {...swipe} className="mb-4 flex touch-none items-center justify-between gap-2">
@@ -232,7 +245,7 @@ export default function WorkoutPage({ workout, onReauth, onMinimize }: Props) {
 }
 
 function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map<string, Exercise>; onOpen: (exerciseId: string) => void }) {
-  const { we, exercise, name, sets, previous, links, best, increase } = block
+  const { we, exercise, name, sets, previous, links, best, advice, targets, warmUp } = block
   const eff = exercise
     ? effective(exercise, byId)
     : { trackingType: 'weight_reps', isUnilateral: false, floor: null, seat: null, footPosition: null, setupNote: null, focusMuscles: [] as string[], focusCue: null, restS: null }
@@ -251,13 +264,12 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
     )
 
   const prevWorking = previous.filter((s) => s.set_type === 'working')
-  // RIR is recorded only for the last working set, below the set rows
-  const lastWorking = sets.filter((s) => s.set_type === 'working').at(-1)
   const prevWarmup = previous.filter((s) => s.set_type === 'warmup')
   let workingNo = 0
   let warmupNo = 0
 
   const tt = eff.trackingType
+  const comparison = compareRepetitions(sets, previous, eff.isUnilateral)
   const cols =
     tt === 'duration'
       ? 'grid-cols-[1.5rem_1fr_6rem_2.75rem]'
@@ -280,10 +292,15 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
         </span>
       </div>
       {eff.setupNote && <p className="text-sm whitespace-pre-line text-zinc-500 dark:text-zinc-400">{eff.setupNote}</p>}
-      {increase && (
-        <p className="mt-1 rounded-md bg-accent-soft px-2 py-1 text-sm font-medium text-accent-ink">
-          ↑ Increase weight
-        </p>
+      {tt === 'weight_reps' && (
+        <>
+          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Target {targets.target} reps · Minimum {targets.minimum}{eff.isUnilateral ? ' per side' : ''}</p>
+          {warmUp && <p className="mt-2 rounded-md bg-sky-50 px-2 py-1 text-sm text-sky-800 dark:bg-sky-950 dark:text-sky-200">Warm Up · prepare with a lighter weight before work sets. No logging needed.</p>}
+          {advice && <div className={`mt-2 rounded-md px-2 py-1 text-sm ${advice === 'reduce' ? 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200' : 'bg-accent-soft text-accent-ink'}`}>
+            <p className="font-medium">{advice === 'increase' ? 'Increase weight' : advice === 'reduce' ? 'Reduce weight' : 'Keep weight'}</p>
+            {advice === 'reduce' && <p className="text-xs">First work set below minimum twice at the same weight. Check rest, recovery and form before choosing a lighter weight.</p>}
+          </div>}
+        </>
       )}
 
 
@@ -331,35 +348,16 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
         })}
       </div>
 
-      {tt === 'weight_reps' && lastWorking && (
-        <div className="mt-2">
-          <div className="flex items-center gap-1.5">
-            <Popover
-              hover
-              label={<>RIR ⓘ</>}
-              ariaLabel="What is RIR?"
-              triggerClassName="mr-1 text-xs text-zinc-500 underline decoration-dotted underline-offset-2 dark:text-zinc-400"
-            >
-              <RirHelp />
-            </Popover>
-            {RIR_OPTIONS.map((o) => {
-              const active = lastWorking.rir === o.value
-              return (
-                <button
-                  key={o.label}
-                  aria-pressed={active}
-                  onClick={() => void updateSet(lastWorking, { rir: o.value })}
-                  className={`h-8 min-w-8 rounded-md px-2 text-sm tabular-nums ${
-                    active
-                      ? 'bg-accent text-accent-fg'
-                      : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'
-                  }`}
-                >
-                  {o.label}
-                </button>
-              )
-            })}
-          </div>
+      {tt === 'weight_reps' && (
+        <div className="mt-3 text-sm tabular-nums">
+          <p className="font-medium">Completed reps: {comparison.total}{eff.isUnilateral ? ' (both sides)' : ''}{comparison.previousTotal !== null && ` · previous ${comparison.previousTotal}`}{comparison.delta !== null && ` · ${comparison.delta > 0 ? '+' : ''}${comparison.delta}`}</p>
+          <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+            {comparison.reason === 'no_history' ? 'No previous performance in this workout yet.'
+              : comparison.reason === 'unfinished' ? `${comparison.completed}/${comparison.planned} work sets checked. Difference shown after all work sets.`
+                : comparison.reason === 'different_sets' ? 'Set count changed; totals shown without a difference.'
+                  : comparison.reason === 'different_weight' ? 'Weight changed; totals shown without a difference.'
+                    : comparison.reason === 'missing_reps' ? 'Enter reps for every checked set to compare.' : 'Same workout, variant, set count and weights. Keep form and rest consistent.'}
+          </p>
         </div>
       )}
 
@@ -377,26 +375,6 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
         )}
       </div>
     </section>
-  )
-}
-
-function RirHelp() {
-  return (
-    <>
-      <span className="mb-1 block font-semibold">RIR – Reps in Reserve</span>
-      <span className="mb-2 block text-zinc-600 dark:text-zinc-300">How many more reps you could have done with clean form.</span>
-      <span className="grid grid-cols-[2rem_1fr] gap-x-2 gap-y-0.5 tabular-nums">
-        <b>0</b>
-        <span>failure, no rep left</span>
-        <b>1</b>
-        <span>one more rep possible</span>
-        <b>2</b>
-        <span>two more reps possible</span>
-        <b>4+</b>
-        <span>clearly easy</span>
-      </span>
-      <span className="mt-2 block text-xs text-zinc-500 dark:text-zinc-400">Target 1–2 · last set only · optional</span>
-    </>
   )
 }
 
@@ -433,15 +411,6 @@ function VideoButton({ links }: { links: ExerciseLink[] }) {
     </Popover>
   )
 }
-
-const RIR_OPTIONS: { label: string; value: number | null }[] = [
-  { label: '–', value: null },
-  { label: '0', value: 0 },
-  { label: '1', value: 1 },
-  { label: '2', value: 2 },
-  { label: '3', value: 3 },
-  { label: '4+', value: 4 },
-]
 
 interface SetRowProps {
   set: WorkoutSet

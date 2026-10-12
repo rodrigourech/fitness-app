@@ -8,35 +8,39 @@ Letzte Aktualisierung 12. Oktober 2026
 
 - Repo github.com/rodrigourech/fitness-app (privat), lokal C:\Repository\fitness-app
 - Live https://rodrigourech.github.io/fitness-app-web/ (Build-Repo fitness-app-web, öffentlich, nur dist; Deploy per GitHub Actions bei Push auf main)
-- Beta https://rodrigourech.github.io/fitness-app-web/beta/ bei Push auf major-update (eigene lokale DB, gleiche Neon-Datenbank)
+- Beta https://rodrigourech.github.io/fitness-app-web/beta/ bei Push auf codex/beta-progression (lokale Datenkopie pro Gerät, keine Schreibzugriffe auf production; auch major-update bleibt als Beta-Trigger unterstützt)
 - Neon-Projekt fitness-app (Frankfurt), Branch production, Datenbank neondb
 - Weitere Doku docs/00_handover.md, docs/03_datenmodell.md, docs/entscheidungen.md, docs/hosting.md, db/migrations/README.md
 
 ## Stand
 
-- Lokaler Branch main auf d26fdc8, identisch mit dem lokal gespeicherten origin/main; kein Remote-Abgleich in dieser Sitzung. Zu Beginn keine lokalen Änderungen
+- Ausgangsstand main auf 7d30044 (`docs: plan progression without RIR (target and minimum reps per exercise)`), am 12. Oktober auch direkt auf origin/main geprüft. Umsetzung jetzt auf `codex/beta-progression`; main bleibt unverändert
 - Home- und Workout-Nachträge vom 9. Oktober sind implementiert: klappbare Workout-Karten, geräteübergreifende Reihenfolge, farbige Home-Karten, Progressionsliste, umschaltbares Diagramm (Gewicht oder Trainingsvolumen mit Anzahl Trainings), Überspringen durch Entfernen des letzten Satzes
 - Migrationen bis 0013 laut Migrationsprotokoll eingespielt; 0004 bewusst durch 0006 ersetzt. Keine ausstehende Migration dokumentiert
 - Foto-Passphrase ändern/zurücksetzen und Papierkorb sind implementiert. Wiederherstellung des Gewichtseintrags vom 7. Oktober und Klärung der vergessenen Foto-Passphrase sind weiterhin nicht bestätigt
 - Prüfung am 12. Oktober: Typprüfung, Lint, alle 92 Tests und Produktionsbuild erfolgreich. Vitest scheitert mit dem Standard-Temp-Verzeichnis der Windows-Sandbox; mit TEMP und TMP auf node_modules/.cache/vitest-temp erfolgreich, ohne Sandbox-Eskalation
 - Build meldet einen Haupt-JavaScript-Chunk über 500 kB; Optimierung ist bisher kein vereinbarter Änderungsauftrag
 - Aktuelle Live-Auslieferung und Gerätetests wurden in dieser Sitzung nicht geprüft. Früherer Browser-/Computer-use-Zugriff scheiterte am lokalen Automatisierungsdienst
+- Neue Info-Seite «Training guide / How recommendations work» lokal umgesetzt: erreichbar über «Info» in der Kopfzeile von Home und laufendem Training sowie eine Home-Karte. Erklärt aktive Progressionsregel, Zielwerte, RIR, Historienauswahl, Wiederholungsbereiche, Anstrengung/Pausen, Vergleichbarkeit, Volumen und geschätztes 1RM. Fünf wissenschaftliche Quellen direkt verlinkt; praktische Heuristiken und derzeit aktive Regeln ausdrücklich unterschieden
+- Die Info-Seite ist Teil der neuen Beta und erklärt jetzt die Progression ohne RIR. Visuelle Prüfung auf 375 px Breite erfolgreich, nachdem der lokale Vite-Server ausserhalb der Sandbox gestartet wurde: Übungsfelder, Warm Up, Info-Navigation und Wiederholungssumme geprüft; keine Browser-Konsolenfehler
 
 ## Nächste Schritte
 
-### Aktueller Änderungsauftrag: Progression ohne RIR
+### Aktueller Änderungsauftrag: Progression ohne RIR in der Beta
 
-Priorität vor den älteren offenen Punkten. Auftrag am 12. Oktober aus dem vom Benutzer eingefügten Claude-Text übernommen; claude/status.md ist im lokalen Repository nicht vorhanden.
+Der Benutzer hat die vollständige Umsetzung der zuletzt besprochenen Regeln in einem Beta-Branch zum Test freigegeben; keine Freigabe für main/production.
 
-- RIR aus Training, Historie und Vorbelegung entfernen; Datenbankspalte und bestehende historische Werte behalten
-- Ziel- und Mindestwiederholungen pro Übung sowie Schalter «Warm Up» ergänzen; Migration 0014 vorbereiten
-- Neue Progression mit «Increase weight» ohne Zahl, Gewicht halten und «Reduce weight» bei zweimal unter Minimum; genaue Kriterien für «zweimal unter Min» noch klären
-- Summe der Wiederholungen mit dem letzten Training vergleichen
-- Bestätigt: Warm Up nur als Hinweis, nicht als erfasster Satz
-- Bestätigt: Min/Max-Felder im Vorlagen-Editor als Überschreibung behalten
-- Umsetzung auf ausdrücklichen Wunsch des Benutzers vorerst angehalten: Trainingsplan hat sich geändert und soll zuerst besprochen werden. Startwerte 10/8 bzw. 15/10 sind nicht bestätigt
-- Screenshot zeigt Main Day A (Bicycle, Chest Press – Griffe Mitte Brust, Lateral Raise, Triceps Pushdown, Preacher Curl, Lat Pulldown – Neutralgriff breit schwarz, Leg Press), Main Day B (Bicycle, Chest Press – Sitz tiefer, Lateral Raise, Triceps Pushdown, Preacher Curl, Seated Row, Lying Leg Curl), Bonus Day (Bicycle, Lateral Raise, Triceps Pushdown, Preacher Curl, Lat Pulldown – Neutralgriff breit schwarz, Leg Press) und Run. Satzanzahl, Gewichte und Wiederholungsziele sind nicht sichtbar
-- Noch keine Code- oder Datenbankänderung für diesen Auftrag vorgenommen
+- Branch `codex/beta-progression`, Ausgangspunkt `7d30044`. Live-Branch main unverändert
+- RIR aus Training, Historie und Vorbelegung entfernt; neue Sätze haben rir = null, historische Werte und DB-Spalte bleiben bestehen
+- Pro Übung Ziel 10 / Minimum 7 als Standard, Varianten erben; Min/Max im Vorlagen-Editor als Überschreibung erhalten. Ziele, Minimum, Warm Up und Pause werden beim Trainingsstart kopiert
+- Warm Up nur Hinweis, keine neuen Aufwärmsätze. Bereits gespeicherte historische Aufwärmsätze bleiben erhalten. Feste alte Vorlagenziele (10/10 usw.) behalten das obere Ziel und erben künftig das Minimum; echte Bereiche bleiben erhalten
+- Increase weight ohne Zahl bei Zielerreichung in allen geplanten Arbeitssätzen. Sonst Keep weight. Reduce weight ohne Zahl erst bei erstem Arbeitssatz unter Minimum in den zwei letzten Trainings derselben Vorlage und Variante, mit identischem positivem Gewicht über alle Arbeitssätze, gleicher geplanter Satzanzahl und gleicher gespeicherter Pause. Ein schwacher letzter Satz allein zählt nicht
+- Wiederholungssumme zählt nur abgehakte Arbeitssätze (bei unilateral beide Seiten). Unterschied zum letzten Training derselben Vorlage/Variante erst nach Abschluss aller Sätze und bei gleicher Satzanzahl/Gewichten sowie vollständigen Reps. Sonst Erklärung, weshalb nur die Summen gezeigt werden
+- Ready-to-increase in Home/Stats pro Vorlage/Variante getrennt, ohne Übernahme der Main-Day-Leistung für Bonus Day
+- Beta lädt beim ersten Anmelden eine vollständige Live-Datenkopie, danach nur lokale Änderungen. Eigene DB, kein Push, kein späterer Pull; Foto-/Passwort-Schreibzugriffe zusätzlich blockiert. Testdaten gelten nur auf diesem Gerät und werden bei Freigabe nicht automatisch übernommen
+- Migration 0014 vorbereitet, nicht auf production ausgeführt. Erst nach Beta-Freigabe migrieren und Schema-Cache aktualisieren, dann main veröffentlichen
+- Abschliessend Typprüfung, Lint, 104 Tests und Builds für Beta und spätere Live-Variante erfolgreich; Beta-Manifest/Service-Worker mit eigenem Scope `/fitness-app-web/beta/`. Neue Prüfungen für Progression, Vorlagen-/Variantenisolation, Trainings-Snapshots, Summen und blockierte Beta-Schreibzugriffe. Veröffentlichung wird separat nachgeführt
+- Fachliche Grundlage und Grenzen stehen in der Info-Seite: [ACSM 2026](https://pubmed.ncbi.nlm.nih.gov/41843416/), [Lopez 2021](https://pubmed.ncbi.nlm.nih.gov/33433148/), [Plotkin 2022](https://pubmed.ncbi.nlm.nih.gov/36199287/), [Refalo 2024](https://pubmed.ncbi.nlm.nih.gov/38393985/), [Singer 2024](https://pubmed.ncbi.nlm.nih.gov/39205815/). Genaue Schwellen sind praktische Heuristiken
 
 ### Ältere offene Prüfungen und Aktionen
 

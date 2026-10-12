@@ -1,4 +1,5 @@
 import { db, getMeta, setMeta } from './db'
+import { requireLiveWrites } from './environment'
 
 // Session handling via the auth proxy (functions/authproxy.ts).
 // Safari and iOS home-screen apps block the Neon Auth cookie, so the app keeps the session token
@@ -106,6 +107,7 @@ export function getJwt(force = false): Promise<string | null> {
  * Throws ProxyError (status 400/401 for a wrong current password).
  */
 export async function proxyChangePassword(currentPassword: string, newPassword: string): Promise<void> {
+  requireLiveWrites()
   const token = await getMeta('session_token')
   if (!token) throw new ProxyError('Not signed in.', 401)
   const res = await call('/change-password', { token, currentPassword, newPassword })

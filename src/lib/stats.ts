@@ -1,4 +1,5 @@
 import { db, type WorkoutSet } from './db'
+import { repetitionTargets } from './training'
 
 // Analytics definitions from docs/00_handover.md (Epley 1RM, volume) and docs/entscheidungen.md (progression).
 
@@ -63,28 +64,25 @@ export function recordsOf(s: WorkoutSet, best: Best): string[] {
 }
 
 /**
- * Progression rule (decision 4 October 2026): all working sets of the last workout reached the
- * target reps and the last working set had at least 2 RIR.
+ * All recorded work sets reached the target; effort is guidance rather than a logged value.
  */
 export function shouldIncrease(previous: WorkoutSet[], targetReps: number | null): boolean {
-  const working = previous.filter((s) => s.set_type === 'working')
-  const last = working.at(-1)
-  if (!last || targetReps === null || last.rir === null || last.rir < 2) return false
+  const working = previous.filter((s) => s.set_type === 'working' && s.deleted_at === null)
+  if (!working.length || targetReps === null) return false
   return working.every((s) => (effectiveReps(s) ?? 0) >= targetReps)
 }
 
 /** Target reps for an exercise from the template the workout was started from. */
 export async function targetRepsFor(templateId: string | null, exerciseId: string): Promise<number | null> {
-  if (!templateId) return null
-  const te = (await db.template_exercise.where('template_id').equals(templateId).toArray()).find(
+  const exercises = await db.exercise.toArray()
+  const byId = new Map(exercises.map((ex) => [ex.id, ex]))
+  const ex = byId.get(exerciseId)
+  if (!ex) return null
+  const te = templateId ? (await db.template_exercise.where('template_id').equals(templateId).toArray()).find(
     (x) => x.deleted_at === null && x.exercise_id === exerciseId,
-  )
-  if (!te) return null
-  const sets = (await db.template_set.where('template_exercise_id').equals(te.id).toArray()).filter(
-    (s) => s.deleted_at === null && s.set_type === 'working',
-  )
-  const values = sets.map((s) => s.target_reps_max ?? s.target_reps_min).filter((v): v is number => v !== null)
-  return values.length ? Math.max(...values) : null
+  ) : undefined
+  const sets = te ? await db.template_set.where('template_exercise_id').equals(te.id).toArray() : []
+  return repetitionTargets(ex, byId, sets).target
 }
 
 export interface WeightSuggestion {

@@ -17,6 +17,7 @@ import {
 } from '../lib/photos'
 import { offerUndo } from '../lib/undo'
 import { parseNumber } from '../lib/workout'
+import { isBetaSandbox } from '../lib/environment'
 
 const dateFormat = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
 const CONDITIONS = Object.keys(CONDITION_LABEL) as BodyCondition[]
@@ -208,6 +209,8 @@ function DayPhotos({ userId, date }: { userId: string; date: string }) {
   const [sheet, setSheet] = useState<'auto' | 'change' | null>(null)
   const [open, setOpen] = useState<BodyPhoto | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  if (isBetaSandbox) return <p className="border-t border-zinc-100 pt-3 text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">Photos and passphrase changes are available in the live app.</p>
 
   async function onFile(file: File | undefined) {
     if (!file) return

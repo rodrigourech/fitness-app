@@ -3,6 +3,7 @@ import { useSyncExternalStore } from 'react'
 import { db } from '../lib/db'
 import { getSyncStatus, subscribeSyncStatus, syncNow } from '../lib/sync'
 import Popover from './Popover'
+import { isBetaSandbox } from '../lib/environment'
 
 interface Props {
   onReauth: () => void
@@ -30,7 +31,7 @@ export default function SyncBadge({ onReauth }: Props) {
       tone = 'text-red-600 dark:text-red-400'
       break
     default:
-      text = pending ? `${pending} pending` : 'Synced'
+      text = isBetaSandbox ? 'Local beta' : pending ? `${pending} pending` : 'Synced'
   }
 
   const action = status.phase === 'signed_out' ? onReauth : () => void syncNow()

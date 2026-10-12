@@ -7,6 +7,8 @@ import { regionName } from '../lib/muscles'
 import BodyMap from './BodyMap'
 import RestStepper from './RestStepper'
 import { formatDuration } from '../lib/workout'
+import Field from './Field'
+import { validRepetitionTargets } from '../lib/training'
 
 interface Props {
   exerciseId: string
@@ -151,31 +153,39 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
             />
           </div>
 
-          <label className="flex items-center justify-between gap-2">
-            <span>
-              <span className="block text-sm font-semibold">Weight step</span>
-              <span className="block text-xs text-zinc-500 dark:text-zinc-400">Used for «Try … kg»</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <input
-                key={ex.weight_step ?? ''}
-                inputMode="decimal"
-                aria-label="Weight step in kg"
-                defaultValue={ex.weight_step ?? ''}
-                placeholder={parent?.weight_step ? `${parent.weight_step} (inh.)` : '–'}
-                onBlur={(e) => {
-                  const n = parseNumber(e.target.value)
-                  if (n === undefined || (n !== null && (n <= 0 || n > 50))) {
-                    e.target.value = ex.weight_step === null ? '' : String(ex.weight_step)
-                    return
-                  }
-                  if (n !== ex.weight_step) void updateExercise(ex, { weight_step: n })
-                }}
-                className="w-20 rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-right text-base outline-none dark:border-zinc-700"
-              />
-              <span className="text-sm text-zinc-500 dark:text-zinc-400">kg</span>
-            </span>
-          </label>
+          {eff.trackingType === 'weight_reps' && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                {(['target_reps', 'min_reps'] as const).map((field) => (
+                  <label key={field} className="flex flex-col gap-1">
+                    <span className="text-sm font-semibold">{field === 'target_reps' ? 'Target reps' : 'Minimum reps'}</span>
+                    <Field
+                      label={field === 'target_reps' ? 'Exercise target reps' : 'Exercise minimum reps'}
+                      inputMode="numeric"
+                      value={ex[field] == null ? '' : String(ex[field])}
+                      placeholder={`${field === 'target_reps' ? eff.targetReps : eff.minReps}${parent ? ' (inherited)' : ' (default)'}`}
+                      onCommit={(input) => {
+                        const n = parseNumber(input)
+                        if (n === undefined) return false
+                        const target = field === 'target_reps' ? n ?? parent?.target_reps ?? 10 : eff.targetReps
+                        const minimum = field === 'min_reps' ? n ?? parent?.min_reps ?? 7 : eff.minReps
+                        if (!validRepetitionTargets(target, minimum)) return false
+                        void updateExercise(ex, { [field]: n })
+                        return true
+                      }}
+                    />
+                  </label>
+                ))}
+              </div>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Workouts can override these values. Clear a field to use the inherited or default value.</p>
+              <label className="flex items-center gap-2 text-sm font-semibold">
+                <input type="checkbox" checked={eff.warmUp} onChange={(e) => void updateExercise(ex, { warm_up: e.target.checked })} className="h-5 w-5" />
+                Warm Up
+              </label>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Shows a reminder before work sets. Warm-up sets are not logged.</p>
+              {parent && ex.warm_up != null && <button onClick={() => void updateExercise(ex, { warm_up: null })} className="text-left text-xs font-medium text-accent-ink">Use main exercise’s Warm Up setting</button>}
+            </>
+          )}
         </section>
 
         <section className="mb-5">

@@ -18,6 +18,7 @@ import {
   setTemplateRest,
 } from '../lib/template'
 import { effective, formatDuration, formatNumber, parseDuration, parseNumber } from '../lib/workout'
+import { validRepetitionTargets } from '../lib/training'
 
 interface Props {
   templateId: string
@@ -30,6 +31,8 @@ interface Row {
   trackingType: string
   /** Default rest of the exercise, shown as placeholder */
   defaultRest: number | null
+  targetReps: number
+  minReps: number
   sets: TemplateSet[]
   /** Main exercise and its variants, to switch the variant used in this template */
   family: { id: string; label: string }[]
@@ -56,7 +59,9 @@ async function load(templateId: string) {
         name: ex ? displayName(ex, byId) : 'Unknown exercise',
         trackingType: ex ? effective(ex, byId).trackingType : 'weight_reps',
         defaultRest: ex ? effective(ex, byId).restS : null,
-        sets: await activeSets(te.id),
+        targetReps: ex ? effective(ex, byId).targetReps : 10,
+        minReps: ex ? effective(ex, byId).minReps : 7,
+        sets: (await activeSets(te.id)).filter((s) => s.set_type === 'working'),
         family,
       }
     }),
@@ -165,20 +170,22 @@ export default function TemplateEditor({ templateId, onDone }: Props) {
 
                 {r.trackingType === 'weight_reps' && (
                   <>
-                    <Target label="Reps from">
+                    <Target label="Min reps">
                       <Field
-                        label="Target reps from"
+                        label="Minimum reps override"
                         inputMode="numeric"
                         value={formatNumber(first?.target_reps_min ?? null)}
-                        onCommit={(v) => commitInt(v, (n) => setPlannedTargets(r.te, { target_reps_min: n, target_reps_max: Math.max(n ?? 0, first?.target_reps_max ?? 0) || n }))}
+                        placeholder={String(r.minReps)}
+                        onCommit={(v) => commitReps(v, first?.target_reps_max ?? r.targetReps, r.minReps, true, (n) => setPlannedTargets(r.te, { target_reps_min: n }))}
                       />
                     </Target>
-                    <Target label="to">
+                    <Target label="Target">
                       <Field
-                        label="Target reps to"
+                        label="Target reps override"
                         inputMode="numeric"
                         value={formatNumber(first?.target_reps_max ?? null)}
-                        onCommit={(v) => commitInt(v, (n) => setPlannedTargets(r.te, { target_reps_max: n }))}
+                        placeholder={String(r.targetReps)}
+                        onCommit={(v) => commitReps(v, r.targetReps, first?.target_reps_min ?? r.minReps, false, (n) => setPlannedTargets(r.te, { target_reps_max: n }))}
                       />
                     </Target>
                     <Target label="kg">
@@ -295,9 +302,9 @@ function Target({ label, wide, children }: { label: string; wide?: boolean; chil
   )
 }
 
-function commitInt(input: string, save: (n: number | null) => Promise<void>): boolean {
+function commitReps(input: string, target: number, minimum: number, isMinimum: boolean, save: (n: number | null) => Promise<void>): boolean {
   const n = parseNumber(input)
-  if (n === undefined || (n !== null && !Number.isInteger(n))) return false
+  if (n === undefined || !validRepetitionTargets(isMinimum ? target : n ?? target, isMinimum ? n ?? minimum : minimum)) return false
   void save(n)
   return true
 }

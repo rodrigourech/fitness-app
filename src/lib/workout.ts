@@ -1,5 +1,6 @@
 import { db, type Exercise, type Workout, type WorkoutExercise, type WorkoutSet } from './db'
 import { saveRows } from './sync'
+import { exerciseTrainingSettings, repetitionTargets } from './training'
 
 // Workout logging. A workout copies its template at start; later template edits do not affect it.
 
@@ -61,8 +62,36 @@ async function latestSets(exerciseId: string, excludeWorkoutId: string | undefin
   return sets.sort((a, b) => a.position - b.position)
 }
 
-/** RIR the last working set starts with (training plan 9 October 2026: 1–2 in reserve, no failure). */
-export const DEFAULT_RIR = 2
+export interface TrainingSession {
+  workout: Workout
+  exercise: WorkoutExercise
+  sets: WorkoutSet[]
+}
+
+/** Recent completed performances in the exact same template and variant, without a cross-template fallback. */
+export async function recentTrainingSessions(exerciseId: string, templateId: string | null, excludeWorkoutId?: string, limit = 2): Promise<TrainingSession[]> {
+  const entries = (await db.workout_exercise.where('exercise_id').equals(exerciseId).toArray())
+    .filter((we) => we.deleted_at === null && !we.skipped_at && we.workout_id !== excludeWorkoutId)
+  const workouts = await db.workout.bulkGet(entries.map((we) => we.workout_id))
+  const excluded = excludeWorkoutId ? await db.workout.get(excludeWorkoutId) : undefined
+  const candidates = entries.flatMap((exercise, i) => {
+    const workout = workouts[i]
+    return workout && workout.deleted_at === null && workout.finished_at !== null && workout.template_id === templateId
+      && (!excluded || workout.started_at < excluded.started_at) ? [{ workout, exercise }] : []
+  }).sort((a, b) => b.workout.started_at.localeCompare(a.workout.started_at))
+  const result: TrainingSession[] = []
+  const seenWorkouts = new Set<string>()
+  for (const candidate of candidates) {
+    if (seenWorkouts.has(candidate.workout.id)) continue
+    const sets = (await db.workout_set.where('workout_exercise_id').equals(candidate.exercise.id).toArray())
+      .filter((s) => s.deleted_at === null).sort((a, b) => a.position - b.position)
+    if (!sets.some((s) => s.set_type === 'working')) continue
+    seenWorkouts.add(candidate.workout.id)
+    result.push({ ...candidate, sets })
+    if (result.length === limit) break
+  }
+  return result
+}
 
 type Measure = Pick<WorkoutSet, 'weight' | 'reps' | 'reps_left' | 'reps_right' | 'duration_s' | 'distance_km'>
 
@@ -101,42 +130,43 @@ export async function startWorkout(templateId: string, userId: string): Promise<
 
   const wes: WorkoutExercise[] = []
   const sets: WorkoutSet[] = []
+  const byId = new Map((await db.exercise.toArray()).map((ex) => [ex.id, ex]))
   for (const te of tes) {
+    const ex = byId.get(te.exercise_id)
+    if (!ex) throw new Error('Exercise not found')
+    const eff = effective(ex, byId)
+    const planned = (await db.template_set.where('template_exercise_id').equals(te.id).toArray())
+      .filter((s) => s.deleted_at === null && s.set_type === 'working')
+      .sort((a, b) => a.position - b.position)
+    const targets = repetitionTargets(ex, byId, planned)
     const we: WorkoutExercise = {
       id: uuid(),
       workout_id: workout.id,
       exercise_id: te.exercise_id,
       position: te.position,
-      rest_s: te.rest_s,
+      rest_s: te.rest_s ?? eff.restS,
       comment: te.comment,
+      target_reps: eff.trackingType === 'weight_reps' ? targets.target : null,
+      min_reps: eff.trackingType === 'weight_reps' ? targets.minimum : null,
+      warm_up: eff.trackingType === 'weight_reps' && eff.warmUp,
       ...base(userId, ts),
     }
     wes.push(we)
-    const planned = (await db.template_set.where('template_exercise_id').equals(te.id).toArray())
-      .filter((s) => s.deleted_at === null)
-      .sort((a, b) => a.position - b.position)
     // Prefill: last performance in this template; else the template targets; else any last performance
     const own = await previousSetsOfTemplate(te.exercise_id, templateId)
     const hasTargets = planned.some((p) => p.target_weight !== null)
     const prev = own.length || hasTargets ? own : await previousSets(te.exercise_id)
     const prevWorking = prev.filter((s) => s.set_type === 'working')
-    const prevWarmup = prev.filter((s) => s.set_type === 'warmup')
-    const lastWorking = planned.filter((p) => p.set_type === 'working').at(-1)
-
     let workingIndex = 0
-    let warmupIndex = 0
     for (const p of planned) {
-      const source =
-        p.set_type === 'working'
-          ? (prevWorking[workingIndex++] ?? prevWorking.at(-1))
-          : (prevWarmup[warmupIndex++] ?? prevWarmup.at(-1))
+      const source = prevWorking[workingIndex++] ?? prevWorking.at(-1)
       const m: Measure = source
         ? measureOf(source)
         : {
             weight: p.target_weight,
-            reps: p.target_reps_min,
-            reps_left: p.target_reps_min,
-            reps_right: p.target_reps_min,
+            reps: eff.trackingType === 'weight_reps' && !eff.isUnilateral ? targets.target : null,
+            reps_left: eff.trackingType === 'weight_reps' && eff.isUnilateral ? targets.target : null,
+            reps_right: eff.trackingType === 'weight_reps' && eff.isUnilateral ? targets.target : null,
             duration_s: p.target_duration_s,
             distance_km: p.target_distance_km,
           }
@@ -146,7 +176,10 @@ export async function startWorkout(templateId: string, userId: string): Promise<
         position: p.position,
         set_type: p.set_type,
         ...m,
-        rir: p === lastWorking ? DEFAULT_RIR : null,
+        reps: eff.isUnilateral ? null : m.reps,
+        reps_left: eff.isUnilateral ? m.reps_left : null,
+        reps_right: eff.isUnilateral ? m.reps_right : null,
+        rir: null,
         completed_at: null,
         ...base(userId, ts),
       })
@@ -174,6 +207,9 @@ export async function addExerciseToWorkout(w: Workout, exerciseId: string): Prom
     position: Math.max(0, ...existing.map((e) => e.position)) + 1,
     rest_s: eff.restS,
     comment: null,
+    target_reps: eff.trackingType === 'weight_reps' ? eff.targetReps : null,
+    min_reps: eff.trackingType === 'weight_reps' ? eff.minReps : null,
+    warm_up: eff.trackingType === 'weight_reps' && eff.warmUp,
     ...base(w.user_id, ts),
   }
   const prev = (await previousSets(ex.id, w.id)).filter((s) => s.set_type === 'working')
@@ -185,8 +221,14 @@ export async function addExerciseToWorkout(w: Workout, exerciseId: string): Prom
       workout_exercise_id: we.id,
       position: i + 1,
       set_type: 'working',
-      ...(p ? measureOf(p) : { weight: null, reps: null, reps_left: null, reps_right: null, duration_s: null, distance_km: null }),
-      rir: i === count - 1 ? DEFAULT_RIR : null,
+      ...(p ? measureOf(p) : {
+        weight: null,
+        reps: eff.trackingType === 'weight_reps' && !eff.isUnilateral ? eff.targetReps : null,
+        reps_left: eff.trackingType === 'weight_reps' && eff.isUnilateral ? eff.targetReps : null,
+        reps_right: eff.trackingType === 'weight_reps' && eff.isUnilateral ? eff.targetReps : null,
+        duration_s: null, distance_km: null,
+      }),
+      rir: null,
       completed_at: null,
       ...base(w.user_id, ts),
     }
@@ -210,7 +252,7 @@ export async function toggleSetDone(set: WorkoutSet): Promise<boolean> {
 
 export async function addSet(we: WorkoutExercise): Promise<void> {
   const sets = (await db.workout_set.where('workout_exercise_id').equals(we.id).toArray()).filter(
-    (s) => s.deleted_at === null,
+    (s) => s.deleted_at === null && s.set_type === 'working',
   )
   const last = sets.sort((a, b) => a.position - b.position).at(-1)
   const ts = now()
@@ -226,8 +268,7 @@ export async function addSet(we: WorkoutExercise): Promise<void> {
       reps_right: last?.reps_right ?? null,
       duration_s: last?.duration_s ?? null,
       distance_km: last?.distance_km ?? null,
-      // The new set becomes the last working set, which carries the RIR
-      rir: last?.set_type === 'working' ? last.rir : DEFAULT_RIR,
+      rir: null,
       completed_at: null,
       ...base(we.user_id, ts),
     } satisfies WorkoutSet,
@@ -237,7 +278,7 @@ export async function addSet(we: WorkoutExercise): Promise<void> {
 /** Removes the last set of an exercise, preferring sets that are not completed. */
 export async function removeLastSet(we: WorkoutExercise): Promise<void> {
   const sets = (await db.workout_set.where('workout_exercise_id').equals(we.id).toArray())
-    .filter((s) => s.deleted_at === null)
+    .filter((s) => s.deleted_at === null && s.set_type === 'working')
     .sort((a, b) => a.position - b.position)
   const target = [...sets].reverse().find((s) => s.completed_at === null) ?? sets.at(-1)
   if (!target) return
@@ -268,7 +309,7 @@ async function workoutParts(workoutId: string) {
 export async function openSetCount(workoutId: string): Promise<number> {
   const { wes, sets } = await workoutParts(workoutId)
   const skipped = new Set(wes.filter((we) => we.skipped_at).map((we) => we.id))
-  return sets.filter((s) => s.completed_at === null && !skipped.has(s.workout_exercise_id)).length
+  return sets.filter((s) => s.set_type === 'working' && s.completed_at === null && !skipped.has(s.workout_exercise_id)).length
 }
 
 /** Finishes a workout: open sets and exercises without completed sets are discarded. */
@@ -326,6 +367,7 @@ export function effective(ex: Exercise, byId: Map<string, Exercise>) {
     focusCue: ex.focus_cue ?? parent?.focus_cue ?? null,
     restS: ex.default_rest_s ?? parent?.default_rest_s ?? null,
     weightStep: ex.weight_step ?? parent?.weight_step ?? null,
+    ...exerciseTrainingSettings(ex, byId),
   }
 }
 

@@ -1,11 +1,19 @@
 import { db, type Exercise, type ExerciseLink, type TrackingType } from './db'
 import { saveRows } from './sync'
+import { DEFAULT_MIN_REPS, DEFAULT_TARGET_REPS, validRepetitionTargets } from './training'
 
 // Exercise master data edits: focus muscles, cue and reference links.
 
 export async function updateExercise(ex: Exercise, patch: Partial<Exercise>): Promise<void> {
   const current = (await db.exercise.get(ex.id)) ?? ex
-  await saveRows('exercise', [{ ...current, ...patch }])
+  const next = { ...current, ...patch }
+  if ('target_reps' in patch || 'min_reps' in patch) {
+    const parent = next.parent_id ? await db.exercise.get(next.parent_id) : undefined
+    if (!validRepetitionTargets(next.target_reps ?? parent?.target_reps ?? DEFAULT_TARGET_REPS, next.min_reps ?? parent?.min_reps ?? DEFAULT_MIN_REPS)) {
+      throw new Error('Minimum reps must be between 1 and target reps; target reps must be at most 100.')
+    }
+  }
+  await saveRows('exercise', [next])
 }
 
 /** Links of the exercise and, for a variant, of its parent. */
@@ -95,6 +103,9 @@ function blankExercise(userId: string, ts: string): Exercise {
     source_id: null,
     focus_muscles: null,
     focus_cue: null,
+    target_reps: null,
+    min_reps: null,
+    warm_up: null,
     created_at: ts,
     updated_at: ts,
     deleted_at: null,
@@ -108,6 +119,9 @@ export async function createExercise(userId: string, input: NewExercise): Promis
     ...blankExercise(userId, ts),
     name: input.name.trim(),
     tracking_type: input.trackingType,
+    target_reps: input.trackingType === 'weight_reps' ? DEFAULT_TARGET_REPS : null,
+    min_reps: input.trackingType === 'weight_reps' ? DEFAULT_MIN_REPS : null,
+    warm_up: false,
     is_unilateral: input.trackingType === 'weight_reps' ? input.isUnilateral : false,
     equipment: input.equipment ?? null,
     muscles_primary: input.musclesPrimary ?? [],

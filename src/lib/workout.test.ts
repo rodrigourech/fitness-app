@@ -172,14 +172,16 @@ describe('add exercise to running workout', () => {
 })
 
 describe('decisions 9 October 2026', () => {
-  it('starts the last working set with RIR 2 and carries it to an added set', async () => {
+  it('creates and adds work sets without RIR while preserving historical values', async () => {
     const w = await startWorkout(day2, USER)
     const s = await setsOf(w.id)
     const curl = s['Lying Leg Curl (Machine)']!
-    expect(curl.sets.map((x) => x.rir)).toEqual([null, null, 2])
+    expect(curl.sets.map((x) => x.rir)).toEqual([null, null, null])
+    await db.workout_set.update(curl.sets.at(-1)!.id, { rir: 3 })
     await addSet(curl.we)
     const after = (await setsOf(w.id))['Lying Leg Curl (Machine)']!.sets
-    expect(after.at(-1)!.rir).toBe(2)
+    expect(after.at(-1)!.rir).toBeNull()
+    expect(after.at(-2)!.rir).toBe(3)
   })
 
   it('keeps a skipped exercise in the history without sets and ignores it for the prefill', async () => {

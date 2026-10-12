@@ -1,5 +1,8 @@
 import { db, SYNC_TABLES, type OutboxEntry, type SyncTable } from './db'
 import { RemoteError, neonRemote, type RemoteApi, type RemoteRow } from './remote'
+import { isBetaSandbox } from './environment'
+import { BETA_READY_KEY, importBetaSnapshot } from './beta'
+import { getMeta } from './db'
 
 // Sync engine, see docs/03_datenmodell.md, section "Synchronisation".
 // Push: outbox rows in dependency order as upserts; the server trigger rejects older states.
@@ -28,7 +31,7 @@ export async function saveRows<T extends SyncRow>(table: SyncTable, rows: T[]): 
   await db.transaction('rw', db.table(table), db.outbox, async () => {
     for (const row of rows) row.updated_at = now
     await db.table(table).bulkPut(rows)
-    await enqueue(table, rows.map((r) => r.id), now)
+    if (!isBetaSandbox) await enqueue(table, rows.map((r) => r.id), now)
   })
   requestSync()
 }
@@ -53,6 +56,7 @@ function chunks<T>(items: T[], size: number): T[][] {
 }
 
 export async function push(remote: RemoteApi): Promise<number> {
+  if (isBetaSandbox) return 0
   const entries = await db.outbox.orderBy('seq').toArray()
   let pushed = 0
   for (const table of SYNC_TABLES) {
@@ -86,6 +90,10 @@ export async function push(remote: RemoteApi): Promise<number> {
 }
 
 export async function pull(remote: RemoteApi): Promise<number> {
+  if (isBetaSandbox) {
+    await importBetaSnapshot(remote)
+    return 0
+  }
   let merged = 0
   for (const table of SYNC_TABLES) {
     const state = await db.sync_state.get(table)
@@ -148,6 +156,10 @@ export async function syncNow(remote: RemoteApi = neonRemote): Promise<void> {
   running = (async () => {
     do {
       again = false
+      if (isBetaSandbox && await getMeta(BETA_READY_KEY) === '1') {
+        setStatus({ phase: 'idle', error: null })
+        return
+      }
       if (!navigator.onLine) {
         setStatus({ phase: 'offline' })
         return
