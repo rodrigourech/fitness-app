@@ -1,7 +1,7 @@
 import { db, SYNC_TABLES, type OutboxEntry, type SyncTable } from './db'
 import { RemoteError, neonRemote, type RemoteApi, type RemoteRow } from './remote'
 import { isBetaSandbox } from './environment'
-import { BETA_READY_KEY, importBetaSnapshot } from './beta'
+import { BETA_READY_KEY, enableRecommendedBetaWarmUps, importBetaSnapshot } from './beta'
 import { getMeta } from './db'
 
 // Sync engine, see docs/03_datenmodell.md, section "Synchronisation".
@@ -157,7 +157,12 @@ export async function syncNow(remote: RemoteApi = neonRemote): Promise<void> {
     do {
       again = false
       if (isBetaSandbox && await getMeta(BETA_READY_KEY) === '1') {
-        setStatus({ phase: 'idle', error: null })
+        try {
+          await enableRecommendedBetaWarmUps()
+          setStatus({ phase: 'idle', error: null })
+        } catch (err) {
+          setStatus({ phase: 'error', error: err instanceof Error ? err.message : String(err) })
+        }
         return
       }
       if (!navigator.onLine) {

@@ -4,7 +4,7 @@ import { beforeEach, expect, it, vi } from 'vitest'
 vi.hoisted(() => vi.stubEnv('VITE_BETA_SANDBOX', 'true'))
 
 import { db, getMeta, SYNC_TABLES, type SyncTable } from './db'
-import { BETA_READY_KEY, importBetaSnapshot } from './beta'
+import { BETA_READY_KEY, enableRecommendedBetaWarmUps, importBetaSnapshot } from './beta'
 import { importSeedIfNeeded } from './seed'
 import { pull, push, saveRows } from './sync'
 import { neonRemote, type RemoteApi, type RemoteRow } from './remote'
@@ -70,4 +70,25 @@ it('blocks all live data, photo upload/delete and password writes before network
   await uploadPendingPhotos()
   await deletePendingPhotoObjects()
   expect(fetch).not.toHaveBeenCalled()
+})
+
+it('enables recommended reminders in an existing beta once, without changing finished history or later manual choices', async () => {
+  await importSeedIfNeeded('u1')
+  const leg = (await db.exercise.toArray()).find((ex) => ex.name === 'Leg Press')!
+  await db.exercise.update(leg.id, { warm_up: false })
+  const past = (await db.workout_exercise.where('exercise_id').equals(leg.id).first())!
+  await db.workout_exercise.update(past.id, { warm_up: false })
+  const workout = (await db.workout.get(past.workout_id))!
+  await db.workout.put({ ...workout, id: 'open', finished_at: null })
+  await db.workout_exercise.put({ ...past, id: 'open-leg', workout_id: 'open', warm_up: false })
+  await db.meta.put({ key: BETA_READY_KEY, value: '1' })
+  await db.outbox.clear()
+  await enableRecommendedBetaWarmUps()
+  expect(await db.exercise.get(leg.id)).toMatchObject({ warm_up: true })
+  expect(await db.workout_exercise.get('open-leg')).toMatchObject({ warm_up: true })
+  expect(await db.workout_exercise.get(past.id)).toMatchObject({ warm_up: false })
+  expect(await db.outbox.count()).toBe(0)
+  await db.exercise.update(leg.id, { warm_up: false })
+  await enableRecommendedBetaWarmUps()
+  expect(await db.exercise.get(leg.id)).toMatchObject({ warm_up: false })
 })

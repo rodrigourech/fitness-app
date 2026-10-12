@@ -23,7 +23,13 @@ begin
     update public.exercise set target_reps = 10, min_reps = 7, updated_at = now()
       where parent_id is null and tracking_type = 'weight_reps';
     update public.exercise e set warm_up = true, updated_at = now()
-      where exists (
+      where e.id in (
+        '1f3d184e-fccb-514f-a554-b6a6cbbc7380', -- Chest Press
+        '8ca6bcc2-1cc1-5f1f-b6a5-609954173d50', -- Lat Pulldown
+        '09ab0a44-dcd2-5c33-989a-3986f73cdb06', -- Seated Row
+        '6144fd76-baee-5c78-a409-4ce968051388', -- Leg Press
+        'fb2adc06-d45c-58f6-b67b-ed1ba6ec8fe7'  -- Lying Leg Curl
+      ) or exists (
         select 1 from public.template_exercise te join public.template_set ts on ts.template_exercise_id = te.id
         where te.exercise_id = e.id and te.deleted_at is null and ts.deleted_at is null and ts.set_type = 'warmup'
       );

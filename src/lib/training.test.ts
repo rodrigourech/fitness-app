@@ -2,10 +2,25 @@ import 'fake-indexeddb/auto'
 import { beforeEach, expect, it } from 'vitest'
 import { db } from './db'
 import { importSeedIfNeeded } from './seed'
-import { exerciseTrainingSettings, repetitionTargets, validRepetitionTargets } from './training'
+import { exerciseTrainingSettings, hasRecommendedWarmUp, repetitionTargets, validRepetitionTargets } from './training'
 import { startWorkout, cancelWorkout } from './workout'
 
 beforeEach(async () => { await db.delete(); await db.open(); await importSeedIfNeeded('u1') })
+
+it('defaults preparation reminders to the selected movements and their variants, with manual off taking precedence', async () => {
+  const all = await db.exercise.toArray()
+  const byId = new Map(all.map((ex) => [ex.id, ex]))
+  for (const name of ['Chest Press (Machine)', 'Lat Pulldown (Cable)', 'Seated Row (Cable)', 'Leg Press', 'Lying Leg Curl (Machine)', 'Griffe Mitte Brust']) {
+    const ex = all.find((exercise) => exercise.name === name)!
+    expect(hasRecommendedWarmUp(ex)).toBe(true)
+    expect(exerciseTrainingSettings(ex, byId).warmUp).toBe(true)
+  }
+  const raise = all.find((ex) => ex.name === 'Lateral Raise (Cable)')!
+  expect(exerciseTrainingSettings(raise, byId).warmUp).toBe(false)
+  const leg = all.find((ex) => ex.name === 'Leg Press')!
+  leg.warm_up = false
+  expect(exerciseTrainingSettings(leg, byId).warmUp).toBe(false)
+})
 
 it('inherits exercise settings and applies only work-set overrides', async () => {
   const all = await db.exercise.toArray()

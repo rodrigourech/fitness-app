@@ -182,7 +182,7 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
                 <input type="checkbox" checked={eff.warmUp} onChange={(e) => void updateExercise(ex, { warm_up: e.target.checked })} className="h-5 w-5" />
                 Warm Up
               </label>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">Shows a reminder before work sets. Warm-up sets are not logged.</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Reminder for new workouts. Warm-up sets are not logged.</p>
               {parent && ex.warm_up != null && <button onClick={() => void updateExercise(ex, { warm_up: null })} className="text-left text-xs font-medium text-accent-ink">Use main exercise’s Warm Up setting</button>}
             </>
           )}
