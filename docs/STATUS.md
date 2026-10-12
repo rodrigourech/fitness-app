@@ -23,6 +23,7 @@ Letzte Aktualisierung 12. Oktober 2026
 - Aktuelle Live-Auslieferung und Gerätetests wurden in dieser Sitzung nicht geprüft. Früherer Browser-/Computer-use-Zugriff scheiterte am lokalen Automatisierungsdienst
 - Neue Info-Seite «Training guide / How recommendations work» lokal umgesetzt: erreichbar über «Info» in der Kopfzeile von Home und laufendem Training sowie eine Home-Karte. Erklärt aktive Progressionsregel, Zielwerte, RIR, Historienauswahl, Wiederholungsbereiche, Anstrengung/Pausen, Vergleichbarkeit, Volumen und geschätztes 1RM. Fünf wissenschaftliche Quellen direkt verlinkt; praktische Heuristiken und derzeit aktive Regeln ausdrücklich unterschieden
 - Die Info-Seite ist Teil der neuen Beta und erklärt jetzt die Progression ohne RIR. Visuelle Prüfung auf 375 px Breite erfolgreich, nachdem der lokale Vite-Server ausserhalb der Sandbox gestartet wurde: Übungsfelder, Warm Up, Info-Navigation und Wiederholungssumme geprüft; keine Browser-Konsolenfehler
+- Beta-Featurecommit `97f65f7` gepusht und veröffentlicht. App-Workflow [38258031432](https://github.com/rodrigourech/fitness-app/actions/runs/38258031432) und Pages-Workflow [38258090245](https://github.com/rodrigourech/fitness-app-web/actions/runs/38258090245) erfolgreich. `/beta/build-info.json` bestätigt Commit, Branch und localBeta=true. Build-Repo-Commit `82e4d71` ändert ausschliesslich `beta/`; Live-Dateien erhalten. Veröffentlichte Beta-Anmeldung im Browser geprüft, ohne Konsolenfehler
 
 ## Nächste Schritte
 
@@ -41,6 +42,7 @@ Der Benutzer hat die vollständige Umsetzung der zuletzt besprochenen Regeln in 
 - Migration 0014 vorbereitet, nicht auf production ausgeführt. Erst nach Beta-Freigabe migrieren und Schema-Cache aktualisieren, dann main veröffentlichen
 - Abschliessend Typprüfung, Lint, 104 Tests und Builds für Beta und spätere Live-Variante erfolgreich; Beta-Manifest/Service-Worker mit eigenem Scope `/fitness-app-web/beta/`. Neue Prüfungen für Progression, Vorlagen-/Variantenisolation, Trainings-Snapshots, Summen und blockierte Beta-Schreibzugriffe. Veröffentlichung wird separat nachgeführt
 - Fachliche Grundlage und Grenzen stehen in der Info-Seite: [ACSM 2026](https://pubmed.ncbi.nlm.nih.gov/41843416/), [Lopez 2021](https://pubmed.ncbi.nlm.nih.gov/33433148/), [Plotkin 2022](https://pubmed.ncbi.nlm.nih.gov/36199287/), [Refalo 2024](https://pubmed.ncbi.nlm.nih.gov/38393985/), [Singer 2024](https://pubmed.ncbi.nlm.nih.gov/39205815/). Genaue Schwellen sind praktische Heuristiken
+- Nächster Schritt: Benutzer meldet sich unter `/beta/` an und prüft die Änderungen. Vor Freigabe keine Migration auf production und kein Merge nach main. Bei Ablehnung weiterhin Live-App verwenden; Beta-Testdaten haben keinen Einfluss darauf
 
 ### Ältere offene Prüfungen und Aktionen
 
