@@ -95,3 +95,11 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
   - Workout-Karten sind zugeklappt (Name, Anzahl Übungen, zuletzt, «Start» direkt), aufgeklappt mit Übungsliste und «Edit workout». Reihenfolge über «Reorder» frei wählbar, gespeichert als user_setting «template_order» (geräteübergreifend, keine Migration); gilt auch für die Startliste auf Home
   - Home farbiger: Wochenziel blau, Körpergewicht grün, Liste «Increase weight next time» gelb (gleiche Regel wie Ready to increase in Stats), umschaltbares Diagramm (Körpergewicht 7-Tage-Schnitt 90 Tage; Training: Volumen pro Woche als Säulen mit Anzahl Trainings darüber, 12 Wochen); Auswahl pro Gerät gemerkt
   - Kein eigener Skip-Button mehr: Wird im Training der letzte Satz einer Übung entfernt, gilt sie als übersprungen (in der Historie «Skipped», Undo bringt den zuletzt entfernten Satz zurück)
+
+## **12. Oktober 2026**
+
+- Arbeitsumfang dieser Sitzung nach Präzisierung: zunächst alle offenen Anpassungen und Prüfungen auflisten. Keine neuen Funktions- oder Workflow-Änderungen beschlossen; die Übersicht in docs/STATUS.md berücksichtigt zusätzlich die noch offenen Punkte aus MVP und Phase 2 des ursprünglichen Handovers
+- Anschliessend konkretisierter Auftrag: Progression ohne RIR, Ziel-/Mindestwiederholungen pro Übung, Warm-Up-Schalter und Wiederholungssumme im Vergleich zum letzten Mal. RIR-Spalte und historische Daten bleiben bestehen
+- Warm Up dient nur als Hinweis und wird nicht erfasst
+- Min/Max-Felder im Vorlagen-Editor bleiben als Überschreibung der Übungswerte erhalten
+- Umsetzung auf Benutzerwunsch vorerst angehalten, um den geänderten Trainingsplan zuerst zu besprechen. Startwerte und genaue Progressionskriterien sind noch offen; der Screenshot enthält nur die Übungslisten
