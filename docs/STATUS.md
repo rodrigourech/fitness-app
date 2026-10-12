@@ -14,13 +14,13 @@ Letzte Aktualisierung 12. Oktober 2026
 
 ## Stand
 
-- Nach Beta-Test ausdrücklich «bitte prod machen»: Produktionsfreigabe erteilt. `main` übernimmt `codex/beta-progression` per Fast-forward (Ausgangsstand `7d30044`, Beta-Feature `064adef` und Publikationsnachweis `29ef1b1`); Produktionsveröffentlichung und Auslieferungsprüfung folgen
+- Nach Beta-Test ausdrücklich «bitte prod machen»: `codex/beta-progression` per Fast-forward in main übernommen und als `5388deb` veröffentlicht (Ausgangsstand `7d30044`, Beta-Feature `064adef`). App-Workflow [38268738116](https://github.com/rodrigourech/fitness-app/actions/runs/38268738116) und Pages-Workflow [38268791185](https://github.com/rodrigourech/fitness-app-web/actions/runs/38268791185) erfolgreich. Ausgeliefertes `/build-info.json` bestätigt `5388deb`, branch=main, variant=main und localBeta=false; Live-Sync wieder aktiv. Manifest und Scope geprüft, ausgeliefertes JavaScript per SHA-256 identisch mit dem geprüften lokalen Produktionsbuild. Öffentlicher Build-Commit `1a0775c` veröffentlicht die Produktionsdateien und entfernt die Beta wie vorgesehen
 - Home- und Workout-Nachträge vom 9. Oktober sind implementiert: klappbare Workout-Karten, geräteübergreifende Reihenfolge, farbige Home-Karten, Progressionsliste, umschaltbares Diagramm (Gewicht oder Trainingsvolumen mit Anzahl Trainings), Überspringen durch Entfernen des letzten Satzes
 - Migrationen bis 0014 eingespielt; 0004 bewusst durch 0006 ersetzt. Migration 0014 am 12. Oktober atomar auf production/neondb ausgeführt, Data-API-Schema-Cache aktualisiert. Sechs neue Spalten vorhanden; 33 Trainings, 620 erfasste Sätze und 36 historische RIR-Werte unverändert. Die zwei Vorlagen-Aufwärmsätze wurden soft-gelöscht, damit neue Trainings nur Hinweise zeigen. Die fünf empfohlenen Übungen haben Warm Up aktiviert
 - Foto-Passphrase ändern/zurücksetzen und Papierkorb sind implementiert. Wiederherstellung des Gewichtseintrags vom 7. Oktober und Klärung der vergessenen Foto-Passphrase sind weiterhin nicht bestätigt
 - Prüfung am 12. Oktober: Typprüfung, Lint, alle 92 Tests und Produktionsbuild erfolgreich. Vitest scheitert mit dem Standard-Temp-Verzeichnis der Windows-Sandbox; mit TEMP und TMP auf node_modules/.cache/vitest-temp erfolgreich, ohne Sandbox-Eskalation
 - Build meldet einen Haupt-JavaScript-Chunk über 500 kB; Optimierung ist bisher kein vereinbarter Änderungsauftrag
-- Aktuelle Live-Auslieferung und Gerätetests wurden in dieser Sitzung nicht geprüft. Früherer Browser-/Computer-use-Zugriff scheiterte am lokalen Automatisierungsdienst
+- Aktuelle Live-Auslieferung über Commit-Metadaten geprüft. Produktionsbuild mit richtiger App-Bezeichnung, Scope und öffentlichen API-URLs erfolgreich; Typprüfung, Lint und alle 106 Tests erfolgreich. Persönlicher Gerätetest des neuen Produktionsstands bleibt beim Benutzer
 - Neue Info-Seite «Training guide / How recommendations work» lokal umgesetzt: erreichbar über «Info» in der Kopfzeile von Home und laufendem Training sowie eine Home-Karte. Erklärt aktive Progressionsregel, Zielwerte, RIR, Historienauswahl, Wiederholungsbereiche, Anstrengung/Pausen, Vergleichbarkeit, Volumen und geschätztes 1RM. Fünf wissenschaftliche Quellen direkt verlinkt; praktische Heuristiken und derzeit aktive Regeln ausdrücklich unterschieden
 - Die Info-Seite ist Teil der neuen Beta und erklärt jetzt die Progression ohne RIR. Visuelle Prüfung auf 375 px Breite erfolgreich, nachdem der lokale Vite-Server ausserhalb der Sandbox gestartet wurde: Übungsfelder, Warm Up, Info-Navigation und Wiederholungssumme geprüft; keine Browser-Konsolenfehler
 - Beta-Featurecommit `97f65f7` gepusht und veröffentlicht. App-Workflow [38258031432](https://github.com/rodrigourech/fitness-app/actions/runs/38258031432) und Pages-Workflow [38258090245](https://github.com/rodrigourech/fitness-app-web/actions/runs/38258090245) erfolgreich. `/beta/build-info.json` bestätigt Commit, Branch und localBeta=true. Build-Repo-Commit `82e4d71` ändert ausschliesslich `beta/`; Live-Dateien erhalten. Veröffentlichte Beta-Anmeldung im Browser geprüft, ohne Konsolenfehler
@@ -35,7 +35,7 @@ Letzte Aktualisierung 12. Oktober 2026
 
 ## Nächste Schritte
 
-### Aktueller Änderungsauftrag: Progression ohne RIR veröffentlichen
+### Umgesetzt und veröffentlicht: Progression ohne RIR
 
 Der Benutzer hat nach der veröffentlichten Beta ausdrücklich die Übernahme in main/production freigegeben.
 
@@ -47,10 +47,10 @@ Der Benutzer hat nach der veröffentlichten Beta ausdrücklich die Übernahme in
 - Wiederholungssumme zählt nur abgehakte Arbeitssätze (bei unilateral beide Seiten). Unterschied zum letzten Training derselben Vorlage/Variante erst nach Abschluss aller Sätze und bei gleicher Satzanzahl/Gewichten sowie vollständigen Reps. Sonst Erklärung, weshalb nur die Summen gezeigt werden
 - Ready-to-increase in Home/Stats pro Vorlage/Variante getrennt, ohne Übernahme der Main-Day-Leistung für Bonus Day
 - Beta lädt beim ersten Anmelden eine vollständige Live-Datenkopie, danach nur lokale Änderungen. Eigene DB, kein Push, kein späterer Pull; Foto-/Passwort-Schreibzugriffe zusätzlich blockiert. Testdaten gelten nur auf diesem Gerät und werden bei Freigabe nicht automatisch übernommen
-- Migration 0014 und Schema-Cache-Aktualisierung nach Freigabe ausgeführt und geprüft; jetzt main veröffentlichen
+- Migration 0014 und Schema-Cache-Aktualisierung nach Freigabe ausgeführt und geprüft; main veröffentlicht
 - Abschliessend Typprüfung, Lint, 104 Tests und Builds für Beta und spätere Live-Variante erfolgreich; Beta-Manifest/Service-Worker mit eigenem Scope `/fitness-app-web/beta/`. Neue Prüfungen für Progression, Vorlagen-/Variantenisolation, Trainings-Snapshots, Summen und blockierte Beta-Schreibzugriffe. Veröffentlichung wird separat nachgeführt
 - Fachliche Grundlage und Grenzen stehen in der Info-Seite: [ACSM 2026](https://pubmed.ncbi.nlm.nih.gov/41843416/), [Lopez 2021](https://pubmed.ncbi.nlm.nih.gov/33433148/), [Plotkin 2022](https://pubmed.ncbi.nlm.nih.gov/36199287/), [Refalo 2024](https://pubmed.ncbi.nlm.nih.gov/38393985/), [Singer 2024](https://pubmed.ncbi.nlm.nih.gov/39205815/). Genaue Schwellen sind praktische Heuristiken
-- Nächster Schritt: main pushen, App- und Pages-Workflow sowie ausgelieferte Produktionsmetadaten prüfen. Danach Benutzer Live-App neu laden lassen. Beta-Testdaten werden nicht in die Produktion übernommen
+- Nächster Schritt: Benutzer lädt die Live-App neu (iPhone-App vollständig schliessen und wieder öffnen) und prüft sein erstes Training. Beta-Testdaten wurden nicht in die Produktion übernommen. Der Publikationsnachweis wird als Dokumentationscommit mit `[skip ci]` nachgeführt; die geprüfte ausgelieferte App bleibt auf `5388deb`
 - Neueste Vorgabe: «bitte prod machen» nach Beta-Veröffentlichung; Produktionsfreigabe einschliesslich Migration 0014 und main-Push. Warm-Up-Hinweise bleiben 5–6 leichte Wiederholungen mit leichterem Gewicht, deutlich vor Ermüdung; keine Erfassung. Zusätzliche Quelle [Viveiros et al. 2024](https://pubmed.ncbi.nlm.nih.gov/39593476/); genaue Anzahl bleibt ein pragmatischer Hinweis, kein universell optimales Protokoll
 
 ### Ältere offene Prüfungen und Aktionen
@@ -58,7 +58,7 @@ Der Benutzer hat nach der veröffentlichten Beta ausdrücklich die Übernahme in
 1. App neu laden (iPhone ganz schliessen) und die neuen Funktionen im ersten Training mit dem neuen Plan prüfen
 2. Gewichtseintrag vom 7. Oktober 2026 über den Papierkorb wiederherstellen
 3. Foto-Passphrase ist vergessen. Zeigt ein Gerät die Fotos noch, dort «Change passphrase»; sonst «Unlock photos», dann «Forgot passphrase?»
-4. Auslieferung des aktuellen main-Stands prüfen; die ältere offene Deployment-Prüfung von 265f945 dadurch mit abdecken
+4. Die ältere offene Deployment-Prüfung ist durch die geprüfte Produktionsauslieferung von `5388deb` erledigt
 
 ## Umgesetzt und live am 9. Oktober 2026 (f0a460d)
 
