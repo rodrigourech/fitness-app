@@ -14,9 +14,9 @@ Letzte Aktualisierung 12. Oktober 2026
 
 ## Stand
 
-- Ausgangsstand main auf 7d30044 (`docs: plan progression without RIR (target and minimum reps per exercise)`), am 12. Oktober auch direkt auf origin/main geprüft. Umsetzung jetzt auf `codex/beta-progression`; main bleibt unverändert
+- Nach Beta-Test ausdrücklich «bitte prod machen»: Produktionsfreigabe erteilt. `main` übernimmt `codex/beta-progression` per Fast-forward (Ausgangsstand `7d30044`, Beta-Feature `064adef` und Publikationsnachweis `29ef1b1`); Produktionsveröffentlichung und Auslieferungsprüfung folgen
 - Home- und Workout-Nachträge vom 9. Oktober sind implementiert: klappbare Workout-Karten, geräteübergreifende Reihenfolge, farbige Home-Karten, Progressionsliste, umschaltbares Diagramm (Gewicht oder Trainingsvolumen mit Anzahl Trainings), Überspringen durch Entfernen des letzten Satzes
-- Migrationen bis 0013 laut Migrationsprotokoll eingespielt; 0004 bewusst durch 0006 ersetzt. Keine ausstehende Migration dokumentiert
+- Migrationen bis 0014 eingespielt; 0004 bewusst durch 0006 ersetzt. Migration 0014 am 12. Oktober atomar auf production/neondb ausgeführt, Data-API-Schema-Cache aktualisiert. Sechs neue Spalten vorhanden; 33 Trainings, 620 erfasste Sätze und 36 historische RIR-Werte unverändert. Die zwei Vorlagen-Aufwärmsätze wurden soft-gelöscht, damit neue Trainings nur Hinweise zeigen. Die fünf empfohlenen Übungen haben Warm Up aktiviert
 - Foto-Passphrase ändern/zurücksetzen und Papierkorb sind implementiert. Wiederherstellung des Gewichtseintrags vom 7. Oktober und Klärung der vergessenen Foto-Passphrase sind weiterhin nicht bestätigt
 - Prüfung am 12. Oktober: Typprüfung, Lint, alle 92 Tests und Produktionsbuild erfolgreich. Vitest scheitert mit dem Standard-Temp-Verzeichnis der Windows-Sandbox; mit TEMP und TMP auf node_modules/.cache/vitest-temp erfolgreich, ohne Sandbox-Eskalation
 - Build meldet einen Haupt-JavaScript-Chunk über 500 kB; Optimierung ist bisher kein vereinbarter Änderungsauftrag
@@ -35,11 +35,11 @@ Letzte Aktualisierung 12. Oktober 2026
 
 ## Nächste Schritte
 
-### Aktueller Änderungsauftrag: Progression ohne RIR in der Beta
+### Aktueller Änderungsauftrag: Progression ohne RIR veröffentlichen
 
-Der Benutzer hat die vollständige Umsetzung der zuletzt besprochenen Regeln in einem Beta-Branch zum Test freigegeben; keine Freigabe für main/production.
+Der Benutzer hat nach der veröffentlichten Beta ausdrücklich die Übernahme in main/production freigegeben.
 
-- Branch `codex/beta-progression`, Ausgangspunkt `7d30044`. Live-Branch main unverändert
+- Beta-Branch `codex/beta-progression`, Ausgangspunkt `7d30044`; geprüfte Umsetzung jetzt in main übernommen
 - RIR aus Training, Historie und Vorbelegung entfernt; neue Sätze haben rir = null, historische Werte und DB-Spalte bleiben bestehen
 - Pro Übung Ziel 10 / Minimum 7 als Standard, Varianten erben; Min/Max im Vorlagen-Editor als Überschreibung erhalten. Ziele, Minimum, Warm Up und Pause werden beim Trainingsstart kopiert
 - Warm Up nur Hinweis, keine neuen Aufwärmsätze. Bereits gespeicherte historische Aufwärmsätze bleiben erhalten. Feste alte Vorlagenziele (10/10 usw.) behalten das obere Ziel und erben künftig das Minimum; echte Bereiche bleiben erhalten
@@ -47,11 +47,11 @@ Der Benutzer hat die vollständige Umsetzung der zuletzt besprochenen Regeln in 
 - Wiederholungssumme zählt nur abgehakte Arbeitssätze (bei unilateral beide Seiten). Unterschied zum letzten Training derselben Vorlage/Variante erst nach Abschluss aller Sätze und bei gleicher Satzanzahl/Gewichten sowie vollständigen Reps. Sonst Erklärung, weshalb nur die Summen gezeigt werden
 - Ready-to-increase in Home/Stats pro Vorlage/Variante getrennt, ohne Übernahme der Main-Day-Leistung für Bonus Day
 - Beta lädt beim ersten Anmelden eine vollständige Live-Datenkopie, danach nur lokale Änderungen. Eigene DB, kein Push, kein späterer Pull; Foto-/Passwort-Schreibzugriffe zusätzlich blockiert. Testdaten gelten nur auf diesem Gerät und werden bei Freigabe nicht automatisch übernommen
-- Migration 0014 vorbereitet, nicht auf production ausgeführt. Erst nach Beta-Freigabe migrieren und Schema-Cache aktualisieren, dann main veröffentlichen
+- Migration 0014 und Schema-Cache-Aktualisierung nach Freigabe ausgeführt und geprüft; jetzt main veröffentlichen
 - Abschliessend Typprüfung, Lint, 104 Tests und Builds für Beta und spätere Live-Variante erfolgreich; Beta-Manifest/Service-Worker mit eigenem Scope `/fitness-app-web/beta/`. Neue Prüfungen für Progression, Vorlagen-/Variantenisolation, Trainings-Snapshots, Summen und blockierte Beta-Schreibzugriffe. Veröffentlichung wird separat nachgeführt
 - Fachliche Grundlage und Grenzen stehen in der Info-Seite: [ACSM 2026](https://pubmed.ncbi.nlm.nih.gov/41843416/), [Lopez 2021](https://pubmed.ncbi.nlm.nih.gov/33433148/), [Plotkin 2022](https://pubmed.ncbi.nlm.nih.gov/36199287/), [Refalo 2024](https://pubmed.ncbi.nlm.nih.gov/38393985/), [Singer 2024](https://pubmed.ncbi.nlm.nih.gov/39205815/). Genaue Schwellen sind praktische Heuristiken
-- Nächster Schritt: Benutzer meldet sich unter `/beta/` an und prüft die Änderungen. Vor Freigabe keine Migration auf production und kein Merge nach main. Bei Ablehnung weiterhin Live-App verwenden; Beta-Testdaten haben keinen Einfluss darauf
-- Neueste Vorgabe: nach lokalem Test ausdrücklich «bitte pushen»; Veröffentlichung auf dem Beta-Branch freigegeben, kein Merge nach main. Warm-Up-Aktivierung für die fünf Übungen bestätigt. Hinweise konkretisiert auf 5–6 leichte Wiederholungen mit leichterem Gewicht, deutlich vor Ermüdung; keine Erfassung. Zusätzliche Quelle [Viveiros et al. 2024](https://pubmed.ncbi.nlm.nih.gov/39593476/); genaue Anzahl bleibt ein pragmatischer Hinweis, kein universell optimales Protokoll
+- Nächster Schritt: main pushen, App- und Pages-Workflow sowie ausgelieferte Produktionsmetadaten prüfen. Danach Benutzer Live-App neu laden lassen. Beta-Testdaten werden nicht in die Produktion übernommen
+- Neueste Vorgabe: «bitte prod machen» nach Beta-Veröffentlichung; Produktionsfreigabe einschliesslich Migration 0014 und main-Push. Warm-Up-Hinweise bleiben 5–6 leichte Wiederholungen mit leichterem Gewicht, deutlich vor Ermüdung; keine Erfassung. Zusätzliche Quelle [Viveiros et al. 2024](https://pubmed.ncbi.nlm.nih.gov/39593476/); genaue Anzahl bleibt ein pragmatischer Hinweis, kein universell optimales Protokoll
 
 ### Ältere offene Prüfungen und Aktionen
 

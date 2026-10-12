@@ -25,4 +25,4 @@ Ohne diesen Schritt liefert die Data API neue Spalten nicht aus und lehnt sie be
 | 0011_trash.sql | purged_at für body_weight, body_photo, workout (Papierkorb) | 8. Oktober 2026, refresh-schema ausgeführt |
 | 0012_archive_skip.sql | template.archived_at und purged_at, workout_exercise.skipped_at; alte template_exercise.rest_s geleert | 9. Oktober 2026, refresh-schema ausgeführt |
 | 0013_plan_2026_10_09.sql | Nur Daten: Trainingsplan vom 9. Oktober (Main Day A/B, Bonus Day, Run), DAY1/DAY2/Lauf archiviert | 9. Oktober 2026, geprüft |
-| 0014_repetition_progression.sql | Ziel-/Mindestwiederholungen und Warm-Up-Hinweis pro Übung, Snapshots im Training; feste alte Ziele erben das Minimum; Vorlagen-Aufwärmsätze werden Hinweise, Historie bleibt erhalten | vorbereitet; erst nach Beta-Freigabe auf production ausführen |
+| 0014_repetition_progression.sql | Ziel-/Mindestwiederholungen und Warm-Up-Hinweis pro Übung, Snapshots im Training; feste alte Ziele erben das Minimum; Vorlagen-Aufwärmsätze werden Hinweise, Historie bleibt erhalten | 12. Oktober 2026, atomar auf production ausgeführt, geprüft und refresh-schema ausgeführt |
