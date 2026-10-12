@@ -42,7 +42,7 @@ export default function InfoPage({ onDone }: { onDone: () => void }) {
       </section>
 
       <div className="mt-3 grid grid-cols-1 gap-2 text-sm">
-        <Tip title="Warm Up">5–6 easy reps with lighter weight. Stay well short of fatigue. No logging.</Tip>
+        <Tip title="Warm Up">5–6 light reps.</Tip>
         <Tip title="Effort & rest">Clean reps, about 1–2 more possible. Rest enough to repeat good form.</Tip>
         <Tip title="Progress">27 → 28 total reps is progress at the same weight and set count.</Tip>
       </div>

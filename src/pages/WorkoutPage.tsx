@@ -295,7 +295,7 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
       {tt === 'weight_reps' && (
         <>
           <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Target {targets.target} reps · Minimum {targets.minimum}{eff.isUnilateral ? ' per side' : ''}</p>
-          {warmUp && <p className="mt-2 rounded-md bg-sky-50 px-2 py-1 text-sm text-sky-800 dark:bg-sky-950 dark:text-sky-200">Warm Up · 5–6 easy reps with a lighter weight. No logging.</p>}
+          {warmUp && <p className="mt-2 rounded-md bg-sky-50 px-2 py-1 text-sm text-sky-800 dark:bg-sky-950 dark:text-sky-200">Warm Up · 5–6 light reps</p>}
           {advice && <div className={`mt-2 rounded-md px-2 py-1 text-sm ${advice === 'reduce' ? 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200' : 'bg-accent-soft text-accent-ink'}`}>
             <p className="font-medium">{advice === 'increase' ? 'Increase weight' : advice === 'reduce' ? 'Reduce weight' : 'Keep weight'}</p>
             {advice === 'reduce' && <p className="text-xs">First work set below minimum twice at the same weight. Check rest, recovery and form before choosing a lighter weight.</p>}
