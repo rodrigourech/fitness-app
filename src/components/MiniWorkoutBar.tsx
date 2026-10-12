@@ -11,7 +11,7 @@ export default function MiniWorkoutBar({ workout, onExpand }: { workout: Workout
   const restLeft = restUntil ? Math.ceil((Date.parse(restUntil) - now) / 1000) : null
 
   return (
-    <div className="mini-workout-bar fixed inset-x-0 bottom-0 z-30 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
+    <div className="mini-workout-bar fixed inset-x-0 bottom-0 z-20 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
       <button
         onClick={onExpand}
         aria-label="Open running workout"
