@@ -363,7 +363,7 @@ const PASSPHRASE_TITLE: Record<PassphraseMode, string> = {
   reset: 'Reset photo passphrase',
 }
 
-function PassphraseSheet({ mode: initial, userId, onClose }: { mode: PassphraseMode; userId: string; onClose: () => void }) {
+export function PassphraseSheet({ mode: initial, userId, onClose }: { mode: PassphraseMode; userId: string; onClose: () => void }) {
   const [mode, setMode] = useState<PassphraseMode>(initial)
   const [pass, setPass] = useState('')
   const [repeat, setRepeat] = useState('')

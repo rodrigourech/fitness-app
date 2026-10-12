@@ -7,7 +7,7 @@ export default function UndoToast({ raised = false }: { raised?: boolean }) {
   if (!offer) return null
   return (
     <div
-      className={`fixed inset-x-0 z-40 px-3 ${raised ? 'bottom-24' : 'bottom-0 pb-[max(env(safe-area-inset-bottom),0.75rem)]'}`}
+      className={`undo-toast fixed inset-x-0 z-40 px-3 ${raised ? 'undo-raised bottom-24' : 'bottom-0 pb-[max(env(safe-area-inset-bottom),0.75rem)]'}`}
       role="status"
     >
       <div

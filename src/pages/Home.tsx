@@ -4,7 +4,10 @@ import AppBar from '../components/AppBar'
 import ExerciseSheet from '../components/ExerciseSheet'
 import SyncBadge from '../components/SyncBadge'
 import ThemeToggle from '../components/ThemeToggle'
-import BodyTab from './BodyTab'
+import BodyTab, { PassphraseSheet } from './BodyTab'
+import Sheet from '../components/Sheet'
+import AppIcon from '../components/AppIcon'
+import { photoKeyState } from '../lib/photos'
 import ExercisesTab from './ExercisesTab'
 import HistoryTab from './HistoryTab'
 import StatsTab from './StatsTab'
@@ -39,7 +42,7 @@ interface TemplateCard {
 }
 
 type Tab = 'home' | 'templates' | 'exercises' | 'history' | 'stats' | 'body'
-const TABS: Tab[] = ['home', 'templates', 'exercises', 'history', 'stats', 'body']
+const TABS: Tab[] = ['home', 'templates', 'stats', 'body']
 // The tab shows the training templates; in the UI they are called workouts (decision 5 October 2026)
 const TAB_LABEL: Record<Tab, string> = { home: 'Home', templates: 'Workouts', exercises: 'Exercises', history: 'History', stats: 'Stats', body: 'Body' }
 
@@ -79,6 +82,9 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
   const [tab, setTab] = useState<Tab>('home')
   const [account, setAccount] = useState(false)
   const [info, setInfo] = useState(false)
+  const [more, setMore] = useState(false)
+  const [photos, setPhotos] = useState(false)
+  const photoAccess = useLiveQuery(photoKeyState, [])
   const [showArchive, setShowArchive] = useState(false)
   const [showActive, setShowActive] = useState(true)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
@@ -88,9 +94,11 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
   const archived = cards?.filter((c) => c.archivedAt).sort((a, b) => b.archivedAt!.localeCompare(a.archivedAt!))
 
   function open(target: HomeTarget) {
+    setMore(false)
     if (target === 'trash') setTrash(true)
     else if (target === 'info') setInfo(true)
     else if (target === 'account') setAccount(true)
+    else if (target === 'photos') setPhotos(true)
     else setTab(target)
   }
   const [editing, setEditing] = useState<string | null>(null)
@@ -106,47 +114,29 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
   if (info) return <InfoPage onDone={() => setInfo(false)} />
 
   return (
-    <main className="mx-auto max-w-xl px-4 pb-10">
+    <main className="home-shell mx-auto max-w-xl px-4">
       <AppBar>
         <button onClick={() => setInfo(true)} className="rounded-md px-2 py-1 text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">
           Info
         </button>
         <SyncBadge onReauth={() => void handleSignOut()} />
         <ThemeToggle />
-        <button
-          onClick={() => setTrash(true)}
-          aria-label="Trash"
-          title="Trash"
-          className="rounded-md p-1.5 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6" />
-          </svg>
-        </button>
-        <button
-          onClick={() => void handleSignOut()}
-          title={`Signed in as ${user.username}`}
-          className="rounded-md px-2 py-1 text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-        >
-          Sign out
-        </button>
       </AppBar>
 
-      <div role="tablist" className="mb-4 grid grid-cols-6 gap-0.5 rounded-xl bg-zinc-200/70 p-1 dark:bg-zinc-900">
+      <nav className="home-navigation" aria-label="Main navigation">
         {TABS.map((t) => (
           <button
             key={t}
-            role="tab"
-            aria-selected={tab === t}
+            aria-current={tab === t ? 'page' : undefined}
             onClick={() => setTab(t)}
-            className={`rounded-md px-0.5 py-2 text-[11px] font-semibold sm:text-sm ${
-              tab === t ? 'bg-white shadow-sm dark:bg-zinc-700' : 'text-zinc-500 dark:text-zinc-400'
-            }`}
           >
+            <span className="home-nav-icon"><AppIcon name={{ home: 'home', templates: 'workout', stats: 'stats', body: 'body', exercises: 'workout', history: 'history' }[t]} /></span>
             {TAB_LABEL[t]}
           </button>
         ))}
-      </div>
+        <button onClick={() => setMore(true)} aria-expanded={more} aria-current={tab === 'exercises' || tab === 'history' ? 'page' : undefined}><span className="home-nav-icon"><AppIcon name="more" /></span>More</button>
+      </nav>
+      {tab !== 'home' && <h1 className="mb-4 text-2xl font-semibold tracking-tight">{TAB_LABEL[tab]}</h1>}
 
       {tab === 'exercises' ? (
         <ExercisesTab userId={user.id} />
@@ -158,7 +148,7 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
         <BodyTab userId={user.id} />
       ) : tab === 'home' ? (
         <HomeTab
-          cards={active?.map((c) => ({ id: c.id, name: c.name, lastDone: c.lastDone }))}
+          cards={active?.map((c) => ({ id: c.id, name: c.name, lastDone: c.lastDone, exerciseCount: c.exercises.length }))}
           running={running}
           onStart={(id) => void startWorkout(id, user.id)}
           onResume={onResume}
@@ -312,6 +302,18 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
       {account && (isBetaSandbox ? (
         <div className="mt-4 card p-4 text-sm">Password changes are available in the live app. <button onClick={() => setAccount(false)} className="ml-2 font-semibold text-accent-ink">Close</button></div>
       ) : <ChangePasswordSheet onClose={() => setAccount(false)} />)}
+      {more && <Sheet title="More" onClose={() => setMore(false)}>
+        <div className="home-more-links">
+          <button onClick={() => open('exercises')}><AppIcon name="workout" />Exercises</button>
+          <button onClick={() => open('history')}><AppIcon name="history" />History</button>
+          <button onClick={() => open('photos')}><AppIcon name="photos" />Photos &amp; passphrase</button>
+          <button onClick={() => open('trash')}><AppIcon name="trash" />Trash</button>
+          <button onClick={() => open('info')}><AppIcon name="guide" />Training guide</button>
+          <button onClick={() => open('account')}><AppIcon name="body" />Change password</button>
+          <button onClick={() => void handleSignOut()}><AppIcon name="arrow" />Sign out · {user.username}</button>
+        </div>
+      </Sheet>}
+      {photos && (isBetaSandbox ? <Sheet title="Photos & passphrase" onClose={() => setPhotos(false)}><p className="text-sm">Photo changes are available in the live app.</p><button onClick={() => { setPhotos(false); setTab('body') }} className="home-primary mt-4">Open Body</button></Sheet> : photoAccess === undefined ? <Sheet title="Photos & passphrase" onClose={() => setPhotos(false)}>Checking photo access …</Sheet> : <PassphraseSheet mode={photoAccess === 'ready' ? 'change' : photoAccess} userId={user.id} onClose={() => setPhotos(false)} />)}
       {sheet && <ExerciseSheet exerciseId={sheet} onClose={() => setSheet(null)} />}
     </main>
   )
