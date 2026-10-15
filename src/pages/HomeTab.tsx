@@ -8,7 +8,6 @@ import { bodyWeightSeries } from '../lib/body'
 import { finishedWorkouts } from '../lib/history'
 import { getWeeklyGoal } from '../lib/settings'
 import { formatDuration } from '../lib/workout'
-import { photoKeyState } from '../lib/photos'
 import { suggestWorkout, type StartCard } from '../lib/home'
 
 export type HomeTarget = 'templates' | 'exercises' | 'history' | 'stats' | 'body' | 'photos' | 'trash' | 'account' | 'info'
@@ -40,7 +39,6 @@ async function loadSummary() {
 
 export default function HomeTab({ cards, running, onStart, onResume, onOpen }: Props) {
   const s = useLiveQuery(loadSummary, [])
-  const key = useLiveQuery(photoKeyState, [])
   const [picked, setPicked] = useState<string | null>(null)
   const [visitedAt] = useState(() => new Date())
   const suggestion = cards && s ? suggestWorkout(cards, s.workouts) : null
@@ -87,7 +85,6 @@ export default function HomeTab({ cards, running, onStart, onResume, onOpen }: P
         <span className="home-last-title"><strong>{s.last.workout.template_name_snapshot ?? 'Workout'}</strong><span className="home-muted home-small">{dayFormat.format(new Date(s.last.workout.started_at))}</span></span>
         <span className="home-last-stats"><span><b>{s.last.durationS !== null ? formatDuration(s.last.durationS) : '–'}</b><small>Duration</small></span><span><b>{Math.round(s.last.volume).toLocaleString('en-GB')} kg</b><small>Volume</small></span><span><b>{s.last.sets} sets</b><small>{s.last.exercises} {s.last.exercises === 1 ? 'exercise' : 'exercises'}</small></span></span>
       </button>}
-      <button onClick={() => onOpen('photos')} className="home-panel home-shortcut"><span className="home-icon-tile"><AppIcon name="photos" /></span><span><strong>Photos &amp; passphrase</strong><small>{key === 'ready' ? 'Unlocked on this device · Change passphrase' : key === 'locked' ? 'Photos locked · Unlock or manage passphrase' : key === 'none' ? 'Set up your photo passphrase' : 'Checking photo access …'}</small></span><AppIcon name="chevron" /></button>
       <div className="home-quick-actions"><button onClick={() => onOpen('history')}><AppIcon name="history" />History</button><button onClick={() => onOpen('trash')}><AppIcon name="trash" />Trash</button><button onClick={() => onOpen('account')}><AppIcon name="body" />Account</button></div>
       <button onClick={() => onOpen('info')} className="home-panel home-shortcut"><AppIcon name="guide" /><span><strong>Training guide</strong><small>Rep ranges, warm-up hints &amp; how progression works</small></span><AppIcon name="chevron" /></button>
     </div>

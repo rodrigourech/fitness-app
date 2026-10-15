@@ -234,11 +234,11 @@ function DayPhotos({ userId, date }: { userId: string; date: string }) {
   const [pose, setPose] = useState<PhotoPose>('front')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [sheet, setSheet] = useState<'auto' | 'change' | null>(null)
+  const [sheet, setSheet] = useState<'auto' | null>(null)
   const [open, setOpen] = useState<BodyPhoto | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  if (isBetaSandbox) return <p className="border-t border-zinc-100 pt-3 text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">Photos and passphrase changes are available in the live app.</p>
+  if (isBetaSandbox) return <p className="border-t border-zinc-100 pt-3 text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">Photos are available in the live app.</p>
 
   async function onFile(file: File | undefined) {
     if (!file) return
@@ -280,8 +280,7 @@ function DayPhotos({ userId, date }: { userId: string; date: string }) {
           </button>
           {keyState === 'locked' && (
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              To change your passphrase and keep your photos, use a device where they are still unlocked,
-              or unlock them here first. If you forgot it, open “Unlock photos” for reset options.
+              If you forgot the passphrase, open “Unlock photos” for reset options. Change it under More.
             </p>
           )}
         </div>
@@ -328,16 +327,11 @@ function DayPhotos({ userId, date }: { userId: string; date: string }) {
             </button>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => void onFile(e.target.files?.[0])} />
           </div>
-          <button type="button" onClick={() => setSheet('change')} className="mt-3 w-full rounded-lg bg-zinc-100 px-3 py-3 text-sm font-semibold dark:bg-zinc-800">
-            Change passphrase
-          </button>
-          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Photos are unlocked on this device. You can change the passphrase without entering the old one.</p>
         </>
       )}
       {error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       {sheet === 'auto' && keyState && keyState !== 'ready' && <PassphraseSheet mode={keyState} userId={userId} onClose={() => setSheet(null)} />}
-      {sheet === 'change' && <PassphraseSheet mode="change" userId={userId} onClose={() => setSheet(null)} />}
       {open && <PhotoViewer photo={open} onClose={() => setOpen(null)} />}
     </div>
   )

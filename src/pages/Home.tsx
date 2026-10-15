@@ -306,14 +306,14 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
         <div className="home-more-links">
           <button onClick={() => open('exercises')}><AppIcon name="workout" />Exercises</button>
           <button onClick={() => open('history')}><AppIcon name="history" />History</button>
-          <button onClick={() => open('photos')}><AppIcon name="photos" />Photos &amp; passphrase</button>
+          <button onClick={() => open('photos')}><AppIcon name="photos" />Photo passphrase</button>
           <button onClick={() => open('trash')}><AppIcon name="trash" />Trash</button>
           <button onClick={() => open('info')}><AppIcon name="guide" />Training guide</button>
           <button onClick={() => open('account')}><AppIcon name="body" />Change password</button>
           <button onClick={() => void handleSignOut()}><AppIcon name="arrow" />Sign out · {user.username}</button>
         </div>
       </Sheet>}
-      {photos && (isBetaSandbox ? <Sheet title="Photos & passphrase" onClose={() => setPhotos(false)}><p className="text-sm">Photo changes are available in the live app.</p><button onClick={() => { setPhotos(false); setTab('body') }} className="home-primary mt-4">Open Body</button></Sheet> : photoAccess === undefined ? <Sheet title="Photos & passphrase" onClose={() => setPhotos(false)}>Checking photo access …</Sheet> : <PassphraseSheet mode={photoAccess === 'ready' ? 'change' : photoAccess} userId={user.id} onClose={() => setPhotos(false)} />)}
+      {photos && (isBetaSandbox ? <Sheet title="Photo passphrase" onClose={() => setPhotos(false)}><p className="text-sm">Photo changes are available in the live app.</p><button onClick={() => { setPhotos(false); setTab('body') }} className="home-primary mt-4">Open Body</button></Sheet> : photoAccess === undefined ? <Sheet title="Photo passphrase" onClose={() => setPhotos(false)}>Checking photo access …</Sheet> : <PassphraseSheet mode={photoAccess === 'ready' ? 'change' : photoAccess} userId={user.id} onClose={() => setPhotos(false)} />)}
       {sheet && <ExerciseSheet exerciseId={sheet} onClose={() => setSheet(null)} />}
     </main>
   )

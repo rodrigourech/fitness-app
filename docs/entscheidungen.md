@@ -140,4 +140,5 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
   - Karte «Photos» im Reiter Body immer sichtbar; bei gesperrten Fotos (oder ohne Passphrase) öffnet ein Tippen zuerst die Passphrase-Abfrage, danach direkt die Galerie
   - Notizfeld beim Körpergewicht entfernt; bestehende Notizen bleiben gespeichert und erscheinen weiter in der Liste
   - Keine Fotovorschau ausserhalb der Galerie: Karte «Photos» zeigt nur Anzahl beziehungsweise Sperrstatus; beim Gewichtseintrag neutrale Einträge mit Kamerasymbol und Pose, das Foto erscheint erst beim Antippen gross. Die Galerie hinter «View all» zeigt weiterhin alle Bilder
+  - Foto-Passphrase ändern nur noch über More («Photo passphrase»); der Knopf im Reiter Body und die Home-Kachel «Photos & passphrase» entfallen. Entsperren bzw. Einrichten bleibt im Reiter Body und auf der Karte «Photos»
 
