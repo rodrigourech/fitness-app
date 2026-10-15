@@ -139,4 +139,5 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
   - Foto-Galerie im Reiter Body (Karte mit den letzten drei Fotos): Raster nach Monat mit Datum und 7-Tage-Schnitt, Filter nach Pose, Vollbild mit Wischen innerhalb der Auswahl, Einblendung Datum, Pose, 7-Tage-Schnitt und Tagesgewicht (Antippen blendet aus, nach unten wischen schliesst). Vergleich: «Compare», zwei Fotos antippen, nebeneinander (älteres links). Keine Gewichtsdifferenz. Bilder werden erst beim Sichtbarwerden entschlüsselt
   - Karte «Photos» im Reiter Body immer sichtbar; bei gesperrten Fotos (oder ohne Passphrase) öffnet ein Tippen zuerst die Passphrase-Abfrage, danach direkt die Galerie
   - Notizfeld beim Körpergewicht entfernt; bestehende Notizen bleiben gespeichert und erscheinen weiter in der Liste
+  - Keine Fotovorschau ausserhalb der Galerie: Karte «Photos» zeigt nur Anzahl beziehungsweise Sperrstatus; beim Gewichtseintrag neutrale Einträge mit Kamerasymbol und Pose, das Foto erscheint erst beim Antippen gross. Die Galerie hinter «View all» zeigt weiterhin alle Bilder
 

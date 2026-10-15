@@ -74,7 +74,7 @@ export default function BodyTab({ userId }: { userId: string }) {
   }
 
   const latest = series?.[0]
-  const recentPhotos = useLiveQuery(async () => (await allPhotos()).slice(0, 3), [])
+  const photoTotal = useLiveQuery(async () => (await allPhotos()).length, [])
   const photoAccess = useLiveQuery(photoKeyState, [])
   const [gallery, setGallery] = useState(false)
 
@@ -96,23 +96,17 @@ export default function BodyTab({ userId }: { userId: string }) {
       {/* Always visible; while photos are locked a tap asks for the passphrase first, then opens the gallery */}
       {!isBetaSandbox && photoAccess !== undefined && (
         <button onClick={() => setGallery(true)} className="card mb-4 flex w-full items-center gap-3 p-3 text-left">
-          {photoAccess === 'ready' && recentPhotos && recentPhotos.length > 0 ? (
-            <span className="grid flex-1 grid-cols-3 gap-1.5">
-              {recentPhotos.map((p) => (
-                <span key={p.id} className="aspect-[3/4] overflow-hidden rounded-md bg-zinc-100 dark:bg-zinc-800">
-                  <PhotoImage photo={p} className="h-full w-full object-cover" />
-                </span>
-              ))}
-            </span>
-          ) : (
-            <span className="flex flex-1 items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
-                <rect x="5" y="11" width="14" height="10" rx="2" />
-                <path d="M8 11V7a4 4 0 0 1 8 0v4" />
-              </svg>
-              {photoAccess === 'ready' ? 'No photos yet' : photoAccess === 'none' ? 'Set up a passphrase to use photos' : 'Locked · tap to unlock'}
-            </span>
-          )}
+          {/* No previews here (decision 15 October 2026): photos are only shown when opened */}
+          <span className="flex flex-1 items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+            <CameraIcon locked={photoAccess !== 'ready'} />
+            {photoAccess === 'ready'
+              ? photoTotal
+                ? `${photoTotal} ${photoTotal === 1 ? 'photo' : 'photos'}`
+                : 'No photos yet'
+              : photoAccess === 'none'
+                ? 'Set up a passphrase to use photos'
+                : 'Locked · tap to unlock'}
+          </span>
           <span className="shrink-0 text-sm font-semibold">
             Photos
             <span className="block text-xs font-normal text-zinc-500 dark:text-zinc-400">View all ›</span>
@@ -293,21 +287,18 @@ function DayPhotos({ userId, date }: { userId: string; date: string }) {
         </div>
       ) : (
         <>
+          {/* Neutral entries instead of thumbnails; a photo is only shown when opened */}
           {photos && photos.length > 0 && (
-            <div className="mb-3 grid grid-cols-3 gap-2">
+            <div className="mb-3 flex flex-wrap gap-2">
               {photos.map((p) => (
                 <button
                   key={p.id}
                   type="button"
                   onClick={() => setOpen(p)}
-                  className="relative aspect-[3/4] overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-800"
+                  className="flex items-center gap-1.5 rounded-lg bg-zinc-100 px-3 py-2 text-sm font-medium dark:bg-zinc-800"
                 >
-                  <PhotoImage photo={p} className="h-full w-full object-cover" />
-                  {p.pose && (
-                    <span className="absolute bottom-1 left-1 rounded bg-black/55 px-1.5 py-0.5 text-[11px] font-medium text-white">
-                      {p.pose}
-                    </span>
-                  )}
+                  <CameraIcon />
+                  {p.pose ? `${p.pose[0]!.toUpperCase()}${p.pose.slice(1)}` : 'Photo'}
                 </button>
               ))}
             </div>
@@ -510,3 +501,18 @@ export function PassphraseSheet({ mode: initial, userId, onClose }: { mode: Pass
     </Sheet>
   )
 }
+
+function CameraIcon({ locked = false }: { locked?: boolean }) {
+  return locked ? (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+      <rect x="5" y="11" width="14" height="10" rx="2" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </svg>
+  ) : (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 8h3l2-3h6l2 3h3v11H4z" />
+      <circle cx="12" cy="13" r="3.5" />
+    </svg>
+  )
+}
+
