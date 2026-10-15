@@ -26,4 +26,4 @@ Ohne diesen Schritt liefert die Data API neue Spalten nicht aus und lehnt sie be
 | 0012_archive_skip.sql | template.archived_at und purged_at, workout_exercise.skipped_at; alte template_exercise.rest_s geleert | 9. Oktober 2026, refresh-schema ausgeführt |
 | 0013_plan_2026_10_09.sql | Nur Daten: Trainingsplan vom 9. Oktober (Main Day A/B, Bonus Day, Run), DAY1/DAY2/Lauf archiviert | 9. Oktober 2026, geprüft |
 | 0014_repetition_progression.sql | Ziel-/Mindestwiederholungen und Warm-Up-Hinweis pro Übung, Snapshots im Training; feste alte Ziele erben das Minimum; Vorlagen-Aufwärmsätze werden Hinweise, Historie bleibt erhalten | 12. Oktober 2026, atomar auf production ausgeführt, geprüft und refresh-schema ausgeführt |
-| 0015_crowd_scale_10.sql | Gym-Auslastung workout.crowd_level 1–10 statt 1–5; bestehende Werte unverändert | nicht eingespielt; vor dem Push ausführen, danach refresh-schema |
+| 0015_crowd_scale_10.sql | Gym-Auslastung workout.crowd_level 1–10 statt 1–5; bestehende Werte unverändert | 15. Oktober 2026 auf production ausgeführt; geprüft: Regel 1–10, 6 Bewertungen (Werte 1–4) unverändert |
