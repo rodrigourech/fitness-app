@@ -48,7 +48,6 @@ export default function BodyTab({ userId }: { userId: string }) {
   const [date, setDate] = useState(todayLocal())
   const [kg, setKg] = useState('')
   const [condition, setCondition] = useState<BodyCondition>('morning_fasted')
-  const [note, setNote] = useState('')
   const [error, setError] = useState(false)
 
   const existing = series?.find((p) => p.entry.measured_on === date)?.entry
@@ -59,7 +58,6 @@ export default function BodyTab({ userId }: { userId: string }) {
     const e = series?.find((p) => p.entry.measured_on === d)?.entry
     setKg(e ? String(e.weight_kg) : '')
     setCondition(e?.condition ?? 'morning_fasted')
-    setNote(e?.note ?? '')
     setError(false)
   }
 
@@ -70,7 +68,8 @@ export default function BodyTab({ userId }: { userId: string }) {
       setError(true)
       return
     }
-    await saveBodyWeight(userId, date, n, condition, note.trim() || null)
+    // Note field removed (15 October 2026); an existing note is kept
+    await saveBodyWeight(userId, date, n, condition, existing?.note ?? null)
     setError(false)
   }
 
@@ -94,22 +93,36 @@ export default function BodyTab({ userId }: { userId: string }) {
         </div>
       )}
 
-      {!isBetaSandbox && photoAccess === 'ready' && recentPhotos && recentPhotos.length > 0 && (
+      {/* Always visible; while photos are locked a tap asks for the passphrase first, then opens the gallery */}
+      {!isBetaSandbox && photoAccess !== undefined && (
         <button onClick={() => setGallery(true)} className="card mb-4 flex w-full items-center gap-3 p-3 text-left">
-          <span className="grid flex-1 grid-cols-3 gap-1.5">
-            {recentPhotos.map((p) => (
-              <span key={p.id} className="aspect-[3/4] overflow-hidden rounded-md bg-zinc-100 dark:bg-zinc-800">
-                <PhotoImage photo={p} className="h-full w-full object-cover" />
-              </span>
-            ))}
-          </span>
+          {photoAccess === 'ready' && recentPhotos && recentPhotos.length > 0 ? (
+            <span className="grid flex-1 grid-cols-3 gap-1.5">
+              {recentPhotos.map((p) => (
+                <span key={p.id} className="aspect-[3/4] overflow-hidden rounded-md bg-zinc-100 dark:bg-zinc-800">
+                  <PhotoImage photo={p} className="h-full w-full object-cover" />
+                </span>
+              ))}
+            </span>
+          ) : (
+            <span className="flex flex-1 items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+                <rect x="5" y="11" width="14" height="10" rx="2" />
+                <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+              </svg>
+              {photoAccess === 'ready' ? 'No photos yet' : photoAccess === 'none' ? 'Set up a passphrase to use photos' : 'Locked · tap to unlock'}
+            </span>
+          )}
           <span className="shrink-0 text-sm font-semibold">
             Photos
             <span className="block text-xs font-normal text-zinc-500 dark:text-zinc-400">View all ›</span>
           </span>
         </button>
       )}
-      {gallery && <PhotoGallery onClose={() => setGallery(false)} />}
+      {gallery && photoAccess !== undefined && photoAccess !== 'ready' && (
+        <PassphraseSheet mode={photoAccess} userId={userId} onClose={() => void photoKeyState().then((st) => st !== 'ready' && setGallery(false))} />
+      )}
+      {gallery && photoAccess === 'ready' && <PhotoGallery onClose={() => setGallery(false)} />}
 
       <div className="card mb-4 flex flex-col gap-3 p-4">
         <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-3">
@@ -148,7 +161,6 @@ export default function BodyTab({ userId }: { userId: string }) {
               ))}
             </select>
           </label>
-          <input aria-label="Note" placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} className={input} />
           <button type="submit" className="rounded-lg bg-accent py-2.5 text-sm font-semibold text-accent-fg">
             {existing ? 'Update entry' : 'Save'}
           </button>

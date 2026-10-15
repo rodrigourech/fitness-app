@@ -137,4 +137,6 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
   - Vorbelegung: Gewicht aus der letzten Leistung, Wiederholungen mit dem Ziel (Max-Wert) statt der letzten Leistung. Bewusst in Kauf genommen: nicht korrigierte Fehlversuche lösen «Increase weight» aus
   - Gym-Auslastung bleibt als Knöpfe (2 Reihen à 5)
   - Foto-Galerie im Reiter Body (Karte mit den letzten drei Fotos): Raster nach Monat mit Datum und 7-Tage-Schnitt, Filter nach Pose, Vollbild mit Wischen innerhalb der Auswahl, Einblendung Datum, Pose, 7-Tage-Schnitt und Tagesgewicht (Antippen blendet aus, nach unten wischen schliesst). Vergleich: «Compare», zwei Fotos antippen, nebeneinander (älteres links). Keine Gewichtsdifferenz. Bilder werden erst beim Sichtbarwerden entschlüsselt
+  - Karte «Photos» im Reiter Body immer sichtbar; bei gesperrten Fotos (oder ohne Passphrase) öffnet ein Tippen zuerst die Passphrase-Abfrage, danach direkt die Galerie
+  - Notizfeld beim Körpergewicht entfernt; bestehende Notizen bleiben gespeichert und erscheinen weiter in der Liste
 
