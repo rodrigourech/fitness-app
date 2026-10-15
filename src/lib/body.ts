@@ -34,6 +34,22 @@ export async function saveBodyWeight(
   await saveRows('body_weight', [row])
 }
 
+/**
+ * Updates an entry and, if the date changes, moves it with the photos of its day to the new date
+ * (decision 15 October 2026). An entry already on the new date is replaced (moved to the trash on
+ * its own; its photos stay on that day and now belong to the moved entry).
+ */
+export async function updateBodyWeight(entry: BodyWeight, measuredOn: string, kg: number, condition: BodyCondition | null): Promise<void> {
+  const ts = new Date().toISOString()
+  if (measuredOn !== entry.measured_on) {
+    const target = (await db.body_weight.where('measured_on').equals(measuredOn).toArray()).filter((b) => b.deleted_at === null && b.id !== entry.id)
+    if (target.length) await saveRows('body_weight', target.map((b) => ({ ...b, deleted_at: ts })))
+    const photos = (await db.body_photo.where('measured_on').equals(entry.measured_on).toArray()).filter((p) => p.deleted_at === null)
+    if (photos.length) await saveRows('body_photo', photos.map((p) => ({ ...p, measured_on: measuredOn })))
+  }
+  await saveRows('body_weight', [{ ...entry, measured_on: measuredOn, weight_kg: kg, condition }])
+}
+
 /** Moves the entry and the photos of its day to the trash; both share the same deleted_at,
  * so restoring the entry brings the photos back (see trash.ts). */
 export async function deleteBodyWeight(b: BodyWeight): Promise<void> {

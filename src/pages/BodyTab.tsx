@@ -3,7 +3,7 @@ import { useRef, useState, type FormEvent } from 'react'
 import PhotoGallery from '../components/PhotoGallery'
 import PhotoImage from '../components/PhotoImage'
 import Sheet from '../components/Sheet'
-import { bodyWeightSeries, CONDITION_LABEL, deleteBodyWeight, saveBodyWeight, todayLocal } from '../lib/body'
+import { bodyWeightSeries, CONDITION_LABEL, deleteBodyWeight, saveBodyWeight, todayLocal, updateBodyWeight, type BodyWeightPoint } from '../lib/body'
 import { db, type BodyCondition, type BodyPhoto, type PhotoPose } from '../lib/db'
 import {
   addPhoto,
@@ -45,33 +45,8 @@ export default function BodyTab({ userId }: { userId: string }) {
       if (p.deleted_at === null) counts.set(p.measured_on, (counts.get(p.measured_on) ?? 0) + 1)
     return counts
   }, [])
-  const [date, setDate] = useState(todayLocal())
-  const [kg, setKg] = useState('')
-  const [condition, setCondition] = useState<BodyCondition>('morning_fasted')
-  const [error, setError] = useState(false)
-
-  const existing = series?.find((p) => p.entry.measured_on === date)?.entry
-
-  // Selecting a day with an entry loads it into the form for editing
-  function pickDate(d: string) {
-    setDate(d)
-    const e = series?.find((p) => p.entry.measured_on === d)?.entry
-    setKg(e ? String(e.weight_kg) : '')
-    setCondition(e?.condition ?? 'morning_fasted')
-    setError(false)
-  }
-
-  async function submit(e: FormEvent) {
-    e.preventDefault()
-    const n = parseNumber(kg)
-    if (n === undefined || n === null || n < 20 || n > 300) {
-      setError(true)
-      return
-    }
-    // Note field removed (15 October 2026); an existing note is kept
-    await saveBodyWeight(userId, date, n, condition, existing?.note ?? null)
-    setError(false)
-  }
+  // One open panel at a time: 'new' or the id of an entry being edited (decision 15 October 2026)
+  const [openId, setOpenId] = useState<string | null>(null)
 
   const latest = series?.[0]
   const photoTotal = useLiveQuery(async () => (await allPhotos()).length, [])
@@ -118,111 +93,179 @@ export default function BodyTab({ userId }: { userId: string }) {
       )}
       {gallery && photoAccess === 'ready' && <PhotoGallery onClose={() => setGallery(false)} />}
 
-      <div className="card mb-4 flex flex-col gap-3 p-4">
-        <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-3">
-          <div className="flex gap-2">
-            <input
-              type="date"
-              aria-label="Date"
-              value={date}
-              max={todayLocal()}
-              onChange={(e) => pickDate(e.target.value)}
-              className={`${input} min-w-0 flex-1`}
-            />
-            <input
-              aria-label="Body weight kg"
-              inputMode="decimal"
-              placeholder="kg"
-              value={kg}
-              onChange={(e) => {
-                setKg(e.target.value)
-                setError(false)
-              }}
-              className={`${input} w-24 ${error ? 'border-red-500 dark:border-red-500' : ''}`}
-            />
-          </div>
-          <label className="flex items-center justify-between gap-3">
-            <span className="text-sm text-zinc-600 dark:text-zinc-300">When measured</span>
-            <select
-              value={condition}
-              onChange={(e) => setCondition(e.target.value as BodyCondition)}
-              className={`${input} py-1.5 text-sm dark:bg-zinc-900`}
-            >
-              {CONDITIONS.map((c) => (
-                <option key={c} value={c}>
-                  {CONDITION_LABEL[c]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button type="submit" className="rounded-lg bg-accent py-2.5 text-sm font-semibold text-accent-fg">
-            {existing ? 'Update entry' : 'Save'}
-          </button>
-          <p className="-mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-            Tip: weigh in the morning before eating, so values stay comparable.
-          </p>
-        </form>
-        {/* Outside the form: the passphrase dialog has its own form */}
-        <DayPhotos userId={userId} date={date} />
-      </div>
+      {openId === 'new' ? (
+        <div className="card mb-4 p-4">
+          <EntryForm
+            series={series ?? []}
+            title="New entry"
+            initial={{ date: todayLocal(), kg: '', condition: 'morning_fasted' }}
+            onCancel={() => setOpenId(null)}
+            onSave={async ({ date, kg, condition }) => {
+              const other = series?.find((p) => p.entry.measured_on === date)?.entry
+              await saveBodyWeight(userId, date, kg, condition, other?.note ?? null)
+              setOpenId(null)
+            }}
+          />
+          <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Tip: weigh in the morning before eating, so values stay comparable. Add photos by opening the entry afterwards.</p>
+        </div>
+      ) : (
+        <button onClick={() => setOpenId('new')} className="mb-4 w-full rounded-xl bg-accent py-3 text-sm font-semibold text-accent-fg">
+          + New entry
+        </button>
+      )}
 
       {series && series.length > 0 ? (
-        <div className="card overflow-hidden">
-          <table className="w-full text-sm tabular-nums">
-            <thead className="text-left text-xs text-zinc-500 dark:text-zinc-400">
-              <tr>
-                <th className="px-3 py-2 font-normal">Date</th>
-                <th className="py-2 text-right font-normal">kg</th>
-                <th className="py-2 text-right font-normal">7-day avg</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {series.map((p) => {
-                const photos = photoCounts?.get(p.entry.measured_on) ?? 0
-                return (
-                  <tr
-                    key={p.entry.id}
-                    onClick={() => pickDate(p.entry.measured_on)}
-                    className={`cursor-pointer border-t border-zinc-100 dark:border-zinc-800 ${p.entry.measured_on === date ? 'bg-accent-soft' : ''}`}
-                  >
-                    <td className="px-3 py-2">
-                      <span className="block">{dateFormat.format(new Date(`${p.entry.measured_on}T12:00:00`))}</span>
-                      <span className="block text-xs text-zinc-500 dark:text-zinc-400">
-                        {[
-                          p.entry.condition ? SHORT_CONDITION[p.entry.condition] : null,
-                          photos ? `${photos} ${photos === 1 ? 'photo' : 'photos'}` : null,
-                          p.entry.note,
-                        ]
-                          .filter(Boolean)
-                          .join(' · ')}
-                      </span>
-                    </td>
-                    <td className="py-2 text-right">{p.entry.weight_kg.toFixed(1)}</td>
-                    <td className="py-2 text-right text-zinc-500 dark:text-zinc-400">{p.avg7.toFixed(1)}</td>
-                    <td className="py-2 pr-1 text-right">
-                      <button
-                        aria-label="Delete entry"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          const label = dateFormat.format(new Date(`${p.entry.measured_on}T12:00:00`))
-                          void deleteBodyWeight(p.entry).then(() => offerUndo(`${label} moved to trash`, p.entry.id))
-                        }}
-                        className="px-2 text-zinc-400 hover:text-red-600"
-                      >
-                        ✕
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+        <div className="card divide-y divide-zinc-100 overflow-hidden dark:divide-zinc-800">
+          <div className="grid grid-cols-[1fr_4rem_4.5rem] px-3 py-2 text-xs text-zinc-500 dark:text-zinc-400">
+            <span>Date</span>
+            <span className="text-right">kg</span>
+            <span className="text-right">7-day avg</span>
+          </div>
+          {series.map((p) => {
+            const photos = photoCounts?.get(p.entry.measured_on) ?? 0
+            const isOpen = openId === p.entry.id
+            return (
+              <div key={p.entry.id} className={isOpen ? 'bg-zinc-50 dark:bg-zinc-900/60' : ''}>
+                <button
+                  onClick={() => setOpenId(isOpen ? null : p.entry.id)}
+                  aria-expanded={isOpen}
+                  className="grid w-full grid-cols-[1fr_4rem_4.5rem] items-center px-3 py-2 text-left text-sm tabular-nums"
+                >
+                  <span>
+                    <span className="block">{dateFormat.format(new Date(`${p.entry.measured_on}T12:00:00`))}</span>
+                    <span className="block text-xs text-zinc-500 dark:text-zinc-400">
+                      {[
+                        p.entry.condition ? SHORT_CONDITION[p.entry.condition] : null,
+                        photos ? `${photos} ${photos === 1 ? 'photo' : 'photos'}` : null,
+                        p.entry.note,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
+                  </span>
+                  <span className="text-right">{p.entry.weight_kg.toFixed(1)}</span>
+                  <span className="text-right text-zinc-500 dark:text-zinc-400">{p.avg7.toFixed(1)}</span>
+                </button>
+                {isOpen && (
+                  <div className="flex flex-col gap-3 px-3 pt-1 pb-4">
+                    <EntryForm
+                      series={series}
+                      entryId={p.entry.id}
+                      title="Edit entry"
+                      initial={{ date: p.entry.measured_on, kg: String(p.entry.weight_kg), condition: p.entry.condition ?? 'morning_fasted' }}
+                      onCancel={() => setOpenId(null)}
+                      onSave={async ({ date, kg, condition }) => {
+                        await updateBodyWeight(p.entry, date, kg, condition)
+                        setOpenId(null)
+                      }}
+                    />
+                    <DayPhotos userId={userId} date={p.entry.measured_on} />
+                    <button
+                      onClick={() => {
+                        const label = dateFormat.format(new Date(`${p.entry.measured_on}T12:00:00`))
+                        void deleteBodyWeight(p.entry).then(() => {
+                          setOpenId(null)
+                          offerUndo(`${label} moved to trash`, p.entry.id)
+                        })
+                      }}
+                      className="rounded-lg py-2 text-sm text-red-600 dark:text-red-400"
+                    >
+                      Delete entry
+                    </button>
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       ) : (
         <p className="text-zinc-500">No measurements yet.</p>
       )}
     </>
+  )
+}
+
+// --- entry form ------------------------------------------------------------------------------
+
+interface EntryValues {
+  date: string
+  kg: string
+  condition: BodyCondition
+}
+
+/** Date, weight and time of measuring. Warns before replacing an entry on another day. */
+function EntryForm({
+  series,
+  entryId,
+  title,
+  initial,
+  onSave,
+  onCancel,
+}: {
+  series: BodyWeightPoint[]
+  entryId?: string
+  title: string
+  initial: EntryValues
+  onSave: (v: { date: string; kg: number; condition: BodyCondition }) => Promise<void>
+  onCancel: () => void
+}) {
+  const [date, setDate] = useState(initial.date)
+  const [kg, setKg] = useState(initial.kg)
+  const [condition, setCondition] = useState<BodyCondition>(initial.condition)
+  const [error, setError] = useState(false)
+  const clash = series.find((p) => p.entry.measured_on === date && p.entry.id !== entryId)?.entry
+
+  async function submit(e: FormEvent) {
+    e.preventDefault()
+    const n = parseNumber(kg)
+    if (n === undefined || n === null || n < 20 || n > 300) {
+      setError(true)
+      return
+    }
+    await onSave({ date, kg: n, condition })
+  }
+
+  return (
+    <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-3">
+      <span className="text-sm font-semibold">{title}</span>
+      <div className="flex gap-2">
+        <input type="date" aria-label="Date" value={date} max={todayLocal()} onChange={(e) => setDate(e.target.value)} className={`${input} min-w-0 flex-1`} />
+        <input
+          aria-label="Body weight kg"
+          inputMode="decimal"
+          placeholder="kg"
+          value={kg}
+          onChange={(e) => {
+            setKg(e.target.value)
+            setError(false)
+          }}
+          className={`${input} w-24 ${error ? 'border-red-500 dark:border-red-500' : ''}`}
+        />
+      </div>
+      <label className="flex items-center justify-between gap-3">
+        <span className="text-sm text-zinc-600 dark:text-zinc-300">When measured</span>
+        <select value={condition} onChange={(e) => setCondition(e.target.value as BodyCondition)} className={`${input} py-1.5 text-sm dark:bg-zinc-900`}>
+          {CONDITIONS.map((c) => (
+            <option key={c} value={c}>
+              {CONDITION_LABEL[c]}
+            </option>
+          ))}
+        </select>
+      </label>
+      {clash && (
+        <p className="rounded-md bg-amber-50 px-2 py-1.5 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+          {dateFormat.format(new Date(`${date}T12:00:00`))} already has {clash.weight_kg.toFixed(1)} kg. Saving replaces it.
+        </p>
+      )}
+      <div className="flex gap-2">
+        <button type="button" onClick={onCancel} className="flex-1 rounded-lg bg-zinc-100 py-2.5 text-sm font-medium dark:bg-zinc-800">
+          Cancel
+        </button>
+        <button type="submit" className="flex-1 rounded-lg bg-accent py-2.5 text-sm font-semibold text-accent-fg">
+          {clash ? 'Replace' : entryId ? 'Update entry' : 'Add'}
+        </button>
+      </div>
+    </form>
   )
 }
 
