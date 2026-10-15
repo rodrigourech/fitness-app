@@ -15,7 +15,7 @@ import { startRest, stopRest } from '../lib/rest'
 import { db, displayName, type Exercise, type ExerciseLink, type Workout, type WorkoutExercise, type WorkoutSet } from '../lib/db'
 import { linkLabel, linksFor } from '../lib/exercise'
 import { bestBefore, recordsOf, type Best } from '../lib/stats'
-import { compareRepetitions, progressionAdvice, type ProgressionAdvice } from '../lib/progression'
+import { belowMinimum, progressionAdvice, workTotals, type ProgressionAdvice } from '../lib/progression'
 import { repetitionTargets, type RepetitionTargets } from '../lib/training'
 import {
   addExerciseToWorkout,
@@ -70,7 +70,8 @@ async function loadBlocks(workoutId: string, templateId: string | null): Promise
   return Promise.all(
     active.map(async (we) => {
       const exercise = byId.get(we.exercise_id)
-      const sessions = await recentTrainingSessions(we.exercise_id, templateId, workoutId)
+      // Previous and progression use the last performances of this exercise in any workout
+      const sessions = await recentTrainingSessions(we.exercise_id, undefined, workoutId)
       const sets = allSets.filter((s) => s.workout_exercise_id === we.id && s.deleted_at === null && s.set_type === 'working').sort((a, b) => a.position - b.position)
       const te = templateId ? await db.template_exercise.where('template_id').equals(templateId).filter((row) => row.exercise_id === we.exercise_id && row.deleted_at === null).first() : undefined
       const planned = te ? await db.template_set.where('template_exercise_id').equals(te.id).toArray() : []
@@ -152,9 +153,6 @@ export default function WorkoutPage({ workout, onReauth, onMinimize }: Props) {
           <p className="text-sm text-zinc-500 tabular-nums dark:text-zinc-400">{formatDuration(elapsed)}</p>
           </div>
         </div>
-        <button onClick={() => void askFinish()} className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-accent-fg">
-          Finish
-        </button>
       </header>
 
       {blocks === undefined ? (
@@ -188,9 +186,13 @@ export default function WorkoutPage({ workout, onReauth, onMinimize }: Props) {
         <CrowdPicker value={workout.crowd_level ?? null} onChange={(v) => void updateWorkout(workout, { crowd_level: v })} />
       </div>
 
+      <button onClick={() => void askFinish()} className="mt-6 w-full rounded-lg bg-accent px-4 py-3 font-semibold text-accent-fg">
+        Finish workout
+      </button>
+
       <button
         onClick={() => setConfirm({ kind: 'cancel' })}
-        className="mt-6 w-full rounded-lg px-4 py-3 text-sm text-red-600 dark:text-red-400"
+        className="mt-2 w-full rounded-lg px-4 py-3 text-sm text-red-600 dark:text-red-400"
       >
         Discard workout
       </button>
@@ -269,7 +271,8 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
   let warmupNo = 0
 
   const tt = eff.trackingType
-  const comparison = compareRepetitions(sets, previous, eff.isUnilateral)
+  const totals = workTotals(sets, eff.isUnilateral, true)
+  const lastTotals = previous.some((s) => s.set_type === 'working') ? workTotals(previous, eff.isUnilateral) : null
   const cols =
     tt === 'duration'
       ? 'grid-cols-[1.5rem_1fr_6rem_2.75rem]'
@@ -342,6 +345,7 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
               trackingType={tt}
               unilateral={eff.isUnilateral}
               restSeconds={we.rest_s ?? eff.restS}
+              minimum={tt === 'weight_reps' ? targets.minimum : null}
               records={recordsOf(s, best)}
             />
           )
@@ -349,16 +353,22 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
       </div>
 
       {tt === 'weight_reps' && (
-        <div className="mt-3 text-sm tabular-nums">
-          <p className="font-medium">Completed reps: {comparison.total}{eff.isUnilateral ? ' (both sides)' : ''}{comparison.previousTotal !== null && ` · previous ${comparison.previousTotal}`}{comparison.delta !== null && ` · ${comparison.delta > 0 ? '+' : ''}${comparison.delta}`}</p>
-          <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-            {comparison.reason === 'no_history' ? 'No previous performance in this workout yet.'
-              : comparison.reason === 'unfinished' ? `${comparison.completed}/${comparison.planned} work sets checked. Difference shown after all work sets.`
-                : comparison.reason === 'different_sets' ? 'Set count changed; totals shown without a difference.'
-                  : comparison.reason === 'different_weight' ? 'Weight changed; totals shown without a difference.'
-                    : comparison.reason === 'missing_reps' ? 'Enter reps for every checked set to compare.' : 'Same workout, variant, set count and weights. Keep form and rest consistent.'}
-          </p>
-        </div>
+        <dl className="mt-3 grid grid-cols-2 gap-2 text-sm tabular-nums">
+          <div className="rounded-md bg-zinc-100 px-2.5 py-1.5 dark:bg-zinc-800">
+            <dt className="text-xs text-zinc-500 dark:text-zinc-400">Total reps{eff.isUnilateral ? ' (both sides)' : ''}</dt>
+            <dd className="font-semibold">
+              {totals.reps}
+              {lastTotals && <span className="font-normal text-zinc-500 dark:text-zinc-400"> · last {lastTotals.reps}</span>}
+            </dd>
+          </div>
+          <div className="rounded-md bg-zinc-100 px-2.5 py-1.5 dark:bg-zinc-800">
+            <dt className="text-xs text-zinc-500 dark:text-zinc-400">Total weight</dt>
+            <dd className="font-semibold">
+              {formatKg(totals.volume)}
+              {lastTotals && <span className="font-normal text-zinc-500 dark:text-zinc-400"> · last {formatKg(lastTotals.volume)}</span>}
+            </dd>
+          </div>
+        </dl>
       )}
 
       <div className="mt-2 flex gap-2">
@@ -419,10 +429,12 @@ interface SetRowProps {
   trackingType: string
   unilateral: boolean
   restSeconds: number | null
+  /** Minimum reps; entered reps below it are marked orange */
+  minimum: number | null
   records: string[]
 }
 
-function SetRow({ set, label, previous, trackingType, unilateral, restSeconds, records }: SetRowProps) {
+function SetRow({ set, label, previous, trackingType, unilateral, restSeconds, minimum, records }: SetRowProps) {
   const done = set.completed_at !== null
 
   function numberCommit(field: 'weight' | 'reps' | 'reps_left' | 'reps_right' | 'distance_km', integer: boolean) {
@@ -491,11 +503,11 @@ function SetRow({ set, label, previous, trackingType, unilateral, restSeconds, r
           <Field label="Weight kg" inputMode="decimal" value={formatNumber(set.weight)} onCommit={numberCommit('weight', false)} />
           {unilateral ? (
             <>
-              <Field label="Reps left" inputMode="numeric" value={formatNumber(set.reps_left)} onCommit={numberCommit('reps_left', true)} />
-              <Field label="Reps right" inputMode="numeric" value={formatNumber(set.reps_right)} onCommit={numberCommit('reps_right', true)} />
+              <Field label="Reps left" inputMode="numeric" value={formatNumber(set.reps_left)} onCommit={numberCommit('reps_left', true)} warn={belowMinimum(set.reps_left, minimum)} />
+              <Field label="Reps right" inputMode="numeric" value={formatNumber(set.reps_right)} onCommit={numberCommit('reps_right', true)} warn={belowMinimum(set.reps_right, minimum)} />
             </>
           ) : (
-            <Field label="Reps" inputMode="numeric" value={formatNumber(set.reps)} onCommit={numberCommit('reps', true)} />
+            <Field label="Reps" inputMode="numeric" value={formatNumber(set.reps)} onCommit={numberCommit('reps', true)} warn={belowMinimum(set.reps, minimum)} />
           )}
         </>
       )}
@@ -511,4 +523,9 @@ function SetRow({ set, label, previous, trackingType, unilateral, restSeconds, r
       </button>
     </>
   )
+}
+
+/** Volume in kg without decimals for large values, e.g. 1110 kg. */
+function formatKg(value: number): string {
+  return `${Math.round(value).toLocaleString('en-GB')} kg`
 }

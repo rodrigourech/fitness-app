@@ -121,3 +121,14 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
 - Für den vorgeschlagenen neuen Home-Trainingsstart A/B-Wechsel am 12. Oktober bestätigt: nach dem zuletzt abgeschlossenen Haupttraining jeweils den anderen Main Day vorschlagen; Bonus Day und Run manuell wählen; laufendes Training über Resume fortsetzen. Noch nicht implementiert.
 - Anschliessend ausdrücklich «super setzte das direkt im produktiven so um»: Freigabe für Umsetzung und main-Veröffentlichung des zusammengeführten Home-Entwurfs samt A/B-Wechsel. Ohne Haupttrainingshistorie startet der Vorschlag mit A; nur abgeschlossene, nicht gelöschte A-/B-Trainings zählen, stabile IDs erhalten die Rotation auch nach Umbenennung. Nur aktive Vorlagen werden angeboten, andere Workouts bleiben manuell wählbar; bei fehlendem A/B-Paar wird eine verfügbare aktive Vorlage angeboten. Diagramme behalten ihre Definitionen, Training zeigt genau 12 Kalenderwochen. Foto-Zugang öffnet die vorhandene Einrichtung/Entsperrung/Änderung je nach lokalem Schlüsselstatus; keine Änderung der Verschlüsselung oder Zurücksetzung
 - Die fixe Home-Navigation bleibt unter dem minimierten Trainingsbalken; Menüdialoge liegen oberhalb des Balkens. Bei Info-/Trash-/Editor-Seiten ohne diese Navigation sitzt der Balken wieder unten. Umsetzung mit `a246d68` und `dfb878b` in Produktion veröffentlicht und anhand von Metadaten sowie JavaScript-/CSS-Hashes verifiziert
+
+## **15. Oktober 2026**
+
+- Pausentimer: nach Ablauf kein Weiterzählen, nur Hinweis «Rest done · next set» mit OK
+- Statt «Completed reps» mit Vergleichsbedingungen pro Übung eine Total-Zeile: Total reps (einseitig beide Seiten) und Total weight als Volumen (kg × Wiederholungen) der abgehakten Arbeitssätze, jeweils mit dem Wert des letzten Trainings. Previous pro Satz bleibt Gewicht × Wiederholungen
+- Previous, Vorbelegung beim Trainingsstart und Progression nutzen die letzte Leistung derselben Übung beziehungsweise Variante aus allen Workouts, ohne Herkunftshinweis (ersetzt die Vorlagentrennung vom 9. und 12. Oktober). Ohne Historie gelten die Zielwerte der Vorlage. Die Liste «Increase weight» führt jede Übung einmal
+- Wiederholungen unter dem Minimum werden im Training und in der Historie orange markiert, ohne Text; Erreichen des Ziels wird nicht markiert
+- «Finish workout» unten nach Notiz und Gym-Auslastung statt in der Kopfzeile; Finish und Discard behalten ihre Bestätigung. Discard verwirft wie bisher (kein Papierkorb für unfertige Trainings)
+- Gym-Auslastung 1 bis 10 statt 1 bis 5 (Migration 0015). Bisherige Werte behalten ihre Zahl (2/5 wird 2/10); die Heatmap fasst je zwei Stufen zu einer Farbe zusammen
+- Plan: Triceps Pushdown und Preacher Curl an den Haupttagen je 3 statt 2 Sätze (vom Benutzer in der App geändert); Decline Crunch bewusst aus den Haupttagen gestrichen
+

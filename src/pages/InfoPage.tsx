@@ -50,7 +50,7 @@ export default function InfoPage({ onDone }: { onDone: () => void }) {
       <div className="mt-4 flex flex-col gap-2 text-sm">
         <Details title="How the app decides">
           <ul className="list-disc space-y-1 pl-4">
-            <li>Compare the same workout and variant. Work sets only.</li>
+            <li>Compare the same exercise and variant across all workouts. Work sets only.</li>
             <li>Increase: every set reaches the target, on both sides.</li>
             <li>Reduce: first set below minimum twice. Same weight, sets and rest.</li>
             <li>Rep change: all sets complete, same weights and set count.</li>

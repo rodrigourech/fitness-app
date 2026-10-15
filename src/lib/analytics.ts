@@ -393,7 +393,11 @@ export const CROWD_SLOTS = [
   { label: '20+', from: 20, to: 24 },
 ] as const
 
-export const CROWD_LABEL: Record<number, string> = { 1: 'Empty', 2: 'Quiet', 3: 'Normal', 4: 'Busy', 5: 'Packed' }
+/** Scale 1–10 since 15 October 2026 (before 1–5; earlier values were kept unchanged). */
+export const CROWD_MAX = 10
+export const CROWD_LABEL: Record<number, string> = {
+  1: 'Empty', 2: 'Empty', 3: 'Quiet', 4: 'Quiet', 5: 'Normal', 6: 'Normal', 7: 'Busy', 8: 'Busy', 9: 'Packed', 10: 'Packed',
+}
 
 export const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const
 

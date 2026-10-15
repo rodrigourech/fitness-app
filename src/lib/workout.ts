@@ -68,15 +68,19 @@ export interface TrainingSession {
   sets: WorkoutSet[]
 }
 
-/** Recent completed performances in the exact same template and variant, without a cross-template fallback. */
-export async function recentTrainingSessions(exerciseId: string, templateId: string | null, excludeWorkoutId?: string, limit = 2): Promise<TrainingSession[]> {
+/**
+ * Recent completed performances of the exact same exercise or variant. With a templateId only workouts of
+ * that template count; with undefined all workouts count (decision 15 October 2026: Previous and progression
+ * use every workout with the same exercise).
+ */
+export async function recentTrainingSessions(exerciseId: string, templateId?: string | null, excludeWorkoutId?: string, limit = 2): Promise<TrainingSession[]> {
   const entries = (await db.workout_exercise.where('exercise_id').equals(exerciseId).toArray())
     .filter((we) => we.deleted_at === null && !we.skipped_at && we.workout_id !== excludeWorkoutId)
   const workouts = await db.workout.bulkGet(entries.map((we) => we.workout_id))
   const excluded = excludeWorkoutId ? await db.workout.get(excludeWorkoutId) : undefined
   const candidates = entries.flatMap((exercise, i) => {
     const workout = workouts[i]
-    return workout && workout.deleted_at === null && workout.finished_at !== null && workout.template_id === templateId
+    return workout && workout.deleted_at === null && workout.finished_at !== null && (templateId === undefined || workout.template_id === templateId)
       && (!excluded || workout.started_at < excluded.started_at) ? [{ workout, exercise }] : []
   }).sort((a, b) => b.workout.started_at.localeCompare(a.workout.started_at))
   const result: TrainingSession[] = []
@@ -152,10 +156,8 @@ export async function startWorkout(templateId: string, userId: string): Promise<
       ...base(userId, ts),
     }
     wes.push(we)
-    // Prefill: last performance in this template; else the template targets; else any last performance
-    const own = await previousSetsOfTemplate(te.exercise_id, templateId)
-    const hasTargets = planned.some((p) => p.target_weight !== null)
-    const prev = own.length || hasTargets ? own : await previousSets(te.exercise_id)
+    // Prefill: last performance of this exercise in any workout; else the template targets (decision 15 October 2026)
+    const prev = await previousSets(te.exercise_id)
     const prevWorking = prev.filter((s) => s.set_type === 'working')
     let workingIndex = 0
     for (const p of planned) {

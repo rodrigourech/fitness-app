@@ -6,6 +6,7 @@ import { db, type WorkoutSet } from '../lib/db'
 import { exportJson, exportSetsCsv } from '../lib/export'
 import { deleteWorkout, finishedWorkouts, workoutDetail, type DetailExercise, type WorkoutSummary } from '../lib/history'
 import { effectiveReps, epley, volume } from '../lib/stats'
+import { belowMinimum } from '../lib/progression'
 import { offerUndo } from '../lib/undo'
 import { formatDuration, formatNumber, paceSeconds, updateWorkout } from '../lib/workout'
 
@@ -170,6 +171,14 @@ function ExerciseResult({ ex }: { ex: DetailExercise }) {
     ]
   }
 
+  // Reps below the minimum are marked orange (reps columns follow the optional kg column)
+  function low(s: WorkoutSet, column: number): boolean {
+    if (kind !== 'weight_reps') return false
+    const k = column - (hasWeight ? 1 : 0)
+    const reps = ex.unilateral ? (k === 0 ? s.reps_left : k === 1 ? s.reps_right : null) : k === 0 ? s.reps : null
+    return belowMinimum(reps, ex.minReps)
+  }
+
   // Summary: working sets, volume and best set (highest estimated 1RM)
   const vol = volume(ex.sets)
   let best: WorkoutSet | null = null
@@ -208,7 +217,7 @@ function ExerciseResult({ ex }: { ex: DetailExercise }) {
               <tr key={s.id} className={`border-t border-zinc-100 dark:border-zinc-800 ${warm ? 'text-zinc-500 dark:text-zinc-400' : ''}`}>
                 <td className="py-1">{warm ? 'W' : n}</td>
                 {cells(s).map((c, k) => (
-                  <td key={k} className="py-1 pl-3 text-right">
+                  <td key={k} className={`py-1 pl-3 text-right ${!warm && low(s, k) ? 'font-semibold text-orange-600 dark:text-orange-400' : ''}`}>
                     {c}
                   </td>
                 ))}

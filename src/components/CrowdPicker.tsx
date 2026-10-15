@@ -1,6 +1,6 @@
-import { CROWD_LABEL } from '../lib/analytics'
+import { CROWD_LABEL, CROWD_MAX } from '../lib/analytics'
 
-// Rating 1–5 of how crowded the gym was when leaving (workout.crowd_level, migration 0007).
+// Rating 1–10 of how crowded the gym was when leaving (workout.crowd_level, migrations 0007 and 0015).
 
 interface Props {
   value: number | null
@@ -14,7 +14,7 @@ export default function CrowdPicker({ value, onChange }: Props) {
         Gym crowd when leaving{value !== null && <span className="text-zinc-900 dark:text-zinc-100"> · {CROWD_LABEL[value]}</span>}
       </legend>
       <div className="grid grid-cols-5 gap-1.5">
-        {[1, 2, 3, 4, 5].map((n) => {
+        {Array.from({ length: CROWD_MAX }, (_, i) => i + 1).map((n) => {
           const active = value === n
           return (
             <button
@@ -37,7 +37,7 @@ export default function CrowdPicker({ value, onChange }: Props) {
       </div>
       <div className="flex justify-between text-xs text-zinc-500 dark:text-zinc-400">
         <span>1 = empty</span>
-        <span>5 = packed</span>
+        <span>{CROWD_MAX} = packed</span>
       </div>
     </fieldset>
   )

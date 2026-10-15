@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db, type WorkoutSet } from './db'
-import { compareRepetitions, progressionAdvice, readyToIncrease } from './progression'
+import { belowMinimum, progressionAdvice, readyToIncrease, workTotals } from './progression'
 import { importSeedIfNeeded } from './seed'
 import { createTemplate, addTemplateExercise } from './template'
 import { recentTrainingSessions, type TrainingSession } from './workout'
@@ -57,39 +57,42 @@ describe('progression decisions', () => {
   })
 })
 
-describe('repetition comparisons', () => {
-  it('counts only checked work sets and withholds a difference while incomplete', () => {
+describe('work totals', () => {
+  it('sums reps and weight × reps of work sets, optionally only checked ones', () => {
     const current = [set(10, 0), set(9, 1, { completed_at: null }), set(8, 2, { set_type: 'warmup' }), set(100, 3, { deleted_at: 'gone' })]
-    expect(compareRepetitions(current, [set(9, 0), set(8, 1)], false)).toMatchObject({ total: 10, previousTotal: 17, delta: null, completed: 1, reason: 'unfinished' })
+    expect(workTotals(current, false, true)).toEqual({ reps: 10, volume: 300 })
+    expect(workTotals(current, false)).toEqual({ reps: 19, volume: 570 })
+    expect(workTotals([set(10, 0, { weight: 30 }), set(10, 1, { weight: 15 })], false)).toEqual({ reps: 20, volume: 450 })
+    expect(workTotals([set(null, 0, { weight: 4.5, reps_left: 10, reps_right: 8 })], true)).toEqual({ reps: 18, volume: 81 })
   })
-  it('shows a difference only for matching weights and set counts, including both sides', () => {
-    expect(compareRepetitions([set(10, 0), set(10, 1)], [set(10, 0), set(9, 1)], false)).toMatchObject({ total: 20, delta: 1 })
-    expect(compareRepetitions([set(10, 0, { weight: 35 })], [set(10, 0)], false).reason).toBe('different_weight')
-    expect(compareRepetitions([set(10, 0)], [set(10, 0), set(10, 1)], false).reason).toBe('different_sets')
-    expect(compareRepetitions([set(null, 0)], [set(10, 0)], false).reason).toBe('missing_reps')
-    expect(compareRepetitions([set(null, 0, { reps_left: 10, reps_right: 8 })], [set(null, 0, { reps_left: 9, reps_right: 8 })], true)).toMatchObject({ total: 18, previousTotal: 17, delta: 1 })
+  it('marks reps below the minimum only when entered', () => {
+    expect(belowMinimum(6, 7)).toBe(true)
+    expect(belowMinimum(7, 7)).toBe(false)
+    expect(belowMinimum(null, 7)).toBe(false)
+    expect(belowMinimum(3, null)).toBe(false)
   })
 })
 
-describe('history isolation', () => {
-  it('does not borrow a Main Day performance for Bonus Day and ignores skipped exercises', async () => {
+describe('shared history', () => {
+  it('uses the last performance of the same exercise in any workout and ignores skipped exercises', async () => {
     await importSeedIfNeeded('u1')
     const ex = (await db.exercise.toArray()).find((e) => e.name === 'Leg Press')!
     const main = (await db.template.toArray()).find((t) => t.name === 'DAY1')!
     const bonus = await createTemplate('u1', 'Bonus Day')
     await addTemplateExercise(bonus, ex.id)
+    // Template filter still available, without it all workouts count
     expect(await recentTrainingSessions(ex.id, bonus)).toEqual([])
-    expect(await recentTrainingSessions(ex.id, main.id)).toHaveLength(1)
-    const original = (await recentTrainingSessions(ex.id, main.id))[0]!
+    expect(await recentTrainingSessions(ex.id)).toHaveLength(1)
+    const original = (await recentTrainingSessions(ex.id))[0]!
+    expect(original.workout.template_id).toBe(main.id)
     await db.workout_exercise.put({ ...original.exercise, id: 'duplicate-entry' })
     await db.workout_set.bulkPut(original.sets.map((s) => ({ ...s, id: `duplicate-${s.id}`, workout_exercise_id: 'duplicate-entry' })))
-    expect(await recentTrainingSessions(ex.id, main.id)).toHaveLength(1)
-    const entries = await readyToIncrease()
-    expect(entries.some((e) => e.templateId === main.id && e.exerciseId === ex.id)).toBe(true)
-    expect(entries.some((e) => e.templateId === bonus)).toBe(false)
-    const prior = (await recentTrainingSessions(ex.id, main.id))[0]!
-    await db.workout_exercise.update(prior.exercise.id, { skipped_at: 'skipped' })
+    expect(await recentTrainingSessions(ex.id)).toHaveLength(1)
+    // One entry per exercise, even if it appears in several workouts
+    const entries = (await readyToIncrease()).filter((e) => e.exerciseId === ex.id)
+    expect(entries).toHaveLength(1)
+    await db.workout_exercise.update(original.exercise.id, { skipped_at: 'skipped' })
     await db.workout_exercise.update('duplicate-entry', { skipped_at: 'skipped' })
-    expect(await recentTrainingSessions(ex.id, main.id)).toEqual([])
+    expect(await recentTrainingSessions(ex.id)).toEqual([])
   })
 })

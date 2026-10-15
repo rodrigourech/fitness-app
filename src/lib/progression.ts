@@ -41,30 +41,35 @@ export function progressionAdvice(sessions: TrainingSession[], targets: Repetiti
   return comparable && lastReps !== null && olderReps !== null && lastReps < targets.minimum && olderReps < targets.minimum ? 'reduce' : 'hold'
 }
 
-export interface RepComparison {
-  total: number
-  previousTotal: number | null
-  delta: number | null
-  completed: number
-  planned: number
-  reason: 'unfinished' | 'no_history' | 'different_sets' | 'different_weight' | 'missing_reps' | null
+export interface WorkTotals {
+  /** Sum of reps; one-sided sets count both sides */
+  reps: number
+  /** Sum of weight × reps */
+  volume: number
 }
 
-/** Only checked work sets count. A difference is shown only after a comparable performance is complete. */
-export function compareRepetitions(current: WorkoutSet[], previous: WorkoutSet[], unilateral: boolean): RepComparison {
-  const work = workSets(current)
-  const before = workSets(previous)
-  const done = work.filter((s) => s.completed_at !== null)
-  const count = (s: WorkoutSet) => unilateral ? s.reps_left !== null && s.reps_right !== null ? s.reps_left + s.reps_right : null : s.reps
-  const total = done.reduce((sum, s) => sum + (count(s) ?? 0), 0)
-  const previousTotal = before.length && before.every((s) => count(s) !== null) ? before.reduce((sum, s) => sum + count(s)!, 0) : null
-  const reason = !before.length ? 'no_history' : done.length !== work.length ? 'unfinished' : work.length !== before.length ? 'different_sets'
-    : work.some((s, i) => s.weight !== before[i]!.weight) ? 'different_weight'
-      : previousTotal === null || done.some((s) => count(s) === null) ? 'missing_reps' : null
-  return { total, previousTotal, delta: reason === null ? total - previousTotal! : null, completed: done.length, planned: work.length, reason }
+/** Totals of the work sets; with onlyDone only checked sets count (running workout). */
+export function workTotals(sets: WorkoutSet[], unilateral: boolean, onlyDone = false): WorkTotals {
+  let reps = 0
+  let volume = 0
+  for (const s of workSets(sets)) {
+    if (onlyDone && s.completed_at === null) continue
+    const r = unilateral ? (s.reps_left ?? 0) + (s.reps_right ?? 0) : s.reps ?? 0
+    reps += r
+    volume += (s.weight ?? 0) * r
+  }
+  return { reps, volume: Math.round(volume * 100) / 100 }
 }
 
-/** Increase-ready entries are evaluated separately for every active template and exercise variant. */
+/** True if reps were entered and lie below the minimum (one side is enough for one-sided sets). */
+export function belowMinimum(reps: number | null, minimum: number | null): boolean {
+  return reps !== null && minimum !== null && reps < minimum
+}
+
+/**
+ * Exercises (variants separately) of the active workouts whose last performance in any workout reached the
+ * target reps in all planned work sets (decision 15 October 2026).
+ */
 export async function readyToIncrease(): Promise<ReadyExercise[]> {
   const [templates, tes, exercises] = await Promise.all([
     db.template.filter((t) => t.deleted_at === null && !t.archived_at).toArray(),
@@ -76,17 +81,24 @@ export async function readyToIncrease(): Promise<ReadyExercise[]> {
   const out: ReadyExercise[] = []
   const seen = new Set<string>()
   for (const te of tes) {
-    if (!live.has(te.template_id)) continue
-    const key = `${te.template_id}/${te.exercise_id}`
-    if (seen.has(key)) continue
-    seen.add(key)
+    if (!live.has(te.template_id) || seen.has(te.exercise_id)) continue
+    seen.add(te.exercise_id)
     const ex = byId.get(te.exercise_id)
     if (!ex || effective(ex, byId).trackingType !== 'weight_reps') continue
-    const sessions = await recentTrainingSessions(te.exercise_id, te.template_id)
-    const planned = (await db.template_set.where('template_exercise_id').equals(te.id).toArray()).filter((s) => s.deleted_at === null && s.set_type === 'working')
-    if (progressionAdvice(sessions, repetitionTargets(ex, byId, planned), effective(ex, byId).isUnilateral, planned.length) !== 'increase') continue
+    const sessions = await recentTrainingSessions(te.exercise_id)
+    const latest = sessions[0]
+    if (!latest) continue
+    // Planned count and targets of the workout the last performance came from (its snapshot), else this template
+    const source = latest.workout.template_id
+      ? await db.template_exercise.where('template_id').equals(latest.workout.template_id).filter((row) => row.exercise_id === te.exercise_id && row.deleted_at === null).first()
+      : undefined
+    const planned = (await db.template_set.where('template_exercise_id').equals((source ?? te).id).toArray()).filter((s) => s.deleted_at === null && s.set_type === 'working')
+    const defaults = repetitionTargets(ex, byId, planned)
+    const targets = { target: latest.exercise.target_reps ?? defaults.target, minimum: latest.exercise.min_reps ?? defaults.minimum }
+    const plannedCount = planned.length || workSets(latest.sets).length
+    if (progressionAdvice(sessions, targets, effective(ex, byId).isUnilateral, plannedCount) !== 'increase') continue
     out.push({ exerciseId: ex.id, templateId: te.template_id, templateName: templates.find((t) => t.id === te.template_id)!.name,
-      name: displayName(ex, byId), lastDate: sessions[0]!.workout.started_at })
+      name: displayName(ex, byId), lastDate: latest.workout.started_at })
   }
   return out.sort((a, b) => a.name.localeCompare(b.name))
 }

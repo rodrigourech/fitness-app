@@ -225,7 +225,7 @@ describe('decisions 9 October 2026', () => {
     await expect(skipExercise(curl.we)).rejects.toThrow()
   })
 
-  it('prefills a new template from its targets, not from another template', async () => {
+  it('prefills a new template from the last performance in another workout (decision 15 October 2026)', async () => {
     const curlId = (await db.exercise.toArray()).find((e) => e.name === 'Lying Leg Curl (Machine)')!.id
     const ts = '2026-10-09T08:00:00Z'
     const b = { user_id: USER, created_at: ts, updated_at: ts, deleted_at: null }
@@ -247,7 +247,8 @@ describe('decisions 9 October 2026', () => {
     )
     const w = await startWorkout('t-new', USER)
     const s = (await setsOf(w.id))['Lying Leg Curl (Machine)']!
-    expect(s.sets.map((x) => x.weight)).toEqual([40, 40, 40])
+    // DAY2 history of the same exercise: 35/35/30 kg, not the template target of 40 kg
+    expect(s.sets.map((x) => x.weight)).toEqual([35, 35, 30])
     expect(s.we.rest_s).toBe(60)
   })
 })

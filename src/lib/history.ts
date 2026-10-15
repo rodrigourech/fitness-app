@@ -39,6 +39,8 @@ export interface DetailExercise {
   skipped: boolean
   trackingType: string
   unilateral: boolean
+  /** Minimum reps per work set (snapshot of the workout, else the exercise setting); null = not weight_reps */
+  minReps: number | null
   sets: WorkoutSet[]
 }
 
@@ -57,6 +59,7 @@ export async function workoutDetail(workoutId: string): Promise<DetailExercise[]
         skipped: !!we.skipped_at,
         trackingType: eff?.trackingType ?? 'weight_reps',
         unilateral: eff?.isUnilateral ?? false,
+        minReps: (eff?.trackingType ?? 'weight_reps') === 'weight_reps' ? we.min_reps ?? eff?.minReps ?? null : null,
         sets: (await db.workout_set.where('workout_exercise_id').equals(we.id).toArray())
           .filter((s) => s.deleted_at === null)
           .sort((a, b) => a.position - b.position),

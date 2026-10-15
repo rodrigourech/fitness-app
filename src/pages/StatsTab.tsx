@@ -542,7 +542,7 @@ function CrowdCard({ data, from }: { data: AnalyticsData; from: number }) {
   const grid = crowdGrid(data.workouts, from)
   const slot = (i: number) => CROWD_SLOTS[i]!.label
   return (
-    <Card title="Gym crowd" subtitle="Average rating by weekday and time of leaving (1 = empty, 5 = packed)">
+    <Card title="Gym crowd" subtitle="Average rating by weekday and time of leaving (1 = empty, 10 = packed)">
       {grid.ratings === 0 ? (
         <Empty>No ratings yet. Rate the crowd at the end of a workout.</Empty>
       ) : (
@@ -564,7 +564,8 @@ function CrowdCard({ data, from }: { data: AnalyticsData; from: number }) {
             cells={grid.cells.map((row) =>
               row.map((c) => ({
                 key: `${c.weekday}-${c.slot}`,
-                level: c.avg === null ? null : Math.min(5, Math.max(1, Math.round(c.avg))),
+                // Five colour steps for the 1–10 scale
+                level: c.avg === null ? null : Math.min(5, Math.max(1, Math.ceil(c.avg / 2))),
                 text: c.avg === null ? '' : c.avg.toFixed(1).replace(/\.0$/, ''),
                 tooltip:
                   c.avg === null

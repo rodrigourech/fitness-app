@@ -80,7 +80,7 @@ export interface Workout extends SyncColumns {
   started_at: string
   finished_at: string | null
   note: string | null
-  /** How crowded the gym was when leaving: 1 = empty … 5 = packed (migration 0007) */
+  /** How crowded the gym was when leaving: 1 = empty … 10 = packed (migrations 0007, 0015) */
   crowd_level?: number | null
   /** Removed from the trash for good (migration 0011) */
   purged_at?: string | null
