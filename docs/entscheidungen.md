@@ -131,4 +131,10 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
 - «Finish workout» unten nach Notiz und Gym-Auslastung statt in der Kopfzeile; Finish und Discard behalten ihre Bestätigung. Discard verwirft wie bisher (kein Papierkorb für unfertige Trainings)
 - Gym-Auslastung 1 bis 10 statt 1 bis 5 (Migration 0015). Bisherige Werte behalten ihre Zahl (2/5 wird 2/10); die Heatmap fasst je zwei Stufen zu einer Farbe zusammen
 - Plan: Triceps Pushdown und Preacher Curl an den Haupttagen je 3 statt 2 Sätze (vom Benutzer in der App geändert); Decline Crunch bewusst aus den Haupttagen gestrichen
+- Nachtrag 15. Oktober (zweites Paket):
+  - Training: Warm-Up-Hinweis nur «Warm Up»; Zeile «Target · Minimum» entfällt; Meldung «Keep weight» entfällt (nur Increase und Reduce); Total-Boxen entfallen wieder, Previous einzeilig («40 kg × 10», einseitig «4.5 kg × 10/10»); Feld «Workout note» entfällt (gespeicherte Notizen bleiben in der Historie)
+  - Kein Skip-Knopf mehr: «Remove set» nur bei mehr als einem Satz; beim Abschliessen gilt eine Übung ohne abgehakten Satz als übersprungen und bleibt in der Historie als «Skipped» (vorher gelöscht)
+  - Vorbelegung: Gewicht aus der letzten Leistung, Wiederholungen mit dem Ziel (Max-Wert) statt der letzten Leistung. Bewusst in Kauf genommen: nicht korrigierte Fehlversuche lösen «Increase weight» aus
+  - Gym-Auslastung bleibt als Knöpfe (2 Reihen à 5)
+  - Foto-Galerie im Reiter Body (Karte mit den letzten drei Fotos): Raster nach Monat mit Datum und 7-Tage-Schnitt, Filter nach Pose, Vollbild mit Wischen innerhalb der Auswahl, Einblendung Datum, Pose, 7-Tage-Schnitt und Tagesgewicht (Antippen blendet aus, nach unten wischen schliesst). Vergleich: «Compare», zwei Fotos antippen, nebeneinander (älteres links). Keine Gewichtsdifferenz. Bilder werden erst beim Sichtbarwerden entschlüsselt
 

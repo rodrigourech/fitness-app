@@ -76,3 +76,23 @@ export function todayLocal(): string {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
+
+export interface WeightOnDay {
+  /** Weight entered on that day, if any */
+  day: number | null
+  /** Mean of all entries in the 7 days up to that day; null without entries */
+  avg7: number | null
+}
+
+/** Body weight around a date, e.g. for a progress photo taken on a day without a weigh-in. */
+export function weightOnDay(date: string, series: BodyWeightPoint[]): WeightOnDay {
+  const t = Date.parse(date)
+  const window = series.filter((p) => {
+    const d = Date.parse(p.entry.measured_on)
+    return d <= t && d > t - 7 * DAY
+  })
+  return {
+    day: series.find((p) => p.entry.measured_on === date)?.entry.weight_kg ?? null,
+    avg7: window.length ? window.reduce((s, p) => s + p.entry.weight_kg, 0) / window.length : null,
+  }
+}

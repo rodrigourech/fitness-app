@@ -162,8 +162,17 @@ export async function startWorkout(templateId: string, userId: string): Promise<
     let workingIndex = 0
     for (const p of planned) {
       const source = prevWorking[workingIndex++] ?? prevWorking.at(-1)
+      // Weight from the last performance, reps from the target (decision 15 October 2026)
+      const weightReps = eff.trackingType === 'weight_reps'
       const m: Measure = source
-        ? measureOf(source)
+        ? {
+            ...measureOf(source),
+            ...(weightReps
+              ? eff.isUnilateral
+                ? { reps_left: targets.target, reps_right: targets.target }
+                : { reps: targets.target }
+              : {}),
+          }
         : {
             weight: p.target_weight,
             reps: eff.trackingType === 'weight_reps' && !eff.isUnilateral ? targets.target : null,
@@ -320,10 +329,11 @@ export async function finishWorkout(w: Workout): Promise<void> {
   const { wes, sets } = await workoutParts(w.id)
   const open = sets.filter((s) => s.completed_at === null)
   const doneByExercise = new Set(sets.filter((s) => s.completed_at !== null).map((s) => s.workout_exercise_id))
-  // Skipped exercises stay (shown as skipped in the history); their open sets are discarded
+  // Exercises without a checked set count as skipped and stay in the history as «Skipped»
+  // (decision 15 October 2026, replaces the skip button); their open sets are discarded
   const emptyExercises = wes.filter((we) => !doneByExercise.has(we.id) && !we.skipped_at)
   if (open.length) await saveRows('workout_set', open.map((s) => ({ ...s, deleted_at: ts })))
-  if (emptyExercises.length) await saveRows('workout_exercise', emptyExercises.map((we) => ({ ...we, deleted_at: ts })))
+  if (emptyExercises.length) await saveRows('workout_exercise', emptyExercises.map((we) => ({ ...we, skipped_at: ts })))
   await updateWorkout(w, { finished_at: ts })
 }
 
@@ -435,7 +445,7 @@ export function describeSet(s: WorkoutSet | undefined, trackingType: string, uni
   if (!s) return ['–', '']
   if (trackingType === 'duration') return [formatDuration(s.duration_s), '']
   if (trackingType === 'distance_duration') return [`${s.distance_km ?? '–'} km`, formatDuration(s.duration_s)]
-  const reps = unilateral ? `${s.reps_left ?? '–'} / ${s.reps_right ?? '–'}` : `× ${s.reps ?? '–'}`
+  const reps = unilateral ? `× ${s.reps_left ?? '–'}/${s.reps_right ?? '–'}` : `× ${s.reps ?? '–'}`
   // Bodyweight sets have no weight: show only the repetitions
-  return s.weight === null ? [reps, ''] : [`${s.weight} kg`, reps]
+  return s.weight === null ? [reps.replace('× ', ''), ''] : [`${s.weight} kg`, reps]
 }

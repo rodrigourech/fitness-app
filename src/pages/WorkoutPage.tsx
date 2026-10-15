@@ -15,7 +15,7 @@ import { startRest, stopRest } from '../lib/rest'
 import { db, displayName, type Exercise, type ExerciseLink, type Workout, type WorkoutExercise, type WorkoutSet } from '../lib/db'
 import { linkLabel, linksFor } from '../lib/exercise'
 import { bestBefore, recordsOf, type Best } from '../lib/stats'
-import { belowMinimum, progressionAdvice, workTotals, type ProgressionAdvice } from '../lib/progression'
+import { belowMinimum, progressionAdvice, type ProgressionAdvice } from '../lib/progression'
 import { repetitionTargets, type RepetitionTargets } from '../lib/training'
 import {
   addExerciseToWorkout,
@@ -172,16 +172,6 @@ export default function WorkoutPage({ workout, onReauth, onMinimize }: Props) {
         + Add exercise
       </button>
 
-      <label className="mt-6 flex flex-col gap-1">
-        <span className="text-sm text-zinc-500 dark:text-zinc-400">Workout note</span>
-        <textarea
-          defaultValue={workout.note ?? ''}
-          onBlur={(e) => void updateWorkout(workout, { note: e.target.value.trim() || null })}
-          rows={2}
-          className="rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-base outline-none dark:border-zinc-700"
-        />
-      </label>
-
       <div className="mt-6">
         <CrowdPicker value={workout.crowd_level ?? null} onChange={(v) => void updateWorkout(workout, { crowd_level: v })} />
       </div>
@@ -271,8 +261,6 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
   let warmupNo = 0
 
   const tt = eff.trackingType
-  const totals = workTotals(sets, eff.isUnilateral, true)
-  const lastTotals = previous.some((s) => s.set_type === 'working') ? workTotals(previous, eff.isUnilateral) : null
   const cols =
     tt === 'duration'
       ? 'grid-cols-[1.5rem_1fr_6rem_2.75rem]'
@@ -297,10 +285,9 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
       {eff.setupNote && <p className="text-sm whitespace-pre-line text-zinc-500 dark:text-zinc-400">{eff.setupNote}</p>}
       {tt === 'weight_reps' && (
         <>
-          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Target {targets.target} reps · Minimum {targets.minimum}{eff.isUnilateral ? ' per side' : ''}</p>
-          {warmUp && <p className="mt-2 rounded-md bg-sky-50 px-2 py-1 text-sm text-sky-800 dark:bg-sky-950 dark:text-sky-200">Warm Up · 5–6 light reps</p>}
-          {advice && <div className={`mt-2 rounded-md px-2 py-1 text-sm ${advice === 'reduce' ? 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200' : 'bg-accent-soft text-accent-ink'}`}>
-            <p className="font-medium">{advice === 'increase' ? 'Increase weight' : advice === 'reduce' ? 'Reduce weight' : 'Keep weight'}</p>
+          {warmUp && <p className="mt-2 rounded-md bg-sky-50 px-2 py-1 text-sm text-sky-800 dark:bg-sky-950 dark:text-sky-200">Warm Up</p>}
+          {(advice === 'increase' || advice === 'reduce') && <div className={`mt-2 rounded-md px-2 py-1 text-sm ${advice === 'reduce' ? 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200' : 'bg-accent-soft text-accent-ink'}`}>
+            <p className="font-medium">{advice === 'increase' ? 'Increase weight' : 'Reduce weight'}</p>
             {advice === 'reduce' && <p className="text-xs">First work set below minimum twice at the same weight. Check rest, recovery and form before choosing a lighter weight.</p>}
           </div>}
         </>
@@ -352,35 +339,17 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
         })}
       </div>
 
-      {tt === 'weight_reps' && (
-        <dl className="mt-3 grid grid-cols-2 gap-2 text-sm tabular-nums">
-          <div className="rounded-md bg-zinc-100 px-2.5 py-1.5 dark:bg-zinc-800">
-            <dt className="text-xs text-zinc-500 dark:text-zinc-400">Total reps{eff.isUnilateral ? ' (both sides)' : ''}</dt>
-            <dd className="font-semibold">
-              {totals.reps}
-              {lastTotals && <span className="font-normal text-zinc-500 dark:text-zinc-400"> · last {lastTotals.reps}</span>}
-            </dd>
-          </div>
-          <div className="rounded-md bg-zinc-100 px-2.5 py-1.5 dark:bg-zinc-800">
-            <dt className="text-xs text-zinc-500 dark:text-zinc-400">Total weight</dt>
-            <dd className="font-semibold">
-              {formatKg(totals.volume)}
-              {lastTotals && <span className="font-normal text-zinc-500 dark:text-zinc-400"> · last {formatKg(lastTotals.volume)}</span>}
-            </dd>
-          </div>
-        </dl>
-      )}
-
       <div className="mt-2 flex gap-2">
         <button onClick={() => void addSet(we)} className="flex-1 rounded-lg bg-zinc-100 py-2 text-sm font-medium dark:bg-zinc-800">
           + Add set
         </button>
-        {sets.length > 0 && (
+        {/* No skip button: an exercise without a checked set counts as skipped when the workout is finished */}
+        {sets.length > 1 && (
           <button
             onClick={() => void removeLastSet(we)}
             className="rounded-lg px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400"
           >
-            {sets.length === 1 ? 'Remove (skip exercise)' : 'Remove set'}
+            Remove set
           </button>
         )}
       </div>
@@ -478,9 +447,8 @@ function SetRow({ set, label, previous, trackingType, unilateral, restSeconds, m
         {label}
         {records.length > 0 && <span className="mt-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400">PR</span>}
       </span>
-      <span className="flex min-w-0 flex-col text-[11px] leading-tight text-zinc-500 tabular-nums dark:text-zinc-400">
-        <span className="truncate">{previous[0]}</span>
-        {previous[1] && <span className="truncate">{previous[1]}</span>}
+      <span className="min-w-0 truncate text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
+        {previous[1] ? `${previous[0]} ${previous[1]}` : previous[0]}
       </span>
       {trackingType === 'duration' && (
         <Field label="Time" inputMode="text" placeholder="mm:ss" value={formatDuration(set.duration_s)} onCommit={durationCommit} />
@@ -525,7 +493,3 @@ function SetRow({ set, label, previous, trackingType, unilateral, restSeconds, m
   )
 }
 
-/** Volume in kg without decimals for large values, e.g. 1110 kg. */
-function formatKg(value: number): string {
-  return `${Math.round(value).toLocaleString('en-GB')} kg`
-}

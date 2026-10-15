@@ -411,3 +411,11 @@ export async function photosOf(measuredOn: string): Promise<BodyPhoto[]> {
   const rows = await db.body_photo.where('measured_on').equals(measuredOn).toArray()
   return rows.filter((p) => p.deleted_at === null).sort((a, b) => a.created_at.localeCompare(b.created_at))
 }
+
+/** All photos that are not deleted, newest first (gallery). */
+export async function allPhotos(): Promise<BodyPhoto[]> {
+  const rows = await db.body_photo.toArray()
+  return rows
+    .filter((p) => p.deleted_at === null)
+    .sort((a, b) => b.measured_on.localeCompare(a.measured_on) || b.created_at.localeCompare(a.created_at))
+}

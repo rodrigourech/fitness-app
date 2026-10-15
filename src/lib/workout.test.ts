@@ -43,18 +43,19 @@ beforeEach(async () => {
 })
 
 describe('startWorkout', () => {
-  it('copies the template and prefills the last performance per set', async () => {
+  it('copies the template, prefills the last weight per set and the target reps', async () => {
     const w = await startWorkout(day2, USER)
     expect(await getActiveWorkout()).toMatchObject({ id: w.id, template_name_snapshot: 'DAY2' })
     const s = await setsOf(w.id)
     // DAY2 history 2 Oct: Lying Leg Curl 35/35/30 kg x 10
     expect(s['Lying Leg Curl (Machine)']!.sets.map((x) => x.weight)).toEqual([35, 35, 30])
-    // Unilateral: Lateral Raise 2 Oct sets R/L = 10/10, 8/10, 8/7
+    // Reps start at the target (10 per side), not at the last performance (decision 15 October 2026)
     expect(s['Lateral Raise (Cable)']!.sets.map((x) => [x.reps_left, x.reps_right])).toEqual([
       [10, 10],
-      [10, 8],
-      [7, 8],
+      [10, 10],
+      [10, 10],
     ])
+    expect(s['Lateral Raise (Cable)']!.sets.map((x) => x.weight)).toEqual([4.5, 4.5, 4.5])
     // Bicycle: duration 7 min
     expect(s['Bicycle']!.sets[0]!.duration_s).toBe(420)
     expect(Object.values(s).flatMap((x) => x.sets).every((x) => x.completed_at === null)).toBe(true)
@@ -84,7 +85,7 @@ describe('startWorkout', () => {
 })
 
 describe('finish and cancel', () => {
-  it('discards open sets and empty exercises, keeps completed ones', async () => {
+  it('discards open sets, marks exercises without a checked set as skipped, keeps completed ones', async () => {
     const w = await startWorkout(day2, USER)
     const s = await setsOf(w.id)
     const curl = s['Lying Leg Curl (Machine)']!
@@ -93,7 +94,9 @@ describe('finish and cancel', () => {
     const after = await setsOf(w.id)
     const curlAfter = after['Lying Leg Curl (Machine)']!
     expect(curlAfter.sets.filter((x) => x.deleted_at === null)).toHaveLength(1)
-    expect(after['Bicycle']!.we.deleted_at).not.toBeNull()
+    expect(after['Bicycle']!.we.deleted_at).toBeNull()
+    expect(after['Bicycle']!.we.skipped_at).not.toBeNull()
+    expect(after['Bicycle']!.sets.every((x) => x.deleted_at !== null)).toBe(true)
     expect((await db.workout.get(w.id))!.finished_at).not.toBeNull()
     expect(await getActiveWorkout()).toBeUndefined()
   })

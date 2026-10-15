@@ -1,11 +1,13 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useRef, useState, type FormEvent } from 'react'
+import PhotoGallery from '../components/PhotoGallery'
 import PhotoImage from '../components/PhotoImage'
 import Sheet from '../components/Sheet'
 import { bodyWeightSeries, CONDITION_LABEL, deleteBodyWeight, saveBodyWeight, todayLocal } from '../lib/body'
 import { db, type BodyCondition, type BodyPhoto, type PhotoPose } from '../lib/db'
 import {
   addPhoto,
+  allPhotos,
   changePhotoPassphrase,
   createPhotoKey,
   deletePhoto,
@@ -73,6 +75,9 @@ export default function BodyTab({ userId }: { userId: string }) {
   }
 
   const latest = series?.[0]
+  const recentPhotos = useLiveQuery(async () => (await allPhotos()).slice(0, 3), [])
+  const photoAccess = useLiveQuery(photoKeyState, [])
+  const [gallery, setGallery] = useState(false)
 
   return (
     <>
@@ -88,6 +93,23 @@ export default function BodyTab({ userId }: { userId: string }) {
           </div>
         </div>
       )}
+
+      {!isBetaSandbox && photoAccess === 'ready' && recentPhotos && recentPhotos.length > 0 && (
+        <button onClick={() => setGallery(true)} className="card mb-4 flex w-full items-center gap-3 p-3 text-left">
+          <span className="grid flex-1 grid-cols-3 gap-1.5">
+            {recentPhotos.map((p) => (
+              <span key={p.id} className="aspect-[3/4] overflow-hidden rounded-md bg-zinc-100 dark:bg-zinc-800">
+                <PhotoImage photo={p} className="h-full w-full object-cover" />
+              </span>
+            ))}
+          </span>
+          <span className="shrink-0 text-sm font-semibold">
+            Photos
+            <span className="block text-xs font-normal text-zinc-500 dark:text-zinc-400">View all ›</span>
+          </span>
+        </button>
+      )}
+      {gallery && <PhotoGallery onClose={() => setGallery(false)} />}
 
       <div className="card mb-4 flex flex-col gap-3 p-4">
         <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-3">
