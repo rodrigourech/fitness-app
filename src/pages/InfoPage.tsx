@@ -4,8 +4,8 @@ import AppBar from '../components/AppBar'
 import { DEFAULT_TRAINING_SHARES, getTrainingShares } from '../lib/settings'
 
 const CATEGORIES = [
-  ['Compound', '6–9', 'Chest Press, Lat Pulldown, Seated Row'],
-  ['Isolation', '8–12', 'Triceps Pushdown, Preacher Curl, Leg Press, Leg Curl'],
+  ['Compound', '6–10', 'Chest Press, Lat Pulldown, Seated Row'],
+  ['Isolation', '8–12', 'Triceps Pushdown, Overhead Extension, Preacher Curl, Leg Press, Leg Curl'],
   ['Small muscle', '10–15', 'Lateral Raise'],
 ] as const
 

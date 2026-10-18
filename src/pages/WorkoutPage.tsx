@@ -110,7 +110,6 @@ export default function WorkoutPage({ workout, onReauth, onMinimize }: Props) {
   const shares = useLiveQuery(getTrainingShares, []) ?? DEFAULT_TRAINING_SHARES
   // One legend for the whole workout when any exercise shows recommendations (decision 19 October 2026)
   const legend = blocks?.some((b) => b.trackingType === 'weight_reps' && (b.topSet || b.sets.some((s) => s.set_type === 'warmup')))
-  const estimated = blocks?.some((b) => b.trackingType === 'weight_reps' && !b.weightStep && (b.topSet || b.sets.some((s) => s.set_type === 'warmup')))
   const exercises = useLiveQuery(() => db.exercise.toArray(), [])
   const now = useNow(1000)
   const [sheet, setSheet] = useState<string | null>(null)
@@ -174,7 +173,7 @@ export default function WorkoutPage({ workout, onReauth, onMinimize }: Props) {
         <p className="text-zinc-500">Loading …</p>
       ) : (
         <div className="flex flex-col gap-4">
-          {legend && <Legend shares={shares} estimated={estimated ?? false} />}
+          {legend && <Legend shares={shares} />}
           {blocks.map((b) => (
             <ExerciseCard key={b.we.id} block={b} byId={byId} shares={shares} onOpen={setSheet} />
           ))}
@@ -439,7 +438,7 @@ function RecCell({ rec, raise, onUse }: { rec: RecCellValue; raise: boolean; onU
   if (rec === null) return <span />
   const solid = 'flex h-10 items-center justify-center rounded-md border border-orange-500 bg-orange-50 text-sm font-extrabold tracking-wide text-orange-700 tabular-nums dark:bg-orange-500/10 dark:text-orange-300'
   if (rec.kind === 'top') {
-    if (!raise) return <span className={solid}>TOP</span>
+    if (!raise) return <span className={solid.replace('text-sm', 'text-xs')}>TOP</span>
     const next = rec.next
     return next === null
       ? <span className={solid} aria-label="Raise the weight">↑</span>
@@ -455,14 +454,13 @@ function RecCell({ rec, raise, onUse }: { rec: RecCellValue; raise: boolean; onU
 }
 
 /** One legend per workout: colours and the shares from Training settings. */
-function Legend({ shares, estimated }: { shares: TrainingShares; estimated: boolean }) {
+function Legend({ shares }: { shares: TrainingShares }) {
   const swatch = 'mr-1 inline-block h-2.5 w-3.5 rounded-sm align-[-1px]'
   return (
     <p className="card flex flex-wrap gap-x-3 gap-y-1 px-3 py-2 text-xs text-zinc-500 dark:text-zinc-400">
       <span><i className={`${swatch} border border-orange-500 bg-orange-100 dark:bg-orange-500/20`} />Top set</span>
       <span><i className={`${swatch} border border-dashed border-orange-400`} />Back-off {shares.backOff} %</span>
       <span><i className={`${swatch} border border-dashed border-sky-400`} />Warm-up {shares.warmUp} %</span>
-      {estimated && <span className="text-orange-700 dark:text-orange-300">≈ estimated, no weight step</span>}
     </p>
   )
 }
