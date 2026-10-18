@@ -181,3 +181,5 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
 - Übungsblatt in Abschnitte Reps, Sets, Weights gegliedert; Feld «Cue» entfernt (gespeicherte Texte bleiben), «Muscles to feel» zuklappbar mit Zusammenfassung
 - Info-Seite neu ohne Quellenangaben: Wiederholungsbereiche, Next workout, Sätze und Rec. kg, Weight step, Wo man es einstellt
 - Archiv: «Main Day A (12 Oct)» und «Main Day B (15 Oct)» als archivierte Kopien der damals trainierten Workouts (Migration 0019, zusammen mit der Geräteart pro Übung)
+- Archiv ausgeführt: «Main Day A (12 Oct)» enthält 6 Übungen (Leg Press wurde an dem Tag nicht trainiert), «Main Day B (15 Oct)» 7 Übungen
+- Muscles to feel überprüft: Chest Press untere und obere Brust (ging beim Zusammenlegen verloren), Incline Chest Press (Dumbbell, Machine) obere Brust und vordere Schulter; übrige Übungen bestätigt. Top set für beide Incline eingeschaltet (Migration 0020)
