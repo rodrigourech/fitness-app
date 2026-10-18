@@ -168,3 +168,4 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
   - Empfehlung zur Reihenfolge (Info-Seite): Top Set als erster Arbeitssatz nach dem Warm-up. Ansteigende Pyramiden sind laut Angleri 2017 nicht überlegen; ein zusätzlicher mittelschwerer Aufwärmsatz verbessert laut Ribeiro 2021 die Leistung im ersten Arbeitssatz
   - Variante als Untertitel unter dem Namen der Hauptübung im Training. Triceps Pushdown: neue Hauptübung «Triceps Pushdown (Cable)», bestehende Übung wird Variante «Straight Bar» (Historie unverändert)
   - Notizen ohne die Zeilen «Oben», «Unten», «V-Griff (schwarz)» und «rechts beginnt»
+  - Kein zweiter Warm-up-Satz W2 (vom Benutzer als Overengineering verworfen); Reihenfolge W, TOP, Back-off, Back-off ergibt sich bei gleichen Vorgaben von selbst
