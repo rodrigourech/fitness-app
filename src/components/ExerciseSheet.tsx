@@ -9,13 +9,14 @@ import RestStepper from './RestStepper'
 import { formatDuration } from '../lib/workout'
 import Field from './Field'
 import { validRepetitionTargets } from '../lib/training'
+import { DEFAULT_TRAINING_SHARES, getTrainingShares } from '../lib/settings'
 
 interface Props {
   exerciseId: string
   onClose: () => void
 }
 
-/** Bottom sheet with focus muscles, cue and reference videos of an exercise. */
+/** Bottom sheet with training settings, focus muscles and reference videos of an exercise. */
 export default function ExerciseSheet({ exerciseId, onClose }: Props) {
   // The sheet can navigate between a main exercise and its variants
   const [currentId, setCurrentId] = useState(exerciseId)
@@ -32,6 +33,7 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
     return { ex, parent, byId, variants, links: await linksFor(ex) }
   }, [currentId])
 
+  const shares = useLiveQuery(getTrainingShares, []) ?? DEFAULT_TRAINING_SHARES
   const [url, setUrl] = useState('')
   const [title, setTitle] = useState('')
   const [urlError, setUrlError] = useState(false)
@@ -42,7 +44,6 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
   const main = parent ?? ex
   const eff = effective(ex, byId)
   const focusInherited = ex.parent_id !== null && ex.focus_muscles == null
-  const cueInherited = ex.parent_id !== null && ex.focus_cue == null
 
   function toggleRegion(region: string) {
     const current = eff.focusMuscles
@@ -153,8 +154,11 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
             />
           </div>
 
-          {eff.trackingType === 'weight_reps' && (
-            <>
+        </section>
+
+        {eff.trackingType === 'weight_reps' && (
+          <>
+            <SheetSection title="Reps">
               <div className="grid grid-cols-2 gap-3">
                 {(['target_reps', 'min_reps'] as const).map((field) => (
                   <label key={field} className="flex flex-col gap-1">
@@ -177,53 +181,79 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
                   </label>
                 ))}
               </div>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">Workouts can override these values. Clear a field to use the inherited or default value.</p>
-              <label className="flex items-center gap-2 text-sm font-semibold">
-                <input type="checkbox" checked={eff.warmUp} onChange={(e) => void updateExercise(ex, { warm_up: e.target.checked })} className="h-5 w-5" />
-                Warm-up set
-              </label>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">Set W with about 50 % of the top set. Not counted in volume, records or progression.</p>
-              {parent && ex.warm_up != null && <button onClick={() => void updateExercise(ex, { warm_up: null })} className="text-left text-xs font-medium text-accent-ink">Use main exercise’s warm-up setting</button>}
-              <label className="flex items-center gap-2 text-sm font-semibold">
-                <input type="checkbox" checked={eff.topSet} onChange={(e) => void updateExercise(ex, { top_set: e.target.checked })} className="h-5 w-5" />
-                Top set
-              </label>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">Heaviest set first; back-off sets are recommended at 80 % of it. Off: equal sets, progression on all sets.</p>
-              {parent && ex.top_set != null && <button onClick={() => void updateExercise(ex, { top_set: null })} className="text-left text-xs font-medium text-accent-ink">Use main exercise’s top set setting</button>}
-            </>
-          )}
-        </section>
+            </SheetSection>
 
-        <section className="mb-5">
-          <h3 className="mb-1 text-sm font-semibold">Muscles to feel</h3>
-          <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-400">
+            <SheetSection title="Sets">
+              <Toggle
+                label="Warm-up set"
+                hint={`Set W at ${shares.warmUp} % of the top set. Not counted in volume, records or progression.`}
+                checked={eff.warmUp}
+                onChange={(v) => void updateExercise(ex, { warm_up: v })}
+                inherit={parent && ex.warm_up != null ? () => void updateExercise(ex, { warm_up: null }) : undefined}
+              />
+              <Toggle
+                label="Top set"
+                hint={`Heaviest set first, back-off sets at ${shares.backOff} %. Off: equal sets, Increase marks every set.`}
+                checked={eff.topSet}
+                onChange={(v) => void updateExercise(ex, { top_set: v })}
+                inherit={parent && ex.top_set != null ? () => void updateExercise(ex, { top_set: null }) : undefined}
+              />
+            </SheetSection>
+
+            <SheetSection title="Weights">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-semibold">Equipment</span>
+                <span className="flex rounded-lg bg-zinc-100 p-0.5 text-sm dark:bg-zinc-800">
+                  {EQUIPMENT.map(([value, text]) => (
+                    <button
+                      key={value}
+                      onClick={() => void updateExercise(main, { equipment: value })}
+                      aria-pressed={main.equipment === value}
+                      className={`rounded-md px-2.5 py-1 ${main.equipment === value ? 'bg-white font-semibold shadow-sm dark:bg-zinc-600' : 'text-zinc-500 dark:text-zinc-400'}`}
+                    >
+                      {text}
+                    </button>
+                  ))}
+                </span>
+              </div>
+              <label className="flex items-center justify-between gap-3">
+                <span>
+                  <span className="block text-sm font-semibold">Weight step kg</span>
+                  <span className="block text-xs text-zinc-500 dark:text-zinc-400">Distance between two plates, as labelled, e.g. 4.5 or 10</span>
+                </span>
+                <span className="w-24 shrink-0">
+                  <Field
+                    label="Weight step kg"
+                    inputMode="decimal"
+                    value={ex.weight_step == null ? '' : String(ex.weight_step)}
+                    placeholder={parent?.weight_step ? `${parent.weight_step} (inh.)` : 'Not set'}
+                    onCommit={(input) => {
+                      const n = parseNumber(input)
+                      if (n === undefined || (n !== null && (n <= 0 || n > 50))) return false
+                      void updateExercise(ex, { weight_step: n })
+                      return true
+                    }}
+                  />
+                </span>
+              </label>
+              {!eff.weightStep && <p className="text-xs text-orange-700 dark:text-orange-300">Without a weight step, recommendations are estimates (≈).</p>}
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Shares for all exercises: More › Training settings.</p>
+            </SheetSection>
+          </>
+        )}
+
+        <details className="mb-5 rounded-xl border border-zinc-200 px-3 py-2 dark:border-zinc-800">
+          <summary className="flex cursor-pointer items-center justify-between gap-2 text-sm font-semibold">
+            <span className="shrink-0">Muscles to feel</span>
+            <span className="truncate text-xs font-normal text-zinc-500 dark:text-zinc-400">
+              {eff.focusMuscles.length ? eff.focusMuscles.map(regionName).join(', ') : 'None'}
+            </span>
+          </summary>
+          <p className="mt-2 mb-2 text-xs text-zinc-500 dark:text-zinc-400">
             Tap a muscle to add or remove it.{focusInherited ? ' Currently inherited from the main exercise.' : ''}
           </p>
           <BodyMap regions={eff.focusMuscles} onToggle={toggleRegion} />
-          {eff.focusMuscles.length > 0 && (
-            <ul className="mt-2 flex flex-wrap gap-1.5">
-              {eff.focusMuscles.map((r) => (
-                <li key={r} className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs text-red-800 dark:bg-red-950 dark:text-red-200">
-                  {regionName(r)}
-                </li>
-              ))}
-            </ul>
-          )}
-          <label className="mt-3 flex flex-col gap-1">
-            <span className="text-sm font-semibold">Cue</span>
-            <textarea
-              key={`${ex.id}-${ex.updated_at}`}
-              defaultValue={eff.focusCue ?? ''}
-              placeholder={cueInherited ? 'Inherited from the main exercise' : 'e.g. drive with the elbows, feel the lats'}
-              rows={2}
-              onBlur={(e) => {
-                const value = e.target.value.trim() || null
-                if (value !== eff.focusCue) void updateExercise(ex, { focus_cue: value })
-              }}
-              className="rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-base outline-none dark:border-zinc-700"
-            />
-          </label>
-        </section>
+        </details>
 
         <section>
           <h3 className="mb-2 text-sm font-semibold">Reference videos</h3>
@@ -280,6 +310,32 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
           </form>
         </section>
       </div>
+    </div>
+  )
+}
+
+const EQUIPMENT = [['plate_loaded', 'Plate'], ['pin_loaded', 'Pin'], ['dumbbell', 'Dumbbell']] as const
+
+function SheetSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="mb-5 flex flex-col gap-3">
+      <h3 className="text-xs font-bold tracking-wide text-zinc-500 uppercase dark:text-zinc-400">{title}</h3>
+      {children}
+    </section>
+  )
+}
+
+function Toggle({ label, hint, checked, onChange, inherit }: { label: string; hint: string; checked: boolean; onChange: (v: boolean) => void; inherit?: () => void }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="flex items-center justify-between gap-3">
+        <span>
+          <span className="block text-sm font-semibold">{label}</span>
+          <span className="block text-xs text-zinc-500 dark:text-zinc-400">{hint}</span>
+        </span>
+        <input type="checkbox" role="switch" checked={checked} onChange={(e) => onChange(e.target.checked)} className="h-5 w-5 shrink-0 accent-orange-500" />
+      </label>
+      {inherit && <button onClick={inherit} className="text-left text-xs font-medium text-accent-ink">Use main exercise’s setting</button>}
     </div>
   )
 }

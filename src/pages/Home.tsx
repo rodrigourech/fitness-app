@@ -22,6 +22,7 @@ import HomeTab, { type HomeTarget } from './HomeTab'
 import TemplateEditor from './TemplateEditor'
 import TrashPage from './TrashPage'
 import InfoPage from './InfoPage'
+import TrainingSettingsPage from './TrainingSettingsPage'
 import { isBetaSandbox } from '../lib/environment'
 
 interface Props {
@@ -82,6 +83,7 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
   const [tab, setTab] = useState<Tab>('home')
   const [account, setAccount] = useState(false)
   const [info, setInfo] = useState(false)
+  const [training, setTraining] = useState(false)
   const [more, setMore] = useState(false)
   const [photos, setPhotos] = useState(false)
   const photoAccess = useLiveQuery(photoKeyState, [])
@@ -112,6 +114,7 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
   if (editing) return <TemplateEditor templateId={editing} onDone={() => setEditing(null)} />
   if (trash) return <TrashPage onDone={() => setTrash(false)} />
   if (info) return <InfoPage onDone={() => setInfo(false)} />
+  if (training) return <TrainingSettingsPage userId={user.id} onDone={() => setTraining(false)} />
 
   return (
     <main className="home-shell mx-auto max-w-xl px-4">
@@ -308,6 +311,7 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
           <button onClick={() => open('history')}><AppIcon name="history" />History</button>
           <button onClick={() => open('photos')}><AppIcon name="photos" />Photo passphrase</button>
           <button onClick={() => open('trash')}><AppIcon name="trash" />Trash</button>
+          <button onClick={() => { setMore(false); setTraining(true) }}><AppIcon name="stats" />Training settings</button>
           <button onClick={() => open('info')}><AppIcon name="guide" />Training guide</button>
           <button onClick={() => open('account')}><AppIcon name="body" />Change password</button>
           <button onClick={() => void handleSignOut()}><AppIcon name="arrow" />Sign out · {user.username}</button>

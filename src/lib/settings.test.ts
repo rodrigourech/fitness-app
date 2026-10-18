@@ -29,3 +29,12 @@ describe('workout order', () => {
     expect(sortByOrder(items, await getTemplateOrder()).map((x) => x.name)).toEqual(['Main Day A', 'Bonus Day', 'Run'])
   })
 })
+
+describe('training shares', () => {
+  it('falls back to 50 / 85 % and clamps stored values', async () => {
+    const { parseTrainingShares, DEFAULT_TRAINING_SHARES } = await import('./settings')
+    expect(parseTrainingShares(null)).toEqual(DEFAULT_TRAINING_SHARES)
+    expect(parseTrainingShares({ warmUp: 5, backOff: 120 })).toEqual({ warmUp: 20, backOff: 95 })
+    expect(parseTrainingShares({ warmUp: 60, backOff: 80 })).toEqual({ warmUp: 60, backOff: 80 })
+  })
+})

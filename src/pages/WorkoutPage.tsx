@@ -18,6 +18,7 @@ import { bestBefore, recordsOf, type Best } from '../lib/stats'
 import { belowMinimum, progressionAdvice, type ProgressionAdvice } from '../lib/progression'
 import { repetitionTargets, type RepetitionTargets } from '../lib/training'
 import { increaseMarks, recommendations, warmUpWeight, type Recommendation } from '../lib/topset'
+import { DEFAULT_TRAINING_SHARES, getTrainingShares, type TrainingShares } from '../lib/settings'
 import {
   addExerciseToWorkout,
   addSet,
@@ -54,6 +55,8 @@ interface ExerciseBlock {
   /** Variant name shown below the main exercise */
   variant: string | null
   topSet: boolean
+  weightStep: number | null
+  trackingType: string
   sets: WorkoutSet[]
   previous: WorkoutSet[]
   links: ExerciseLink[]
@@ -89,6 +92,8 @@ async function loadBlocks(workoutId: string, templateId: string | null): Promise
         name: exercise ? (exercise.parent_id ? byId.get(exercise.parent_id)?.name ?? displayName(exercise, byId) : exercise.name) : 'Unknown exercise',
         variant: exercise?.parent_id && byId.has(exercise.parent_id) ? exercise.name : null,
         topSet: eff?.topSet ?? false,
+        weightStep: eff?.weightStep ?? null,
+        trackingType: eff?.trackingType ?? 'weight_reps',
         sets,
         previous: sessions[0]?.sets ?? [],
         links: exercise ? await linksFor(exercise) : [],
@@ -102,6 +107,10 @@ async function loadBlocks(workoutId: string, templateId: string | null): Promise
 
 export default function WorkoutPage({ workout, onReauth, onMinimize }: Props) {
   const blocks = useLiveQuery(() => loadBlocks(workout.id, workout.template_id), [workout.id, workout.template_id])
+  const shares = useLiveQuery(getTrainingShares, []) ?? DEFAULT_TRAINING_SHARES
+  // One legend for the whole workout when any exercise shows recommendations (decision 19 October 2026)
+  const legend = blocks?.some((b) => b.trackingType === 'weight_reps' && (b.topSet || b.sets.some((s) => s.set_type === 'warmup')))
+  const estimated = blocks?.some((b) => b.trackingType === 'weight_reps' && !b.weightStep && (b.topSet || b.sets.some((s) => s.set_type === 'warmup')))
   const exercises = useLiveQuery(() => db.exercise.toArray(), [])
   const now = useNow(1000)
   const [sheet, setSheet] = useState<string | null>(null)
@@ -165,8 +174,9 @@ export default function WorkoutPage({ workout, onReauth, onMinimize }: Props) {
         <p className="text-zinc-500">Loading …</p>
       ) : (
         <div className="flex flex-col gap-4">
+          {legend && <Legend shares={shares} estimated={estimated ?? false} />}
           {blocks.map((b) => (
-            <ExerciseCard key={b.we.id} block={b} byId={byId} onOpen={setSheet} />
+            <ExerciseCard key={b.we.id} block={b} byId={byId} shares={shares} onOpen={setSheet} />
           ))}
         </div>
       )}
@@ -242,8 +252,8 @@ export default function WorkoutPage({ workout, onReauth, onMinimize }: Props) {
   )
 }
 
-function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map<string, Exercise>; onOpen: (exerciseId: string) => void }) {
-  const { we, exercise, name, variant, topSet, sets, previous, links, best, advice, targets } = block
+function ExerciseCard({ block, byId, shares, onOpen }: { block: ExerciseBlock; byId: Map<string, Exercise>; shares: TrainingShares; onOpen: (exerciseId: string) => void }) {
+  const { we, exercise, name, variant, topSet, weightStep, sets, previous, links, best, advice, targets } = block
   const eff = exercise
     ? effective(exercise, byId)
     : { trackingType: 'weight_reps', isUnilateral: false, floor: null, seat: null, footPosition: null, setupNote: null, focusMuscles: [] as string[], focusCue: null, restS: null }
@@ -271,9 +281,9 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
   const working = sets.filter((s) => s.set_type === 'working')
   const current = working.map((s) => s.weight)
   const before = prevWorking.map((s) => s.weight)
-  const recs = tt === 'weight_reps' ? recommendations(current, topSet) : []
   const marks = tt === 'weight_reps' && advice === 'increase' ? increaseMarks(current, before, working.map((s) => s.completed_at !== null), topSet) : []
-  const warmKg = tt === 'weight_reps' ? warmUpWeight(current) : null
+  const recs = tt === 'weight_reps' ? recommendations(current, topSet, shares.backOff / 100, weightStep, marks.some(Boolean)) : []
+  const warmKg = tt === 'weight_reps' ? warmUpWeight(current, shares.warmUp / 100, weightStep) : null
   // The column only appears when it has something to say (warm-up set or top set)
   const showRec = tt === 'weight_reps' && (sets.some((s) => s.set_type === 'warmup') || recs.some((r) => r !== null))
   const cols =
@@ -343,7 +353,7 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
           const warm = s.set_type === 'warmup'
           const prev = warm ? prevWarmup[warmupNo++] : prevWorking[workingNo++]
           const label = warm ? 'W' : String(workingNo)
-          const rec: RecCellValue = !showRec ? undefined : warm ? (warmKg === null ? null : { kind: 'warm', kg: warmKg }) : recs[workingNo - 1] ?? null
+          const rec: RecCellValue = !showRec ? undefined : warm ? (warmKg === null ? null : { kind: 'warm', kg: warmKg.kg, estimate: warmKg.estimate }) : recs[workingNo - 1] ?? null
           return (
             <SetRow
               key={s.id}
@@ -414,7 +424,7 @@ function VideoButton({ links }: { links: ExerciseLink[] }) {
   )
 }
 
-type RecCellValue = Recommendation | { kind: 'warm'; kg: number } | undefined
+type RecCellValue = Recommendation | { kind: 'warm'; kg: number; estimate: boolean } | undefined
 
 /** Previous column: compact «40 × 9» for weight and reps (room for Rec. kg). */
 function compactPrevious(s: WorkoutSet | undefined, trackingType: string, unilateral: boolean): [string, string] {
@@ -423,25 +433,37 @@ function compactPrevious(s: WorkoutSet | undefined, trackingType: string, unilat
   return [s.weight === null ? reps : `${s.weight} × ${reps}`, '']
 }
 
-function RecCell({ rec, onUse }: { rec: RecCellValue; onUse: (kg: number) => void }) {
+/** Rec. kg: TOP (or ↑ next weight while the top set should be raised), back-off dashed orange, warm-up dashed blue. */
+function RecCell({ rec, raise, onUse }: { rec: RecCellValue; raise: boolean; onUse: (kg: number) => void }) {
   if (rec === undefined) return null
   if (rec === null) return <span />
-  if (rec.kind === 'top')
-    return (
-      <span className="flex h-10 items-center justify-center rounded-md border border-orange-500 bg-orange-50 text-sm font-extrabold tracking-wide text-orange-700 dark:bg-orange-500/10 dark:text-orange-300">
-        TOP
-      </span>
-    )
+  const solid = 'flex h-10 items-center justify-center rounded-md border border-orange-500 bg-orange-50 text-sm font-extrabold tracking-wide text-orange-700 tabular-nums dark:bg-orange-500/10 dark:text-orange-300'
+  if (rec.kind === 'top') {
+    if (!raise) return <span className={solid}>TOP</span>
+    const next = rec.next
+    return next === null
+      ? <span className={solid} aria-label="Raise the weight">↑</span>
+      : <button onClick={() => onUse(next)} aria-label={`Use ${next} kg`} className={solid}>↑ {next}</button>
+  }
   const kg = rec.kg
+  const tone = rec.kind === 'warm' ? 'border-sky-400 text-sky-700 dark:text-sky-300' : 'border-orange-400 text-orange-700 dark:text-orange-300'
   return (
-    <button
-      onClick={() => onUse(kg)}
-      aria-label={`Use recommended ${kg} kg`}
-      className="flex h-10 flex-col items-center justify-center rounded-md border border-dashed border-orange-400 leading-tight text-orange-700 tabular-nums dark:text-orange-300"
-    >
-      <span className="text-sm font-semibold">{rec.kind === 'warm' ? `≈ ${kg}` : kg}</span>
-      <span className="text-[9px] font-semibold text-zinc-500 dark:text-zinc-400">{rec.kind === 'warm' ? '50 %' : `${rec.percent} %`}</span>
+    <button onClick={() => onUse(kg)} aria-label={`Use recommended ${kg} kg`} className={`flex h-10 items-center justify-center rounded-md border border-dashed text-sm font-semibold tabular-nums ${tone}`}>
+      {rec.estimate ? `≈ ${kg}` : kg}
     </button>
+  )
+}
+
+/** One legend per workout: colours and the shares from Training settings. */
+function Legend({ shares, estimated }: { shares: TrainingShares; estimated: boolean }) {
+  const swatch = 'mr-1 inline-block h-2.5 w-3.5 rounded-sm align-[-1px]'
+  return (
+    <p className="card flex flex-wrap gap-x-3 gap-y-1 px-3 py-2 text-xs text-zinc-500 dark:text-zinc-400">
+      <span><i className={`${swatch} border border-orange-500 bg-orange-100 dark:bg-orange-500/20`} />Top set</span>
+      <span><i className={`${swatch} border border-dashed border-orange-400`} />Back-off {shares.backOff} %</span>
+      <span><i className={`${swatch} border border-dashed border-sky-400`} />Warm-up {shares.warmUp} %</span>
+      {estimated && <span className="text-orange-700 dark:text-orange-300">≈ estimated, no weight step</span>}
+    </p>
   )
 }
 
@@ -512,7 +534,7 @@ function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, res
       <span className="min-w-0 truncate text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
         {previous[1] ? `${previous[0]} ${previous[1]}` : previous[0]}
       </span>
-      <RecCell rec={rec} onUse={(kg) => void updateSet(set, { weight: kg })} />
+      <RecCell rec={rec} raise={mark} onUse={(kg) => void updateSet(set, { weight: kg })} />
       {trackingType === 'duration' && (
         <Field label="Time" inputMode="text" placeholder="mm:ss" value={formatDuration(set.duration_s)} onCommit={durationCommit} />
       )}
@@ -533,7 +555,7 @@ function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, res
         <>
           <span className="relative">
             <Field label="Weight kg" inputMode="decimal" value={formatNumber(set.weight)} onCommit={numberCommit('weight', false)} mark={mark}
-              placeholder={warm && rec?.kind === 'warm' ? `≈ ${rec.kg}` : undefined} />
+              placeholder={warm && rec?.kind === 'warm' ? (rec.estimate ? `≈ ${rec.kg}` : String(rec.kg)) : undefined} />
             {mark && <span aria-hidden="true" className="pointer-events-none absolute top-0 right-1 text-[11px] font-extrabold text-orange-500">↑</span>}
           </span>
           {unilateral ? (

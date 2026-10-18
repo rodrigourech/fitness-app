@@ -170,3 +170,14 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
   - Notizen ohne die Zeilen «Oben», «Unten», «V-Griff (schwarz)» und «rechts beginnt»
   - Kein zweiter Warm-up-Satz W2 (vom Benutzer als Overengineering verworfen); Reihenfolge W, TOP, Back-off, Back-off ergibt sich bei gleichen Vorgaben von selbst
   - Back-off neu 80 % des heutigen Top Sets als Startregel (Wunsch Rodrigo: Top Set geht nahe ans Versagen, 15 % schien zu wenig). Nach einigen Trainings auf Rückmeldung hin überprüfen
+
+## **19. Oktober 2026**
+
+- Back-off zurück auf 85 % als Standard (ersetzt die 80 % vom Vorabend); Warm-up 50 %. Beide zentral unter More › Training settings einstellbar (user_setting «training_shares», 20–90 % bzw. 50–95 %)
+- Gewichtsstufe pro Übung, immer in kg wie am Gerät angeschrieben (exercise.weight_step, keine Pfund-Angaben). Mit Stufe geht die Empfehlung vom heutigen Top Set in ganzen Stufen abwärts, so nahe wie möglich an den Anteil (bei Gleichstand der leichtere); angezeigt ab 10 kg auf ganze kg gerundet, darunter auf 0.5 kg, damit Stapel mit 4.5-kg-Schritten ihre Beschriftung treffen (36 → 32). Increase zeigt dann «↑» mit dem nächsten Gewicht (Top Set + 1 Stufe)
+- Ohne Stufe schätzt die App (ab 20 kg auf 5 kg, darunter auf 1 kg, Hälften abwärts) und kennzeichnet mit «≈»; Increase zeigt nur «↑». Alle Stufen bewusst leer gelassen, Rodrigo trägt sie nach Prüfung am Gerät ein
+- Keine Standardstufen nach Geräteart (keine Halblösung). Geräteart Plate-loaded, Pin-loaded oder Dumbbell ist nur Beschreibung
+- Spalte «Rec. kg» ohne kleine Prozentzahlen: Top Set orange gefüllt, Back-off orange gestrichelt, Warm-up blau gestrichelt. Eine Legende oben im Workout nennt die aktuellen Prozentwerte und «≈ estimated, no weight step», falls eine Übung keine Stufe hat
+- Übungsblatt in Abschnitte Reps, Sets, Weights gegliedert; Feld «Cue» entfernt (gespeicherte Texte bleiben), «Muscles to feel» zuklappbar mit Zusammenfassung
+- Info-Seite neu ohne Quellenangaben: Wiederholungsbereiche, Next workout, Sätze und Rec. kg, Weight step, Wo man es einstellt
+- Archiv: «Main Day A (12 Oct)» und «Main Day B (15 Oct)» als archivierte Kopien der damals trainierten Workouts (Migration 0019, zusammen mit der Geräteart pro Übung)

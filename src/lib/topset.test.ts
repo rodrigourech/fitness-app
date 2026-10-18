@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { increaseMarks, recommendations, roundWeight, topIndex, warmUpWeight } from './topset'
+import { displayWeight, estimateWeight, increaseMarks, recommendations, shareOf, topIndex, warmUpWeight } from './topset'
 
 describe('top set', () => {
   it('finds the first heaviest weight', () => {
@@ -8,29 +8,40 @@ describe('top set', () => {
     expect(topIndex([null, null])).toBe(-1)
   })
 
-  it('rounds to 5 kg from 20 kg and to 0.5 kg below', () => {
-    expect(roundWeight(34)).toBe(35)
-    expect(roundWeight(42.5)).toBe(40)
-    expect(roundWeight(17)).toBe(17)
-    expect(roundWeight(3.8)).toBe(4)
+  it('shows whole kg from 10 kg like the labels of a stack', () => {
+    expect(displayWeight(31.5)).toBe(32)
+    expect(displayWeight(40.5)).toBe(41)
+    expect(displayWeight(4.5)).toBe(4.5)
   })
 
-  it('recommends back-off sets at 80 % of today\'s top set', () => {
-    expect(recommendations([40, 32, 32], true)).toEqual([
-      { kind: 'top' }, { kind: 'weight', kg: 30, percent: 75 }, { kind: 'weight', kg: 30, percent: 75 }])
-    expect(recommendations([32, 50, 32], true)[0]).toEqual({ kind: 'weight', kg: 40, percent: 80 })
-    expect(recommendations([20, 20, 15], true)[2]).toEqual({ kind: 'weight', kg: 16, percent: 80 })
-    expect(recommendations([null, null], true)).toEqual([null, null])
+  it('estimates without a step: 5 kg from 20 kg, 1 kg below, halves down', () => {
+    expect(estimateWeight(30.6)).toBe(30)
+    expect(estimateWeight(42.5)).toBe(40)
+    expect(estimateWeight(11.9)).toBe(12)
   })
 
-  it('gives no recommendations without the top set setting', () => {
-    expect(recommendations([5.5, 4.5, 4.5], false)).toEqual([null, null, null])
+  it('walks down from the top set in whole steps, the lighter one on a tie', () => {
+    expect(shareOf(40, 0.85, 10)).toEqual({ kg: 30, estimate: false })
+    expect(shareOf(36, 0.85, 4.5)).toEqual({ kg: 32, estimate: false })
+    expect(shareOf(45, 0.85, 4.5)).toEqual({ kg: 36, estimate: false })
+    expect(shareOf(39, 0.85, 7)).toEqual({ kg: 32, estimate: false })
+    expect(shareOf(10, 0.5, 10)).toEqual({ kg: 10, estimate: false })
+    expect(shareOf(36, 0.85, null)).toEqual({ kg: 30, estimate: true })
   })
 
-  it('recommends about half of the top set for the warm-up', () => {
-    expect(warmUpWeight([40, 50, 40])).toBe(25)
-    expect(warmUpWeight([45, 45, 45])).toBe(20)
-    expect(warmUpWeight([null])).toBeNull()
+  it('recommends back-off sets and the next top-set weight with a step', () => {
+    expect(recommendations([36, 32, 32], true, 0.85, 4.5, true)).toEqual([
+      { kind: 'top', next: 41 }, { kind: 'weight', kg: 32, estimate: false }, { kind: 'weight', kg: 32, estimate: false }])
+    expect(recommendations([36, 32], true, 0.85, null, true)).toEqual([
+      { kind: 'top', next: null }, { kind: 'weight', kg: 30, estimate: true }])
+    expect(recommendations([5.5, 4.5, 4.5], false, 0.85, 4.5)).toEqual([null, null, null])
+    expect(recommendations([null, null], true, 0.85, 5)).toEqual([null, null])
+  })
+
+  it('recommends the warm-up at its share', () => {
+    expect(warmUpWeight([40, 50, 40], 0.5, 10)).toEqual({ kg: 20, estimate: false })
+    expect(warmUpWeight([40, 40], 0.5, null)).toEqual({ kg: 20, estimate: true })
+    expect(warmUpWeight([null], 0.5, 5)).toBeNull()
   })
 
   it('marks the top-weight fields with the setting on, every field without it', () => {

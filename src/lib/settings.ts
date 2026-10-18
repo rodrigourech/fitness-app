@@ -73,3 +73,38 @@ export async function moveTemplate(userId: string, list: string[], id: string, d
     : { id: TEMPLATE_ORDER_ID, user_id: userId, key: 'template_order', value: next, created_at: ts, updated_at: ts, deleted_at: null }
   await saveRows('user_setting', [row])
 }
+
+// --- training shares (decision 19 October 2026) ------------------------------------------------
+
+const TRAINING_SHARES_ID = '3c8a51e7-2f4d-4b96-9e1a-7d06b2c4f835'
+
+/** Shares of today's top set for the warm-up set and the back-off sets, in percent. */
+export interface TrainingShares {
+  warmUp: number
+  backOff: number
+}
+
+export const DEFAULT_TRAINING_SHARES: TrainingShares = { warmUp: 50, backOff: 85 }
+
+export function parseTrainingShares(value: unknown): TrainingShares {
+  const v = (value ?? {}) as Record<string, unknown>
+  return {
+    warmUp: clamp(v.warmUp, 20, 90, DEFAULT_TRAINING_SHARES.warmUp),
+    backOff: clamp(v.backOff, 50, 95, DEFAULT_TRAINING_SHARES.backOff),
+  }
+}
+
+export async function getTrainingShares(): Promise<TrainingShares> {
+  const row = await db.user_setting.get(TRAINING_SHARES_ID)
+  return row && row.deleted_at === null ? parseTrainingShares(row.value) : DEFAULT_TRAINING_SHARES
+}
+
+export async function saveTrainingShares(userId: string, shares: TrainingShares): Promise<void> {
+  const existing = await db.user_setting.get(TRAINING_SHARES_ID)
+  const ts = new Date().toISOString()
+  const value = parseTrainingShares(shares)
+  const row: UserSetting = existing
+    ? { ...existing, value, deleted_at: null }
+    : { id: TRAINING_SHARES_ID, user_id: userId, key: 'training_shares', value, created_at: ts, updated_at: ts, deleted_at: null }
+  await saveRows('user_setting', [row])
+}
