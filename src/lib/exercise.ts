@@ -10,7 +10,7 @@ export async function updateExercise(ex: Exercise, patch: Partial<Exercise>): Pr
   if ('target_reps' in patch || 'min_reps' in patch) {
     const parent = next.parent_id ? await db.exercise.get(next.parent_id) : undefined
     if (!validRepetitionTargets(next.target_reps ?? parent?.target_reps ?? DEFAULT_TARGET_REPS, next.min_reps ?? parent?.min_reps ?? DEFAULT_MIN_REPS)) {
-      throw new Error('Minimum reps must be between 1 and target reps; target reps must be at most 100.')
+      throw new Error('Min reps must be between 1 and Max reps; Max reps must be at most 100.')
     }
   }
   await saveRows('exercise', [next])

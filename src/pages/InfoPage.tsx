@@ -11,6 +11,12 @@ const SOURCES = [
   ['Viveiros 2024', 'Short warm-up sets', 'https://pubmed.ncbi.nlm.nih.gov/39593476/'],
 ] as const
 
+const CATEGORIES = [
+  ['Compound', '6–9', 'yes', 'Chest Press, Lat Pulldown, Seated Row'],
+  ['Isolation', '8–12', 'no', 'Triceps Pushdown, Preacher Curl, Leg Press and Leg Curl (with warm-up)'],
+  ['Small muscle', '10–15', 'no', 'Lateral Raise'],
+] as const
+
 /** A short decision guide; precise conditions and research remain available on demand. */
 export default function InfoPage({ onDone }: { onDone: () => void }) {
   return (
@@ -21,41 +27,71 @@ export default function InfoPage({ onDone }: { onDone: () => void }) {
 
       <header className="mb-4">
         <h1 className="text-2xl font-semibold tracking-tight">Training guide</h1>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Build reps. Then add weight.</p>
+        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Build reps in the range. Then add weight.</p>
       </header>
 
-      <div className="mb-3 grid grid-cols-2 gap-2 text-center">
-        <div className="rounded-xl bg-accent-soft p-3 text-accent-ink">
-          <p className="text-2xl font-semibold tabular-nums">10</p><p className="text-xs">Target reps</p>
-        </div>
-        <div className="card p-3">
-          <p className="text-2xl font-semibold tabular-nums">7</p><p className="text-xs text-zinc-500 dark:text-zinc-400">Minimum reps</p>
-        </div>
-      </div>
-      <p className="mb-4 text-xs text-zinc-500 dark:text-zinc-400">Defaults per set and side. Your exercise or workout can override them.</p>
+      <Section title="1 · Rep ranges">
+        <table className="w-full text-xs">
+          <thead className="text-left text-zinc-500 dark:text-zinc-400">
+            <tr><th className="py-1 pr-2 font-medium">Category</th><th className="py-1 pr-2 font-medium">Reps</th><th className="py-1 pr-2 font-medium">Warm-up</th><th className="py-1 font-medium">Exercises</th></tr>
+          </thead>
+          <tbody>
+            {CATEGORIES.map(([name, reps, warm, examples]) => (
+              <tr key={name} className="border-t border-zinc-100 align-top dark:border-zinc-800">
+                <td className="py-1.5 pr-2 font-semibold">{name}</td><td className="py-1.5 pr-2 tabular-nums">{reps}</td><td className="py-1.5 pr-2">{warm}</td>
+                <td className="py-1.5 text-zinc-500 dark:text-zinc-400">{examples}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Min Reps and Max Reps per set and side. Each exercise can override its range and warm-up.</p>
+      </Section>
 
-      <section aria-labelledby="weight-hints" className="card overflow-hidden">
-        <h2 id="weight-hints" className="px-4 pt-3 text-sm font-semibold">Next workout</h2>
-        <Decision title="Increase weight" description="Every work set reaches the target." values={[10, 10, 10]} tone="increase" />
-        <Decision title="Keep weight" description="Build reps at the same weight." values={[10, 9, 7]} tone="hold" />
-        <Decision title="Reduce weight" description="First set below minimum in two comparable workouts." values={[6, 6]} tone="reduce" label="First set, last two workouts" />
-      </section>
+      <Section title="2 · Next workout">
+        <Decision title="Increase weight" description="Every set at the top weight reaches Max Reps." values={[9, 9, 9]} tone="increase" />
+        <Decision title="Keep weight" description="Add reps at the same weight." values={[9, 8, 6]} tone="hold" />
+        <Decision title="Reduce weight" description="First set at the top weight below Min Reps in the last two workouts." values={[5, 5]} tone="reduce" label="Top set, last two workouts" />
+        <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Example Compound 6–9. Only the top weight counts, back-off sets do not.</p>
+      </Section>
+
+      <Section title="3 · Top set and Rec. kg">
+        <p className="text-sm"><strong>Top set</strong> = heaviest work set. <span className="text-zinc-500 dark:text-zinc-400">With equal weights, set 1 is the basis and there is no TOP badge.</span></p>
+        <div className="mt-2 flex items-center gap-1.5 text-center text-xs">
+          <Step label="Last time" value="40 · 50 · 40" />
+          <span className="text-zinc-400" aria-hidden="true">→</span>
+          <Step label="Ratio" value="80 · 100 · 80 %" />
+          <span className="text-zinc-400" aria-hidden="true">→</span>
+          <Step label="Top set today 60" value="50 · 60 · 50" highlight />
+        </div>
+        <p className="mt-2 rounded-lg bg-zinc-100 px-3 py-2 text-center text-xs leading-relaxed dark:bg-zinc-950">
+          Rec. kg = top set today × set last time ÷ top set last time<br />
+          <span className="text-zinc-500 dark:text-zinc-400">60 × 40 ÷ 50 = 48 → 50 kg</span>
+        </p>
+        <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-zinc-600 dark:text-zinc-300">
+          <li>Rounded to 5 kg from 20 kg, below that to 0.5 kg.</li>
+          <li>Tap a recommendation to use it. Fields never change by themselves.</li>
+          <li><span className="font-semibold text-orange-700 dark:text-orange-300">Orange field ↑</span> = raise this weight. It clears once raised or checked.</li>
+          <li>Train equal sets or a top set with back-off: the app follows your last workout.</li>
+        </ul>
+      </Section>
 
       <div className="mt-3 grid grid-cols-1 gap-2 text-sm">
-        <Tip title="Warm Up">5–6 light reps.</Tip>
+        <Tip title="Warm-up">Set W, 10 reps at about 50 % of the top set. An empty weight takes the recommendation when checked. Not counted in volume, records or progression.</Tip>
         <Tip title="Effort & rest">Clean reps, about 1–2 more possible. Rest enough to repeat good form.</Tip>
-        <Tip title="Progress">27 → 28 total reps is progress at the same weight and set count.</Tip>
+        <Tip title="Progress">More reps at the same weight is progress too.</Tip>
       </div>
 
       <div className="mt-4 flex flex-col gap-2 text-sm">
         <Details title="How the app decides">
           <ul className="list-disc space-y-1 pl-4">
-            <li>Compare the same exercise and variant across all workouts. Work sets only.</li>
-            <li>Increase: every set reaches the target, on both sides.</li>
-            <li>Reduce: first set below minimum twice. Same weight, sets and rest.</li>
-            <li>Rep change: all sets complete, same weights and set count.</li>
+            <li>Same exercise across all workouts, work sets only.</li>
+            <li>Top weight = heaviest work set of the last workout.</li>
+            <li>Increase: every set at the top weight reaches Max Reps, on both sides, with at least the planned sets.</li>
+            <li>Reduce: first set at the top weight below Min Reps twice, same top weight and rest.</li>
+            <li>Rec. kg keeps each set's ratio to the top set from last time; a new set takes the ratio of the last one.</li>
+            <li>Warm-up ≈ 50 % of today's top set.</li>
           </ul>
-          <p className="mt-2 text-xs">You decide whether to change the weight.</p>
+          <p className="mt-2 text-xs">You decide the weight. The app only marks and recommends.</p>
         </Details>
         <Details title="Sources">
           <p className="text-xs">Research informs the approach. Exact thresholds are practical rules.</p>
@@ -64,7 +100,7 @@ export default function InfoPage({ onDone }: { onDone: () => void }) {
               <li key={href}><a href={href} target="_blank" rel="noopener noreferrer" className="font-medium text-accent-ink underline underline-offset-2">{name}</a><span className="text-zinc-500 dark:text-zinc-400"> · {topic}</span></li>
             ))}
           </ul>
-          <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">Reviewed 12 October 2026. Sources need an internet connection.</p>
+          <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">Reviewed 18 October 2026. Sources need an internet connection.</p>
         </Details>
       </div>
     </main>
@@ -74,18 +110,36 @@ export default function InfoPage({ onDone }: { onDone: () => void }) {
 function Decision({ title, description, values, tone, label = 'Work-set reps' }: {
   title: string; description: string; values: number[]; tone: 'increase' | 'hold' | 'reduce'; label?: string
 }) {
-  const colours = tone === 'increase' ? 'bg-accent-soft text-accent-ink' : tone === 'reduce'
-    ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'
+  const colours = tone === 'increase' ? 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200' : tone === 'reduce'
+    ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 px-4 py-3 last:border-0 dark:border-zinc-800">
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 py-3 first:pt-0 dark:border-zinc-800">
       <div className="min-w-0 flex-1 basis-40">
-        <h3 className="text-sm font-semibold">{title}</h3>
+        <h3 className={`text-sm font-semibold ${tone === 'increase' ? 'text-orange-700 dark:text-orange-300' : tone === 'reduce' ? 'text-red-700 dark:text-red-300' : ''}`}>{title}</h3>
         <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{description}</p>
       </div>
       <div role="img" aria-label={`${label}: ${values.join(', ')}`} className="flex gap-1">
         {values.map((value, index) => <span key={index} className={`flex h-9 w-9 items-center justify-center rounded-lg text-sm font-semibold tabular-nums ${colours}`}>{value}</span>)}
       </div>
     </div>
+  )
+}
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="card mb-3 p-3">
+      <h2 className="mb-2 text-xs font-bold tracking-wide text-zinc-500 uppercase dark:text-zinc-400">{title}</h2>
+      {children}
+    </section>
+  )
+}
+
+function Step({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <span className="flex-1 rounded-lg bg-zinc-100 px-1.5 py-1.5 leading-snug dark:bg-zinc-800">
+      <span className="block text-zinc-500 dark:text-zinc-400">{label}</span>
+      <span className={`block font-semibold tabular-nums ${highlight ? 'text-orange-700 dark:text-orange-300' : ''}`}>{value}</span>
+    </span>
   )
 }
 

@@ -42,11 +42,21 @@ describe('progression decisions', () => {
     expect(progressionAdvice([session([6, 6, 5]), session([6, 5, 5])], targets, false, 3)).toBe('reduce')
     expect(progressionAdvice([session([6, 6, 5]), session([6, 5, 5], { weight: 27.5 })], targets, false, 3)).toBe('hold')
     expect(progressionAdvice([session([6, 6, 5]), session([6, 5])], targets, false, 3)).toBe('hold')
-    const mixed = session([6, 5, 5]); mixed.sets[2]!.weight = 25
-    expect(progressionAdvice([session([6, 6, 5]), mixed], targets, false, 3)).toBe('hold')
+    // A lighter back-off set does not matter, the top weight does
+    const backOff = session([6, 5, 5]); backOff.sets[2]!.weight = 25
+    expect(progressionAdvice([session([6, 6, 5]), backOff], targets, false, 3)).toBe('reduce')
     const rest = session([6, 5, 5]); rest.exercise.rest_s = 90
     expect(progressionAdvice([session([6, 6, 5]), rest], targets, false, 3)).toBe('hold')
     expect(progressionAdvice([session([6, 6, 5], { weight: null }), session([6, 5, 5], { weight: null })], targets, false, 3)).toBe('hold')
+  })
+
+  it('decides on the top set only', () => {
+    const pyramid = (reps: number[]) => { const s = session(reps); s.sets[0]!.weight = 40; s.sets[1]!.weight = 50; s.sets[2]!.weight = 40; return s }
+    expect(progressionAdvice([pyramid([7, 10, 7])], targets, false, 3)).toBe('increase')
+    expect(progressionAdvice([pyramid([10, 9, 10])], targets, false, 3)).toBe('hold')
+    expect(progressionAdvice([pyramid([10, 6, 10]), pyramid([10, 5, 10])], targets, false, 3)).toBe('reduce')
+    // More sets than planned still count
+    expect(progressionAdvice([session([10, 10, 10, 10])], targets, false, 3)).toBe('increase')
   })
 
   it('requires both sides for an increase and uses the weaker side for the first-set minimum', () => {

@@ -143,3 +143,20 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
   - Foto-Passphrase ändern nur noch über More («Photo passphrase»); der Knopf im Reiter Body und die Home-Kachel «Photos & passphrase» entfallen. Entsperren bzw. Einrichten bleibt im Reiter Body und auf der Karte «Photos»
   - Körpergewicht: oben nur «+ New entry» (klappt ein Formular auf, Knopf «Add»); bestehende Einträge klappen in der Liste auf («Edit entry» mit Datum, Gewicht, Zeitpunkt, Fotos und «Delete entry»), «Update entry» speichert und klappt zu. Datum änderbar: der Eintrag zieht mit seinen Fotos um; liegt am Zieldatum schon ein Eintrag, warnt das Formular und der Knopf heisst «Replace» (der alte Eintrag geht in den Papierkorb, seine Fotos bleiben). Fotos werden nur im aufgeklappten bestehenden Eintrag hinzugefügt
 
+
+## **18. Oktober 2026**
+
+- Wiederholungsbereiche nach Kategorie, gespeichert pro Übung (Max Reps = exercise.target_reps, Min Reps = exercise.min_reps, Warm-up = exercise.warm_up), keine eigene Kategoriespalte:
+  - Compound 6–9 mit Warm-up: Chest Press, Incline Chest Press (Machine, Dumbbell), Lat Pulldown, Seated Row
+  - Isolation 8–12 ohne Warm-up: Triceps Pushdown, Preacher Curl; Leg Press und Lying Leg Curl behalten den Warm-up-Satz
+  - Small muscle 10–15 ohne Warm-up: Lateral Raise
+- Begriffe in der App «Max Reps» und «Min Reps» statt Target und Minimum. Feste Wiederholungswerte in den Vorlagen entfernt; es gelten die Werte der Übung
+- Progression auf dem Top Set: bewertet werden die Sätze mit dem schwersten Gewicht des letzten Trainings (bei gleichem Gewicht alle Sätze). Increase, wenn alle diese Sätze Max Reps erreichen; Reduce, wenn der erste davon in den zwei letzten Trainings bei gleichem Top-Gewicht und gleicher Pause unter Min Reps liegt. Back-off-Sätze lösen nichts aus
+- Kein Schalter pro Übung für Top Set oder gleiche Sätze: die App folgt dem Schema des letzten Trainings. Begründung: die Studienlage zeigt keinen belastbaren Vorteil eines der beiden Schemata für den Muskelaufbau; entscheidend sind Volumen und Nähe zum Muskelversagen
+- Spalte «Rec. kg»: das Top Set zeigt «TOP Basis» (bei gleichen Gewichten «Basis»), jeder andere Satz behält sein Verhältnis zum Top Set aus dem letzten Training (Gewicht und Prozent), gerundet ab 20 kg auf 5 kg, darunter auf 0.5 kg. Antippen übernimmt den Wert; die App ändert nie selbst ein Feld. Ohne Historie «–»
+- Badge «TOP» nur, wenn die Arbeitssätze unterschiedlich schwer sind
+- Increase: Hinweis orange («raise the marked weight»), Gewichtsfeld der Top-Gewicht-Sätze orange umrandet mit ↑, bis das Gewicht erhöht oder der Satz abgehakt ist. Kein berechnetes Zielgewicht, keine Gewichtsstufen pro Übung. Reduce rötlich
+- Warm-up als eigener Satz «W» statt Hinweis: 10 Wiederholungen, Gewicht leer mit Empfehlung «≈ 50 %» des aktuellen Top Sets; beim Abhaken ohne Gewicht wird die Empfehlung übernommen. Zählt nicht für Volumen, Bestleistungen und Progression; nicht abgehakt wird er beim Abschliessen verworfen
+- Chest Press: Varianten «Griffe Mitte Brust» und «Sitz tiefer» in «Chest Press (Machine)» zusammengelegt (7 Trainings, 28 Sätze, eine Historie), Notiz «Oben, Griffe auf Brustwarzenhöhe», Varianten soft-gelöscht. Main Day A/B: Chest Press 3 statt 4 Sätze, Triceps Pushdown und Preacher Curl 3 statt 2 Sätze (Migration 0017)
+- Neue Übungen Incline Chest Press (Machine) und (Dumbbell), noch in keinem Workout (Migration 0016)
+- Info-Seite neu aufgebaut: Wiederholungsbereiche, Next workout, Top Set und Rec. kg mit Rechenbeispiel, Tipps, Details und Quellen

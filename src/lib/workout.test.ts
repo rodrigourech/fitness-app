@@ -22,12 +22,14 @@ const USER = 'u1'
 let day1 = '' // resolved in beforeEach
 let day2 = ''
 
+/** Work sets per exercise (the warm-up set W is tested separately). */
 async function setsOf(workoutId: string) {
   const wes = (await db.workout_exercise.where('workout_id').equals(workoutId).toArray()).sort((a, b) => a.position - b.position)
   const exercises = new Map((await db.exercise.toArray()).map((e) => [e.id, e]))
   const out: Record<string, { we: WorkoutExercise; sets: WorkoutSet[] }> = {}
   for (const we of wes) {
-    const sets = (await db.workout_set.where('workout_exercise_id').equals(we.id).toArray()).sort((a, b) => a.position - b.position)
+    const sets = (await db.workout_set.where('workout_exercise_id').equals(we.id).toArray())
+      .filter((x) => x.set_type === 'working').sort((a, b) => a.position - b.position)
     out[exercises.get(we.exercise_id)!.name] = { we, sets }
   }
   return out
@@ -117,19 +119,35 @@ describe('finish and cancel', () => {
     await addSet(leg.we)
     let after = (await setsOf(w.id))['Leg Press']!.sets.filter((x) => x.deleted_at === null)
     expect(after).toHaveLength(4)
-    expect(after[3]).toMatchObject({ position: 4, weight: 70, reps: 10 })
+    expect(after[3]).toMatchObject({ position: 5, weight: 70, reps: 10 })
     await toggleSetDone(after[3]!)
     await removeLastSet(leg.we) // removes the last open set, not the completed one
     after = (await setsOf(w.id))['Leg Press']!.sets.filter((x) => x.deleted_at === null)
-    expect(after.map((x) => x.position)).toEqual([1, 2, 4])
+    // Position 1 is the warm-up set W
+    expect(after.map((x) => x.position)).toEqual([2, 3, 5])
+  })
+
+  it('discards an unchecked warm-up set at finish and keeps a checked one', async () => {
+    const w = await startWorkout(day1, USER)
+    const wes = await db.workout_exercise.where('workout_id').equals(w.id).toArray()
+    const warm = (await db.workout_set.where('workout_exercise_id').anyOf(wes.map((we) => we.id)).toArray()).filter((x) => x.set_type === 'warmup')
+    expect(warm.length).toBeGreaterThan(0)
+    const before = await openSetCount(w.id)
+    await toggleSetDone(warm[0]!)
+    expect(await openSetCount(w.id)).toBe(before) // W never counts as an open work set
+    await finishWorkout(w)
+    const after = await db.workout_set.bulkGet(warm.map((x) => x.id))
+    expect(after[0]!.deleted_at).toBeNull()
+    expect(after.slice(1).every((x) => x!.deleted_at !== null)).toBe(true)
   })
 
   it('queues every change for sync', async () => {
     await db.outbox.clear()
     const w = await startWorkout(day1, USER)
     const count = await db.outbox.count()
-    const s = await setsOf(w.id)
-    const rows = 1 + Object.keys(s).length + Object.values(s).reduce((n, x) => n + x.sets.length, 0)
+    const wes = await db.workout_exercise.where('workout_id').equals(w.id).toArray()
+    const sets = await db.workout_set.where('workout_exercise_id').anyOf(wes.map((we) => we.id)).count()
+    const rows = 1 + wes.length + sets
     expect(count).toBe(rows)
   })
 })

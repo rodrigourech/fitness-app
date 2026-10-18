@@ -2,7 +2,7 @@
 
 Zentrale Übergabe für alle KI-Agenten und Sitzungen. Zuerst CLAUDE.md lesen (Regeln, Stack, Konventionen), dann diese Datei. Am Ende jeder Sitzung hier nachführen: Stand, offene Punkte, neue Hinweise. Entscheidungen gehören zusätzlich nach docs/entscheidungen.md.
 
-Letzte Aktualisierung 15. Oktober 2026
+Letzte Aktualisierung 18. Oktober 2026
 
 ## Orte
 
@@ -14,6 +14,8 @@ Letzte Aktualisierung 15. Oktober 2026
 
 ## Stand
 
+- Paket vom 18. Oktober (Trainingslogik): Wiederholungsbereiche nach Kategorie, Progression auf dem Top Set, Spalte «Rec. kg», Warm-up-Satz «W», Increase orange mit markiertem Feld, Max/Min Reps, neue Info-Seite, Chest Press zusammengelegt. Details in docs/entscheidungen.md (18. Oktober). Migrationen 0016 und 0017 auf production ausgeführt und geprüft (keine Schemaänderung, kein refresh-schema nötig). Typprüfung, Lint, 122 Tests und Produktionsbuild erfolgreich; Workout und Info-Seite mit Beispieldaten bei 390 px visuell geprüft. Es fehlt der Push von main durch Rodrigo
+- Offen: Home-Übersicht (Achsenbeschriftung, Diagramm ab erster Datenwoche, einfachere Legende, Statusleiste, Herkunft «Main Day A» in der Increase-Liste) wartet auf Bestätigung
 - Änderungen vom 15. Oktober lokal committet, noch nicht gepusht und nicht live: Pausentimer zählt nach Ablauf nicht weiter («Rest done · next set»), Total-Zeile pro Übung (Total reps und Total weight = Volumen, je mit «last»), Previous, Vorbelegung und Progression über alle Workouts derselben Übung/Variante, Wiederholungen unter Minimum orange (Training und Historie), «Finish workout» unten statt oben (Bestätigungsdialoge für Finish und Discard bestehen bereits), Gym-Auslastung 1–10. Typprüfung, Lint, 112 Tests und Produktionsbuild erfolgreich; Migration 0015 auf lokalem Postgres 16 geprüft (idempotent, Werte unverändert, 11 abgelehnt)
 - Zweites Paket vom 15. Oktober (Galerie, Vergleich, vereinfachte Übungskarte, Skip beim Abschliessen, Wiederholungen mit Ziel vorbelegt) committet; keine Migration nötig. Typprüfung, Lint, 112 Tests und Produktionsbuild erfolgreich; Galerie, Vollbild-Swipe und Vergleich mit Beispielbildern bei 375 px geprüft (keine Überläufe)
 - Migration 0015 am 15. Oktober auf production ausgeführt und geprüft (Regel 1–10, bestehende Werte unverändert). Es fehlt nur noch der Push von main durch Rodrigo

@@ -158,9 +158,9 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
               <div className="grid grid-cols-2 gap-3">
                 {(['target_reps', 'min_reps'] as const).map((field) => (
                   <label key={field} className="flex flex-col gap-1">
-                    <span className="text-sm font-semibold">{field === 'target_reps' ? 'Target reps' : 'Minimum reps'}</span>
+                    <span className="text-sm font-semibold">{field === 'target_reps' ? 'Max reps' : 'Min reps'}</span>
                     <Field
-                      label={field === 'target_reps' ? 'Exercise target reps' : 'Exercise minimum reps'}
+                      label={field === 'target_reps' ? 'Exercise max reps' : 'Exercise min reps'}
                       inputMode="numeric"
                       value={ex[field] == null ? '' : String(ex[field])}
                       placeholder={`${field === 'target_reps' ? eff.targetReps : eff.minReps}${parent ? ' (inherited)' : ' (default)'}`}
@@ -180,10 +180,10 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
               <p className="text-xs text-zinc-500 dark:text-zinc-400">Workouts can override these values. Clear a field to use the inherited or default value.</p>
               <label className="flex items-center gap-2 text-sm font-semibold">
                 <input type="checkbox" checked={eff.warmUp} onChange={(e) => void updateExercise(ex, { warm_up: e.target.checked })} className="h-5 w-5" />
-                Warm Up
+                Warm-up set
               </label>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">Reminder for new workouts. Warm-up sets are not logged.</p>
-              {parent && ex.warm_up != null && <button onClick={() => void updateExercise(ex, { warm_up: null })} className="text-left text-xs font-medium text-accent-ink">Use main exercise’s Warm Up setting</button>}
+              {parent && ex.warm_up != null && <button onClick={() => void updateExercise(ex, { warm_up: null })} className="text-left text-xs font-medium text-accent-ink">Use main exercise’s warm-up setting</button>}
             </>
           )}
         </section>

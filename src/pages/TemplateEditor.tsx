@@ -172,16 +172,16 @@ export default function TemplateEditor({ templateId, onDone }: Props) {
                   <>
                     <Target label="Min reps">
                       <Field
-                        label="Minimum reps override"
+                        label="Min reps override"
                         inputMode="numeric"
                         value={formatNumber(first?.target_reps_min ?? null)}
                         placeholder={String(r.minReps)}
                         onCommit={(v) => commitReps(v, first?.target_reps_max ?? r.targetReps, r.minReps, true, (n) => setPlannedTargets(r.te, { target_reps_min: n }))}
                       />
                     </Target>
-                    <Target label="Target">
+                    <Target label="Max reps">
                       <Field
-                        label="Target reps override"
+                        label="Max reps override"
                         inputMode="numeric"
                         value={formatNumber(first?.target_reps_max ?? null)}
                         placeholder={String(r.targetReps)}

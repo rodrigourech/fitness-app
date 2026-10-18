@@ -39,7 +39,7 @@ it('inherits exercise settings and applies only work-set overrides', async () =>
   expect(validRepetitionTargets(10, 0)).toBe(false)
 })
 
-it('snapshots targets and warm-up reminders, creates no warm-up or RIR sets, and leaves history intact', async () => {
+it('snapshots targets, creates one warm-up set W instead of template warm-ups, no RIR, and leaves history intact', async () => {
   const day = (await db.template.toArray()).find((t) => t.name === 'DAY1')!
   const ex = (await db.exercise.toArray()).find((e) => e.name === 'Griffe Mitte Brust')!
   const te = (await db.template_exercise.where('template_id').equals(day.id).toArray()).find((e) => e.exercise_id === ex.id)!
@@ -52,9 +52,12 @@ it('snapshots targets and warm-up reminders, creates no warm-up or RIR sets, and
   const w = await startWorkout(day.id, 'u1')
   const we = (await db.workout_exercise.where('workout_id').equals(w.id).toArray()).find((e) => e.exercise_id === ex.id)!
   expect(we).toMatchObject({ target_reps: 12, min_reps: 8, warm_up: true })
-  const sets = await db.workout_set.where('workout_exercise_id').equals(we.id).toArray()
-  expect(sets).toHaveLength(4)
-  expect(sets.every((s) => s.set_type === 'working' && s.rir === null)).toBe(true)
+  const sets = (await db.workout_set.where('workout_exercise_id').equals(we.id).toArray()).sort((a, b) => a.position - b.position)
+  expect(sets).toHaveLength(5)
+  // Warm-up set W first: 10 reps, weight left empty (decision 18 October 2026)
+  expect(sets[0]).toMatchObject({ set_type: 'warmup', position: 1, weight: null, reps: 10 })
+  expect(sets.slice(1).every((s) => s.set_type === 'working' && s.rir === null)).toBe(true)
+  expect(sets.slice(1).map((s) => s.position)).toEqual([2, 3, 4, 5])
   await db.exercise.update(ex.id, { target_reps: 15, min_reps: 10, warm_up: false })
   expect(await db.workout_exercise.get(we.id)).toMatchObject({ target_reps: 12, min_reps: 8, warm_up: true })
   await cancelWorkout(w)

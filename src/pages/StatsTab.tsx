@@ -259,15 +259,15 @@ function ReadyCard() {
   const ready = useLiveQuery(readyToIncrease, [])
   if (ready === undefined) return null
   return (
-    <Card title="Ready to increase" subtitle="Last workout of the same template and variant: every planned work set hit the target reps">
+    <Card title="Ready to increase" subtitle="Last workout of the exercise: every set at the top weight reached Max Reps">
       {ready.length === 0 ? (
-        <Empty>Nothing yet. Build towards the target in every work set.</Empty>
+        <Empty>Nothing yet. Build reps towards Max Reps.</Empty>
       ) : (
         <ul className="flex flex-col">
           {ready.map((r) => (
             <li key={`${r.templateId}/${r.exerciseId}`} className="flex items-baseline justify-between gap-3 border-t border-zinc-100 py-2 first:border-t-0 dark:border-zinc-800">
               <span className="min-w-0 text-sm"><span className="block truncate">{r.name}</span><span className="block text-xs text-zinc-500 dark:text-zinc-400">{r.templateName}</span></span>
-              <span className="shrink-0 rounded-md bg-accent-soft px-2 py-1 text-sm font-semibold text-accent-ink tabular-nums">
+              <span className="shrink-0 rounded-md bg-orange-50 px-2 py-1 text-sm font-semibold text-orange-800 tabular-nums dark:bg-orange-950 dark:text-orange-200">
                 Increase weight
               </span>
             </li>

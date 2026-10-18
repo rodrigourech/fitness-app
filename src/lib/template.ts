@@ -161,7 +161,7 @@ export async function setPlannedTargets(te: TemplateExercise, patch: Partial<Tar
     for (const set of sets) {
       const next = { ...set, ...patch }
       if (!validRepetitionTargets(next.target_reps_max ?? settings.targetReps, next.target_reps_min ?? settings.minReps)) {
-        throw new Error('Minimum reps must be between 1 and target reps; target reps must be at most 100.')
+        throw new Error('Min reps must be between 1 and Max reps; Max reps must be at most 100.')
       }
     }
   }

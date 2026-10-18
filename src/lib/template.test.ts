@@ -69,7 +69,7 @@ describe('template editing', () => {
 
     const w = await startWorkout(day2.id, USER)
     const we = (await db.workout_exercise.where('workout_id').equals(w.id).toArray()).find((x) => x.exercise_id === te.exercise_id)!
-    const sets = (await db.workout_set.where('workout_exercise_id').equals(we.id).toArray()).filter((s) => s.deleted_at === null)
+    const sets = (await db.workout_set.where('workout_exercise_id').equals(we.id).toArray()).filter((s) => s.deleted_at === null && s.set_type === 'working')
     expect(sets).toHaveLength(2)
   })
 

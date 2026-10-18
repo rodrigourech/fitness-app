@@ -17,6 +17,7 @@ import { linkLabel, linksFor } from '../lib/exercise'
 import { bestBefore, recordsOf, type Best } from '../lib/stats'
 import { belowMinimum, progressionAdvice, type ProgressionAdvice } from '../lib/progression'
 import { repetitionTargets, type RepetitionTargets } from '../lib/training'
+import { increaseMarks, recommendations, warmUpWeight, type Recommendation } from '../lib/topset'
 import {
   addExerciseToWorkout,
   addSet,
@@ -56,7 +57,6 @@ interface ExerciseBlock {
   best: Best
   advice: ProgressionAdvice
   targets: RepetitionTargets
-  warmUp: boolean
 }
 
 async function loadBlocks(workoutId: string, templateId: string | null): Promise<ExerciseBlock[]> {
@@ -72,7 +72,9 @@ async function loadBlocks(workoutId: string, templateId: string | null): Promise
       const exercise = byId.get(we.exercise_id)
       // Previous and progression use the last performances of this exercise in any workout
       const sessions = await recentTrainingSessions(we.exercise_id, undefined, workoutId)
-      const sets = allSets.filter((s) => s.workout_exercise_id === we.id && s.deleted_at === null && s.set_type === 'working').sort((a, b) => a.position - b.position)
+      // Warm-up set W first, then the work sets (decision 18 October 2026)
+      const sets = allSets.filter((s) => s.workout_exercise_id === we.id && s.deleted_at === null)
+        .sort((a, b) => Number(a.set_type === 'working') - Number(b.set_type === 'working') || a.position - b.position)
       const te = templateId ? await db.template_exercise.where('template_id').equals(templateId).filter((row) => row.exercise_id === we.exercise_id && row.deleted_at === null).first() : undefined
       const planned = te ? await db.template_set.where('template_exercise_id').equals(te.id).toArray() : []
       const defaults = exercise ? repetitionTargets(exercise, byId, planned) : { target: 10, minimum: 7 }
@@ -86,9 +88,8 @@ async function loadBlocks(workoutId: string, templateId: string | null): Promise
         previous: sessions[0]?.sets ?? [],
         links: exercise ? await linksFor(exercise) : [],
         best: await bestBefore(we.exercise_id, workoutId),
-        advice: eff?.trackingType === 'weight_reps' ? progressionAdvice(sessions, targets, eff.isUnilateral, sets.length) : null,
+        advice: eff?.trackingType === 'weight_reps' ? progressionAdvice(sessions, targets, eff.isUnilateral, sets.filter((s) => s.set_type === 'working').length) : null,
         targets,
-        warmUp: we.warm_up ?? eff?.warmUp ?? false,
       }
     }),
   )
@@ -237,7 +238,7 @@ export default function WorkoutPage({ workout, onReauth, onMinimize }: Props) {
 }
 
 function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map<string, Exercise>; onOpen: (exerciseId: string) => void }) {
-  const { we, exercise, name, sets, previous, links, best, advice, targets, warmUp } = block
+  const { we, exercise, name, sets, previous, links, best, advice, targets } = block
   const eff = exercise
     ? effective(exercise, byId)
     : { trackingType: 'weight_reps', isUnilateral: false, floor: null, seat: null, footPosition: null, setupNote: null, focusMuscles: [] as string[], focusCue: null, restS: null }
@@ -261,14 +262,21 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
   let warmupNo = 0
 
   const tt = eff.trackingType
+  // Top set and Rec. kg (decision 18 October 2026): computed live from the weights in the fields
+  const working = sets.filter((s) => s.set_type === 'working')
+  const current = working.map((s) => s.weight)
+  const before = prevWorking.map((s) => s.weight)
+  const recs = tt === 'weight_reps' ? recommendations(current, before) : []
+  const marks = tt === 'weight_reps' && advice === 'increase' ? increaseMarks(current, before, working.map((s) => s.completed_at !== null)) : []
+  const warmKg = tt === 'weight_reps' ? warmUpWeight(current) : null
   const cols =
     tt === 'duration'
-      ? 'grid-cols-[1.5rem_1fr_6rem_2.75rem]'
+      ? 'grid-cols-[1.75rem_1fr_6rem_2.75rem]'
       : tt === 'distance_duration'
-        ? 'grid-cols-[1.5rem_1fr_3.25rem_4rem_4rem_2.5rem]'
+        ? 'grid-cols-[1.75rem_1fr_3.25rem_4rem_4rem_2.5rem]'
         : eff.isUnilateral
-          ? 'grid-cols-[1.5rem_1fr_3.5rem_3rem_3rem_2.75rem]'
-          : 'grid-cols-[1.5rem_1fr_4.25rem_3.75rem_2.75rem]'
+          ? 'grid-cols-[1.75rem_1fr_3rem_3.25rem_2.75rem_2.75rem_2.5rem]'
+          : 'grid-cols-[1.75rem_1fr_3rem_4rem_3.25rem_2.5rem]'
 
   return (
     <section className="card p-3">
@@ -285,10 +293,12 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
       {eff.setupNote && <p className="text-sm whitespace-pre-line text-zinc-500 dark:text-zinc-400">{eff.setupNote}</p>}
       {tt === 'weight_reps' && (
         <>
-          {warmUp && <p className="mt-2 rounded-md bg-sky-50 px-2 py-1 text-sm text-sky-800 dark:bg-sky-950 dark:text-sky-200">Warm Up</p>}
-          {(advice === 'increase' || advice === 'reduce') && <div className={`mt-2 rounded-md px-2 py-1 text-sm ${advice === 'reduce' ? 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200' : 'bg-accent-soft text-accent-ink'}`}>
-            <p className="font-medium">{advice === 'increase' ? 'Increase weight' : 'Reduce weight'}</p>
-            {advice === 'reduce' && <p className="text-xs">First work set below minimum twice at the same weight. Check rest, recovery and form before choosing a lighter weight.</p>}
+          {advice === 'increase' && <p className="mt-2 rounded-md bg-orange-50 px-2 py-1 text-sm text-orange-800 dark:bg-orange-950 dark:text-orange-200">
+            <span className="font-semibold">Increase weight</span><span className="text-xs"> · raise the marked weight</span>
+          </p>}
+          {advice === 'reduce' && <div className="mt-2 rounded-md bg-red-50 px-2 py-1 text-sm text-red-800 dark:bg-red-950 dark:text-red-200">
+            <p className="font-semibold">Reduce weight</p>
+            <p className="text-xs">Top set below Min Reps twice at the same weight. Check rest, recovery and form before choosing a lighter weight.</p>
           </div>}
         </>
       )}
@@ -297,6 +307,7 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
       <div className={`mt-3 grid ${cols} items-center gap-x-1 gap-y-1.5 text-xs text-zinc-500 dark:text-zinc-400`}>
         <span className="text-center">Set</span>
         <span>Previous</span>
+        {tt === 'weight_reps' && <span className="text-center">Rec. kg</span>}
         {tt === 'duration' && <span className="text-center">Time</span>}
         {tt === 'distance_duration' && (
           <>
@@ -321,18 +332,22 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
         <span />
 
         {sets.map((s) => {
-          const prev = s.set_type === 'warmup' ? prevWarmup[warmupNo++] : prevWorking[workingNo++]
-          const label = s.set_type === 'warmup' ? 'W' : String(workingNo)
+          const warm = s.set_type === 'warmup'
+          const prev = warm ? prevWarmup[warmupNo++] : prevWorking[workingNo++]
+          const label = warm ? 'W' : String(workingNo)
+          const rec: RecCellValue = tt !== 'weight_reps' ? undefined : warm ? (warmKg === null ? null : { kind: 'warm', kg: warmKg }) : recs[workingNo - 1] ?? null
           return (
             <SetRow
               key={s.id}
               set={s}
               label={label}
-              previous={describeSet(prev, tt, eff.isUnilateral)}
+              rec={rec}
+              mark={!warm && (marks[workingNo - 1] ?? false)}
+              previous={compactPrevious(prev, tt, eff.isUnilateral)}
               trackingType={tt}
               unilateral={eff.isUnilateral}
               restSeconds={we.rest_s ?? eff.restS}
-              minimum={tt === 'weight_reps' ? targets.minimum : null}
+              minimum={tt === 'weight_reps' && !warm ? targets.minimum : null}
               records={recordsOf(s, best)}
             />
           )
@@ -344,7 +359,7 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
           + Add set
         </button>
         {/* No skip button: an exercise without a checked set counts as skipped when the workout is finished */}
-        {sets.length > 1 && (
+        {working.length > 1 && (
           <button
             onClick={() => void removeLastSet(we)}
             className="rounded-lg px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400"
@@ -391,9 +406,45 @@ function VideoButton({ links }: { links: ExerciseLink[] }) {
   )
 }
 
+type RecCellValue = Recommendation | { kind: 'warm'; kg: number } | undefined
+
+/** Previous column: compact «40 × 9» for weight and reps (room for Rec. kg). */
+function compactPrevious(s: WorkoutSet | undefined, trackingType: string, unilateral: boolean): [string, string] {
+  if (!s || trackingType !== 'weight_reps') return describeSet(s, trackingType, unilateral)
+  const reps = unilateral ? `${s.reps_left ?? '–'}/${s.reps_right ?? '–'}` : `${s.reps ?? '–'}`
+  return [s.weight === null ? reps : `${s.weight} × ${reps}`, '']
+}
+
+function RecCell({ rec, onUse }: { rec: RecCellValue; onUse: (kg: number) => void }) {
+  if (rec === undefined) return null
+  if (rec === null) return <span className="text-center text-zinc-400 dark:text-zinc-600">–</span>
+  if (rec.kind === 'top')
+    return (
+      <span className="flex h-10 flex-col items-center justify-center rounded-md border border-orange-500 bg-orange-50 leading-tight text-orange-700 dark:bg-orange-500/10 dark:text-orange-300">
+        <span className="text-xs font-bold">{rec.badge ? 'TOP' : 'Basis'}</span>
+        {rec.badge && <span className="text-[9px] font-semibold">Basis</span>}
+      </span>
+    )
+  const kg = rec.kg
+  return (
+    <button
+      onClick={() => onUse(kg)}
+      aria-label={`Use recommended ${kg} kg`}
+      className="flex h-10 flex-col items-center justify-center rounded-md border border-dashed border-orange-400 leading-tight text-orange-700 tabular-nums dark:text-orange-300"
+    >
+      <span className="text-sm font-semibold">{rec.kind === 'warm' ? `≈ ${kg}` : kg}</span>
+      <span className="text-[9px] font-semibold text-zinc-500 dark:text-zinc-400">{rec.kind === 'warm' ? '50 %' : `${rec.percent} %`}</span>
+    </button>
+  )
+}
+
 interface SetRowProps {
   set: WorkoutSet
   label: string
+  /** Rec. kg cell; undefined for exercises without weight */
+  rec: RecCellValue
+  /** Weight field marked orange with ↑ while the weight should be raised */
+  mark: boolean
   previous: [string, string]
   trackingType: string
   unilateral: boolean
@@ -403,7 +454,7 @@ interface SetRowProps {
   records: string[]
 }
 
-function SetRow({ set, label, previous, trackingType, unilateral, restSeconds, minimum, records }: SetRowProps) {
+function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, restSeconds, minimum, records }: SetRowProps) {
   const done = set.completed_at !== null
 
   function numberCommit(field: 'weight' | 'reps' | 'reps_left' | 'reps_right' | 'distance_km', integer: boolean) {
@@ -432,11 +483,15 @@ function SetRow({ set, label, previous, trackingType, unilateral, restSeconds, m
   }
 
   async function toggle() {
+    // An empty warm-up weight takes the recommendation when the set is checked
+    if (set.completed_at === null && set.weight === null && rec?.kind === 'warm') await updateSet(set, { weight: rec.kg })
     const nowDone = await toggleSetDone(set)
     if (nowDone && restSeconds) await startRest(restSeconds)
   }
 
-  const rowTone = done ? 'bg-emerald-50 dark:bg-emerald-950/40' : ''
+  const warm = set.set_type === 'warmup'
+  const top = rec?.kind === 'top' && rec.badge
+  const rowTone = done ? 'bg-emerald-50 dark:bg-emerald-950/40' : warm ? 'bg-sky-50 text-sky-700 dark:bg-sky-950 dark:text-sky-300' : top ? 'bg-orange-50 dark:bg-orange-500/10' : ''
 
   return (
     <>
@@ -445,11 +500,13 @@ function SetRow({ set, label, previous, trackingType, unilateral, restSeconds, m
         className={`flex h-10 flex-col items-center justify-center rounded-md text-sm leading-none font-medium text-zinc-700 dark:text-zinc-200 ${rowTone}`}
       >
         {label}
+        {top && <span className="mt-0.5 rounded-sm bg-orange-500 px-0.5 text-[8px] font-extrabold text-white">TOP</span>}
         {records.length > 0 && <span className="mt-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400">PR</span>}
       </span>
       <span className="min-w-0 truncate text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
         {previous[1] ? `${previous[0]} ${previous[1]}` : previous[0]}
       </span>
+      <RecCell rec={rec} onUse={(kg) => void updateSet(set, { weight: kg })} />
       {trackingType === 'duration' && (
         <Field label="Time" inputMode="text" placeholder="mm:ss" value={formatDuration(set.duration_s)} onCommit={durationCommit} />
       )}
@@ -468,7 +525,11 @@ function SetRow({ set, label, previous, trackingType, unilateral, restSeconds, m
       )}
       {trackingType === 'weight_reps' && (
         <>
-          <Field label="Weight kg" inputMode="decimal" value={formatNumber(set.weight)} onCommit={numberCommit('weight', false)} />
+          <span className="relative">
+            <Field label="Weight kg" inputMode="decimal" value={formatNumber(set.weight)} onCommit={numberCommit('weight', false)} mark={mark}
+              placeholder={warm && rec?.kind === 'warm' ? `≈ ${rec.kg}` : undefined} />
+            {mark && <span aria-hidden="true" className="pointer-events-none absolute top-0 right-1 text-[11px] font-extrabold text-orange-500">↑</span>}
+          </span>
           {unilateral ? (
             <>
               <Field label="Reps left" inputMode="numeric" value={formatNumber(set.reps_left)} onCommit={numberCommit('reps_left', true)} warn={belowMinimum(set.reps_left, minimum)} />

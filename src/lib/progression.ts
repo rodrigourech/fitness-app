@@ -20,24 +20,33 @@ function repsOf(set: WorkoutSet, unilateral: boolean): number | null {
   return unilateral ? set.reps_left !== null && set.reps_right !== null ? Math.min(set.reps_left, set.reps_right) : null : set.reps
 }
 
-/** Conservative heuristic: only the first work set can trigger a repeated low-rep warning. */
+/** Work sets that carry the heaviest weight (the top set, or all sets at equal weight; all sets without weight). */
+function topWeightSets(sets: WorkoutSet[]): WorkoutSet[] {
+  const top = Math.max(0, ...sets.map((s) => s.weight ?? 0))
+  return top > 0 ? sets.filter((s) => s.weight === top) : sets
+}
+
+/**
+ * Progression on the top weight (decision 18 October 2026): increase when every set at the top weight reached
+ * Max Reps; reduce when the first set at the top weight stayed below Min Reps twice at the same weight and rest.
+ * Back-off sets never trigger a decision.
+ */
 export function progressionAdvice(sessions: TrainingSession[], targets: RepetitionTargets, unilateral: boolean, plannedCount: number): ProgressionAdvice {
   const latest = sessions[0]
   if (!latest) return null
   const previous = workSets(latest.sets)
   if (!previous.length) return null
-  if (previous.length === plannedCount && previous.every((s) => (repsOf(s, unilateral) ?? 0) >= targets.target)) return 'increase'
+  const top = topWeightSets(previous)
+  if (previous.length >= plannedCount && top.every((s) => (repsOf(s, unilateral) ?? 0) >= targets.target)) return 'increase'
   const older = sessions[1]
   if (!older) return 'hold'
   const before = workSets(older.sets)
-  const first = previous[0]!
-  const other = before[0]
-  if (!other || previous.length !== plannedCount || before.length !== plannedCount) return 'hold'
-  const load = first.weight
-  const comparable = load !== null && load > 0 && [...previous, ...before].every((s) => s.weight === load)
-    && latest.exercise.rest_s === older.exercise.rest_s
-  const lastReps = repsOf(first, unilateral)
-  const olderReps = repsOf(other, unilateral)
+  if (!before.length || previous.length < plannedCount || before.length < plannedCount) return 'hold'
+  const olderTop = topWeightSets(before)
+  const load = top[0]!.weight
+  const comparable = load !== null && load > 0 && olderTop[0]!.weight === load && latest.exercise.rest_s === older.exercise.rest_s
+  const lastReps = repsOf(top[0]!, unilateral)
+  const olderReps = repsOf(olderTop[0]!, unilateral)
   return comparable && lastReps !== null && olderReps !== null && lastReps < targets.minimum && olderReps < targets.minimum ? 'reduce' : 'hold'
 }
 
@@ -68,7 +77,7 @@ export function belowMinimum(reps: number | null, minimum: number | null): boole
 
 /**
  * Exercises (variants separately) of the active workouts whose last performance in any workout reached the
- * target reps in all planned work sets (decision 15 October 2026).
+ * Max Reps in every set at the top weight (decisions 15 and 18 October 2026).
  */
 export async function readyToIncrease(): Promise<ReadyExercise[]> {
   const [templates, tes, exercises] = await Promise.all([

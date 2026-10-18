@@ -159,6 +159,9 @@ export async function startWorkout(templateId: string, userId: string): Promise<
     // Prefill: last performance of this exercise in any workout; else the template targets (decision 15 October 2026)
     const prev = await previousSets(te.exercise_id)
     const prevWorking = prev.filter((s) => s.set_type === 'working')
+    // Warm-up as its own set W before the work sets (decision 18 October 2026)
+    const warmUp = eff.trackingType === 'weight_reps' && eff.warmUp
+    if (warmUp) sets.push(warmUpSet(we, eff.isUnilateral, userId, ts))
     let workingIndex = 0
     for (const p of planned) {
       const source = prevWorking[workingIndex++] ?? prevWorking.at(-1)
@@ -184,7 +187,7 @@ export async function startWorkout(templateId: string, userId: string): Promise<
       sets.push({
         id: uuid(),
         workout_exercise_id: we.id,
-        position: p.position,
+        position: workingIndex + (warmUp ? 1 : 0),
         set_type: p.set_type,
         ...m,
         reps: eff.isUnilateral ? null : m.reps,
@@ -225,12 +228,13 @@ export async function addExerciseToWorkout(w: Workout, exerciseId: string): Prom
   }
   const prev = (await previousSets(ex.id, w.id)).filter((s) => s.set_type === 'working')
   const count = prev.length || (eff.trackingType === 'weight_reps' ? 3 : 1)
+  const warmUp = eff.trackingType === 'weight_reps' && eff.warmUp
   const sets: WorkoutSet[] = Array.from({ length: count }, (_, i) => {
     const p = prev[i] ?? prev.at(-1)
     return {
       id: uuid(),
       workout_exercise_id: we.id,
-      position: i + 1,
+      position: i + 1 + (warmUp ? 1 : 0),
       set_type: 'working',
       ...(p ? measureOf(p) : {
         weight: null,
@@ -244,8 +248,30 @@ export async function addExerciseToWorkout(w: Workout, exerciseId: string): Prom
       ...base(w.user_id, ts),
     }
   })
+  if (warmUp) sets.unshift(warmUpSet(we, eff.isUnilateral, w.user_id, ts))
   await saveRows('workout_exercise', [we])
   await saveRows('workout_set', sets)
+}
+
+export const WARM_UP_REPS = 10
+
+/** Warm-up set W: 10 reps, weight left empty (the app recommends about half of the top set). */
+function warmUpSet(we: WorkoutExercise, unilateral: boolean, userId: string, ts: string): WorkoutSet {
+  return {
+    id: uuid(),
+    workout_exercise_id: we.id,
+    position: 1,
+    set_type: 'warmup',
+    weight: null,
+    reps: unilateral ? null : WARM_UP_REPS,
+    reps_left: unilateral ? WARM_UP_REPS : null,
+    reps_right: unilateral ? WARM_UP_REPS : null,
+    rir: null,
+    duration_s: null,
+    distance_km: null,
+    completed_at: null,
+    ...base(userId, ts),
+  }
 }
 
 export async function updateSet(set: WorkoutSet, patch: Partial<WorkoutSet>): Promise<void> {
