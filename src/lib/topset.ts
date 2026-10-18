@@ -1,11 +1,11 @@
 // Top set and recommended weights (decisions 18 October 2026).
 // Per exercise the setting «Top set» decides the scheme. On: the heaviest set is the top set and every other
-// work set is recommended at 85 % of today's top set (back-off). Off: equal sets, no recommendations.
+// work set is recommended at 80 % of today's top set (back-off, starting rule of 18 October 2026). Off: equal sets, no recommendations.
 // The app never changes a field by itself: recommendations are shown and taken over with a tap.
 
 export type Recommendation = { kind: 'top' } | { kind: 'weight'; kg: number; percent: number } | null
 
-export const BACK_OFF_SHARE = 0.85
+export const BACK_OFF_SHARE = 0.8
 export const WARM_UP_SHARE = 0.5
 
 /** Rounds to 5 kg from 20 kg, below that to 0.5 kg; exact halves round down (the lighter weight). */

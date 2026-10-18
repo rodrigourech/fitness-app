@@ -15,11 +15,11 @@ describe('top set', () => {
     expect(roundWeight(3.8)).toBe(4)
   })
 
-  it('recommends back-off sets at 85 % of today\'s top set', () => {
+  it('recommends back-off sets at 80 % of today\'s top set', () => {
     expect(recommendations([40, 32, 32], true)).toEqual([
-      { kind: 'top' }, { kind: 'weight', kg: 35, percent: 88 }, { kind: 'weight', kg: 35, percent: 88 }])
+      { kind: 'top' }, { kind: 'weight', kg: 30, percent: 75 }, { kind: 'weight', kg: 30, percent: 75 }])
     expect(recommendations([32, 50, 32], true)[0]).toEqual({ kind: 'weight', kg: 40, percent: 80 })
-    expect(recommendations([20, 20, 15], true)[2]).toEqual({ kind: 'weight', kg: 17, percent: 85 })
+    expect(recommendations([20, 20, 15], true)[2]).toEqual({ kind: 'weight', kg: 16, percent: 80 })
     expect(recommendations([null, null], true)).toEqual([null, null])
   })
 

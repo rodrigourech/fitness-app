@@ -188,7 +188,7 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
                 <input type="checkbox" checked={eff.topSet} onChange={(e) => void updateExercise(ex, { top_set: e.target.checked })} className="h-5 w-5" />
                 Top set
               </label>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">Heaviest set first; back-off sets are recommended at 85 % of it. Off: equal sets, progression on all sets.</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Heaviest set first; back-off sets are recommended at 80 % of it. Off: equal sets, progression on all sets.</p>
               {parent && ex.top_set != null && <button onClick={() => void updateExercise(ex, { top_set: null })} className="text-left text-xs font-medium text-accent-ink">Use main exercise’s top set setting</button>}
             </>
           )}

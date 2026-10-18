@@ -59,12 +59,12 @@ export default function InfoPage({ onDone }: { onDone: () => void }) {
         <div className="mt-2 flex items-center gap-1.5 text-center text-xs">
           <Step label="Top set today" value="40" />
           <span className="text-zinc-400" aria-hidden="true">→</span>
-          <Step label="Back-off 85 %" value="34" />
+          <Step label="Back-off 80 %" value="32" />
           <span className="text-zinc-400" aria-hidden="true">→</span>
-          <Step label="Rec. kg" value="35" highlight />
+          <Step label="Rec. kg" value="30" highlight />
         </div>
         <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-zinc-600 dark:text-zinc-300">
-          <li><strong>On:</strong> the heaviest set is TOP; every other set is recommended at 85 % of today's top set. The percentage shows the share after rounding.</li>
+          <li><strong>On:</strong> the heaviest set is TOP; every other set is recommended at 80 % of today's top set (starting rule, adjusted after feedback). The percentage shows the share after rounding.</li>
           <li><strong>Off:</strong> equal sets, no TOP and no recommendations for work sets.</li>
           <li>Best practice: top set as the first work set right after the warm-up, then the back-off sets.</li>
           <li>Rounded to 5 kg from 20 kg, below that to 0.5 kg; exact halves round down.</li>
@@ -86,7 +86,7 @@ export default function InfoPage({ onDone }: { onDone: () => void }) {
             <li>Top set on: the sets at the top weight of the last workout decide. Off: every work set decides.</li>
             <li>Increase: every deciding set reaches Max Reps, on both sides, with at least the planned sets.</li>
             <li>Reduce: first deciding set below Min Reps twice, same weight and rest.</li>
-            <li>Back-off sets: 85 % of today's top set.</li>
+            <li>Back-off sets: 80 % of today's top set.</li>
             <li>Warm-up ≈ 50 % of today's top set.</li>
           </ul>
           <p className="mt-2 text-xs">You decide the weight. The app only marks and recommends.</p>
