@@ -27,6 +27,7 @@ export function exerciseTrainingSettings(ex: Exercise, byId: Map<string, Exercis
     targetReps: ex.target_reps ?? parent?.target_reps ?? DEFAULT_TARGET_REPS,
     minReps: ex.min_reps ?? parent?.min_reps ?? DEFAULT_MIN_REPS,
     warmUp: ex.warm_up ?? parent?.warm_up ?? hasRecommendedWarmUp(ex),
+    topSet: ex.top_set ?? parent?.top_set ?? false,
   }
 }
 

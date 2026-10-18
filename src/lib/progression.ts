@@ -27,22 +27,23 @@ function topWeightSets(sets: WorkoutSet[]): WorkoutSet[] {
 }
 
 /**
- * Progression on the top weight (decision 18 October 2026): increase when every set at the top weight reached
- * Max Reps; reduce when the first set at the top weight stayed below Min Reps twice at the same weight and rest.
- * Back-off sets never trigger a decision.
+ * Progression (decisions 18 October 2026). Top set on: the sets at the top weight decide; back-off sets never
+ * trigger a decision. Off: every work set decides. Increase when all deciding sets reached Max Reps; reduce when
+ * the first deciding set stayed below Min Reps twice at the same weight and rest.
  */
-export function progressionAdvice(sessions: TrainingSession[], targets: RepetitionTargets, unilateral: boolean, plannedCount: number): ProgressionAdvice {
+export function progressionAdvice(sessions: TrainingSession[], targets: RepetitionTargets, unilateral: boolean, plannedCount: number, topSet = false): ProgressionAdvice {
+  const deciding = (sets: WorkoutSet[]) => (topSet ? topWeightSets(sets) : sets)
   const latest = sessions[0]
   if (!latest) return null
   const previous = workSets(latest.sets)
   if (!previous.length) return null
-  const top = topWeightSets(previous)
+  const top = deciding(previous)
   if (previous.length >= plannedCount && top.every((s) => (repsOf(s, unilateral) ?? 0) >= targets.target)) return 'increase'
   const older = sessions[1]
   if (!older) return 'hold'
   const before = workSets(older.sets)
   if (!before.length || previous.length < plannedCount || before.length < plannedCount) return 'hold'
-  const olderTop = topWeightSets(before)
+  const olderTop = deciding(before)
   const load = top[0]!.weight
   const comparable = load !== null && load > 0 && olderTop[0]!.weight === load && latest.exercise.rest_s === older.exercise.rest_s
   const lastReps = repsOf(top[0]!, unilateral)
@@ -77,7 +78,7 @@ export function belowMinimum(reps: number | null, minimum: number | null): boole
 
 /**
  * Exercises (variants separately) of the active workouts whose last performance in any workout reached the
- * Max Reps in every set at the top weight (decisions 15 and 18 October 2026).
+ * Max Reps in every deciding set (decisions 15 and 18 October 2026).
  */
 export async function readyToIncrease(): Promise<ReadyExercise[]> {
   const [templates, tes, exercises] = await Promise.all([
@@ -105,7 +106,8 @@ export async function readyToIncrease(): Promise<ReadyExercise[]> {
     const defaults = repetitionTargets(ex, byId, planned)
     const targets = { target: latest.exercise.target_reps ?? defaults.target, minimum: latest.exercise.min_reps ?? defaults.minimum }
     const plannedCount = planned.length || workSets(latest.sets).length
-    if (progressionAdvice(sessions, targets, effective(ex, byId).isUnilateral, plannedCount) !== 'increase') continue
+    const eff = effective(ex, byId)
+    if (progressionAdvice(sessions, targets, eff.isUnilateral, plannedCount, eff.topSet) !== 'increase') continue
     out.push({ exerciseId: ex.id, templateId: te.template_id, templateName: templates.find((t) => t.id === te.template_id)!.name,
       name: displayName(ex, byId), lastDate: latest.workout.started_at })
   }

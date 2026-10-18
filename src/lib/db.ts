@@ -37,6 +37,8 @@ export interface Exercise extends SyncColumns {
   target_reps?: number | null
   min_reps?: number | null
   warm_up?: boolean | null
+  /** Top set with back-off sets (migration 0018); null on a variant = inherit, null on a main exercise = off */
+  top_set?: boolean | null
 }
 
 export interface ExerciseLink extends SyncColumns {

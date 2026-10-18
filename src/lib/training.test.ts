@@ -26,11 +26,11 @@ it('inherits exercise settings and applies only work-set overrides', async () =>
   const all = await db.exercise.toArray()
   const variant = all.find((e) => e.name === 'Griffe Mitte Brust')!
   const parent = all.find((e) => e.id === variant.parent_id)!
-  Object.assign(parent, { target_reps: 12, min_reps: 8, warm_up: true })
+  Object.assign(parent, { target_reps: 12, min_reps: 8, warm_up: true, top_set: true })
   const byId = new Map(all.map((e) => [e.id, e]))
-  expect(exerciseTrainingSettings(variant, byId)).toEqual({ targetReps: 12, minReps: 8, warmUp: true })
-  Object.assign(variant, { target_reps: 10, min_reps: 7, warm_up: false })
-  expect(exerciseTrainingSettings(variant, byId)).toEqual({ targetReps: 10, minReps: 7, warmUp: false })
+  expect(exerciseTrainingSettings(variant, byId)).toEqual({ targetReps: 12, minReps: 8, warmUp: true, topSet: true })
+  Object.assign(variant, { target_reps: 10, min_reps: 7, warm_up: false, top_set: false })
+  expect(exerciseTrainingSettings(variant, byId)).toEqual({ targetReps: 10, minReps: 7, warmUp: false, topSet: false })
   const te = (await db.template_exercise.toArray()).find((e) => e.exercise_id === variant.id)!
   const planned = (await db.template_set.where('template_exercise_id').equals(te.id).toArray()).map((s) => ({ ...s, target_reps_min: 8, target_reps_max: 11 }))
   expect(repetitionTargets(variant, byId, planned)).toEqual({ target: 11, minimum: 8 })

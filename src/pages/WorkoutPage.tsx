@@ -51,6 +51,9 @@ interface ExerciseBlock {
   we: WorkoutExercise
   exercise: Exercise | undefined
   name: string
+  /** Variant name shown below the main exercise */
+  variant: string | null
+  topSet: boolean
   sets: WorkoutSet[]
   previous: WorkoutSet[]
   links: ExerciseLink[]
@@ -83,12 +86,14 @@ async function loadBlocks(workoutId: string, templateId: string | null): Promise
       return {
         we,
         exercise,
-        name: exercise ? displayName(exercise, byId) : 'Unknown exercise',
+        name: exercise ? (exercise.parent_id ? byId.get(exercise.parent_id)?.name ?? displayName(exercise, byId) : exercise.name) : 'Unknown exercise',
+        variant: exercise?.parent_id && byId.has(exercise.parent_id) ? exercise.name : null,
+        topSet: eff?.topSet ?? false,
         sets,
         previous: sessions[0]?.sets ?? [],
         links: exercise ? await linksFor(exercise) : [],
         best: await bestBefore(we.exercise_id, workoutId),
-        advice: eff?.trackingType === 'weight_reps' ? progressionAdvice(sessions, targets, eff.isUnilateral, sets.filter((s) => s.set_type === 'working').length) : null,
+        advice: eff?.trackingType === 'weight_reps' ? progressionAdvice(sessions, targets, eff.isUnilateral, sets.filter((s) => s.set_type === 'working').length, eff.topSet) : null,
         targets,
       }
     }),
@@ -238,7 +243,7 @@ export default function WorkoutPage({ workout, onReauth, onMinimize }: Props) {
 }
 
 function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map<string, Exercise>; onOpen: (exerciseId: string) => void }) {
-  const { we, exercise, name, sets, previous, links, best, advice, targets } = block
+  const { we, exercise, name, variant, topSet, sets, previous, links, best, advice, targets } = block
   const eff = exercise
     ? effective(exercise, byId)
     : { trackingType: 'weight_reps', isUnilateral: false, floor: null, seat: null, footPosition: null, setupNote: null, focusMuscles: [] as string[], focusCue: null, restS: null }
@@ -266,17 +271,19 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
   const working = sets.filter((s) => s.set_type === 'working')
   const current = working.map((s) => s.weight)
   const before = prevWorking.map((s) => s.weight)
-  const recs = tt === 'weight_reps' ? recommendations(current, before) : []
-  const marks = tt === 'weight_reps' && advice === 'increase' ? increaseMarks(current, before, working.map((s) => s.completed_at !== null)) : []
+  const recs = tt === 'weight_reps' ? recommendations(current, topSet) : []
+  const marks = tt === 'weight_reps' && advice === 'increase' ? increaseMarks(current, before, working.map((s) => s.completed_at !== null), topSet) : []
   const warmKg = tt === 'weight_reps' ? warmUpWeight(current) : null
+  // The column only appears when it has something to say (warm-up set or top set)
+  const showRec = tt === 'weight_reps' && (sets.some((s) => s.set_type === 'warmup') || recs.some((r) => r !== null))
   const cols =
     tt === 'duration'
       ? 'grid-cols-[1.75rem_1fr_6rem_2.75rem]'
       : tt === 'distance_duration'
         ? 'grid-cols-[1.75rem_1fr_3.25rem_4rem_4rem_2.5rem]'
         : eff.isUnilateral
-          ? 'grid-cols-[1.75rem_1fr_3rem_3.25rem_2.75rem_2.75rem_2.5rem]'
-          : 'grid-cols-[1.75rem_1fr_3rem_4rem_3.25rem_2.5rem]'
+          ? showRec ? 'grid-cols-[1.75rem_1fr_3rem_3.25rem_2.75rem_2.75rem_2.5rem]' : 'grid-cols-[1.75rem_1fr_3.75rem_3.25rem_3.25rem_2.75rem]'
+          : showRec ? 'grid-cols-[1.75rem_1fr_3rem_4rem_3.25rem_2.5rem]' : 'grid-cols-[1.75rem_1fr_4.5rem_3.75rem_2.75rem]'
 
   return (
     <section className="card p-3">
@@ -285,6 +292,7 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
           <h2 className="font-semibold underline-offset-2 hover:underline">
             {name} <span className="text-zinc-400">›</span>
           </h2>
+          {variant && <p className="text-sm text-zinc-700 dark:text-zinc-300">{variant}</p>}
         </button>
         <span className="flex shrink-0 items-center gap-1">
           <VideoButton links={links} />
@@ -307,7 +315,7 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
       <div className={`mt-3 grid ${cols} items-center gap-x-1 gap-y-1.5 text-xs text-zinc-500 dark:text-zinc-400`}>
         <span className="text-center">Set</span>
         <span>Previous</span>
-        {tt === 'weight_reps' && <span className="text-center">Rec. kg</span>}
+        {showRec && <span className="text-center">Rec. kg</span>}
         {tt === 'duration' && <span className="text-center">Time</span>}
         {tt === 'distance_duration' && (
           <>
@@ -335,7 +343,7 @@ function ExerciseCard({ block, byId, onOpen }: { block: ExerciseBlock; byId: Map
           const warm = s.set_type === 'warmup'
           const prev = warm ? prevWarmup[warmupNo++] : prevWorking[workingNo++]
           const label = warm ? 'W' : String(workingNo)
-          const rec: RecCellValue = tt !== 'weight_reps' ? undefined : warm ? (warmKg === null ? null : { kind: 'warm', kg: warmKg }) : recs[workingNo - 1] ?? null
+          const rec: RecCellValue = !showRec ? undefined : warm ? (warmKg === null ? null : { kind: 'warm', kg: warmKg }) : recs[workingNo - 1] ?? null
           return (
             <SetRow
               key={s.id}
@@ -417,12 +425,11 @@ function compactPrevious(s: WorkoutSet | undefined, trackingType: string, unilat
 
 function RecCell({ rec, onUse }: { rec: RecCellValue; onUse: (kg: number) => void }) {
   if (rec === undefined) return null
-  if (rec === null) return <span className="text-center text-zinc-400 dark:text-zinc-600">–</span>
+  if (rec === null) return <span />
   if (rec.kind === 'top')
     return (
-      <span className="flex h-10 flex-col items-center justify-center rounded-md border border-orange-500 bg-orange-50 leading-tight text-orange-700 dark:bg-orange-500/10 dark:text-orange-300">
-        <span className="text-xs font-bold">{rec.badge ? 'TOP' : 'Basis'}</span>
-        {rec.badge && <span className="text-[9px] font-semibold">Basis</span>}
+      <span className="flex h-10 items-center justify-center rounded-md border border-orange-500 bg-orange-50 text-sm font-extrabold tracking-wide text-orange-700 dark:bg-orange-500/10 dark:text-orange-300">
+        TOP
       </span>
     )
   const kg = rec.kg
@@ -490,7 +497,7 @@ function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, res
   }
 
   const warm = set.set_type === 'warmup'
-  const top = rec?.kind === 'top' && rec.badge
+  const top = rec?.kind === 'top'
   const rowTone = done ? 'bg-emerald-50 dark:bg-emerald-950/40' : warm ? 'bg-sky-50 text-sky-700 dark:bg-sky-950 dark:text-sky-300' : top ? 'bg-orange-50 dark:bg-orange-500/10' : ''
 
   return (
@@ -500,7 +507,6 @@ function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, res
         className={`flex h-10 flex-col items-center justify-center rounded-md text-sm leading-none font-medium text-zinc-700 dark:text-zinc-200 ${rowTone}`}
       >
         {label}
-        {top && <span className="mt-0.5 rounded-sm bg-orange-500 px-0.5 text-[8px] font-extrabold text-white">TOP</span>}
         {records.length > 0 && <span className="mt-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400">PR</span>}
       </span>
       <span className="min-w-0 truncate text-xs text-zinc-500 tabular-nums dark:text-zinc-400">

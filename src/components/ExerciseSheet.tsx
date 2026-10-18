@@ -182,8 +182,14 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
                 <input type="checkbox" checked={eff.warmUp} onChange={(e) => void updateExercise(ex, { warm_up: e.target.checked })} className="h-5 w-5" />
                 Warm-up set
               </label>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">Reminder for new workouts. Warm-up sets are not logged.</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Set W with about 50 % of the top set. Not counted in volume, records or progression.</p>
               {parent && ex.warm_up != null && <button onClick={() => void updateExercise(ex, { warm_up: null })} className="text-left text-xs font-medium text-accent-ink">Use main exercise’s warm-up setting</button>}
+              <label className="flex items-center gap-2 text-sm font-semibold">
+                <input type="checkbox" checked={eff.topSet} onChange={(e) => void updateExercise(ex, { top_set: e.target.checked })} className="h-5 w-5" />
+                Top set
+              </label>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">Heaviest set first; back-off sets are recommended at 85 % of it. Off: equal sets, progression on all sets.</p>
+              {parent && ex.top_set != null && <button onClick={() => void updateExercise(ex, { top_set: null })} className="text-left text-xs font-medium text-accent-ink">Use main exercise’s top set setting</button>}
             </>
           )}
         </section>

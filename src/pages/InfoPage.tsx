@@ -48,30 +48,28 @@ export default function InfoPage({ onDone }: { onDone: () => void }) {
       </Section>
 
       <Section title="2 · Next workout">
-        <Decision title="Increase weight" description="Every set at the top weight reaches Max Reps." values={[9, 9, 9]} tone="increase" />
+        <Decision title="Increase weight" description="Top set (or every set without top set) reaches Max Reps." values={[9, 9, 9]} tone="increase" />
         <Decision title="Keep weight" description="Add reps at the same weight." values={[9, 8, 6]} tone="hold" />
-        <Decision title="Reduce weight" description="First set at the top weight below Min Reps in the last two workouts." values={[5, 5]} tone="reduce" label="Top set, last two workouts" />
-        <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Example Compound 6–9. Only the top weight counts, back-off sets do not.</p>
+        <Decision title="Reduce weight" description="Top set (or first set) below Min Reps in the last two workouts." values={[5, 5]} tone="reduce" label="Top set, last two workouts" />
+        <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Example Compound 6–9. With top set on, back-off sets do not count.</p>
       </Section>
 
       <Section title="3 · Top set and Rec. kg">
-        <p className="text-sm"><strong>Top set</strong> = heaviest work set. <span className="text-zinc-500 dark:text-zinc-400">With equal weights, set 1 is the basis and there is no TOP badge.</span></p>
+        <p className="text-sm">Setting <strong>Top set</strong> per exercise. <span className="text-zinc-500 dark:text-zinc-400">On for Chest Press, Lat Pulldown, Seated Row, Leg Press, Triceps Pushdown, Preacher Curl and Leg Curl; off for Lateral Raise.</span></p>
         <div className="mt-2 flex items-center gap-1.5 text-center text-xs">
-          <Step label="Last time" value="40 · 50 · 40" />
+          <Step label="Top set today" value="40" />
           <span className="text-zinc-400" aria-hidden="true">→</span>
-          <Step label="Ratio" value="80 · 100 · 80 %" />
+          <Step label="Back-off 85 %" value="34" />
           <span className="text-zinc-400" aria-hidden="true">→</span>
-          <Step label="Top set today 60" value="50 · 60 · 50" highlight />
+          <Step label="Rec. kg" value="35" highlight />
         </div>
-        <p className="mt-2 rounded-lg bg-zinc-100 px-3 py-2 text-center text-xs leading-relaxed dark:bg-zinc-950">
-          Rec. kg = top set today × set last time ÷ top set last time<br />
-          <span className="text-zinc-500 dark:text-zinc-400">60 × 40 ÷ 50 = 48 → 50 kg</span>
-        </p>
         <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-zinc-600 dark:text-zinc-300">
-          <li>Rounded to 5 kg from 20 kg, below that to 0.5 kg.</li>
+          <li><strong>On:</strong> the heaviest set is TOP; every other set is recommended at 85 % of today's top set. The percentage shows the share after rounding.</li>
+          <li><strong>Off:</strong> equal sets, no TOP and no recommendations for work sets.</li>
+          <li>Best practice: top set as the first work set right after the warm-up, then the back-off sets.</li>
+          <li>Rounded to 5 kg from 20 kg, below that to 0.5 kg; exact halves round down.</li>
           <li>Tap a recommendation to use it. Fields never change by themselves.</li>
           <li><span className="font-semibold text-orange-700 dark:text-orange-300">Orange field ↑</span> = raise this weight. It clears once raised or checked.</li>
-          <li>Train equal sets or a top set with back-off: the app follows your last workout.</li>
         </ul>
       </Section>
 
@@ -85,10 +83,10 @@ export default function InfoPage({ onDone }: { onDone: () => void }) {
         <Details title="How the app decides">
           <ul className="list-disc space-y-1 pl-4">
             <li>Same exercise across all workouts, work sets only.</li>
-            <li>Top weight = heaviest work set of the last workout.</li>
-            <li>Increase: every set at the top weight reaches Max Reps, on both sides, with at least the planned sets.</li>
-            <li>Reduce: first set at the top weight below Min Reps twice, same top weight and rest.</li>
-            <li>Rec. kg keeps each set's ratio to the top set from last time; a new set takes the ratio of the last one.</li>
+            <li>Top set on: the sets at the top weight of the last workout decide. Off: every work set decides.</li>
+            <li>Increase: every deciding set reaches Max Reps, on both sides, with at least the planned sets.</li>
+            <li>Reduce: first deciding set below Min Reps twice, same weight and rest.</li>
+            <li>Back-off sets: 85 % of today's top set.</li>
             <li>Warm-up ≈ 50 % of today's top set.</li>
           </ul>
           <p className="mt-2 text-xs">You decide the weight. The app only marks and recommends.</p>
