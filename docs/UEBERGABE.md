@@ -113,7 +113,7 @@ git push origin main
 | Chest Press (Machine) | Scheiben | 10 | in DB |
 | Preacher Curl (Machine) | Scheiben | 5 | in DB |
 | Seated Row (Cable) | vermutlich gleicher Stapel wie Lat Pulldown | | Rodrigo schaut beim nächsten Training |
-| Leg Press | vordefinierte Stufen ohne Scheiben | | Foto (50 kg eingestellt) erneut senden |
+| Leg Press | Technogym-Stapel 5, 10, 20, 30 … 190 kg | 10 | in DB |
 | Incline Chest Press (Machine) | gibt es im Gym nicht | | in keinem Workout, bleibt erhalten |
 
 ## **6. Wichtige IDs**
@@ -153,7 +153,7 @@ Umgesetzt am 19. Oktober (Release nach bfc8f3e, Entwurf docs/design/naechstes-re
 
 Weiter offen:
 
-5. Fehlende Gewichtsstufen: Seated Row, Leg Press (Abschnitt 5)
+5. Fehlende Gewichtsstufe: Seated Row (Abschnitt 5)
 6. Shoulder Press (Machine) und Lateral Raise (Machine) sind angelegt, aber keinem Workout zugeordnet; Einsatz im Plan offen
 7. Incline Chest Press in Main Day A hat keine gespeicherte Pause (rest_s leer)
 8. Reihenfolge Rücken und Beine vor Armen prüfen (offen seit Planüberprüfung)

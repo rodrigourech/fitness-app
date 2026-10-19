@@ -200,3 +200,4 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
 - Entwürfe fürs nächste Release abgestimmt (docs/design/naechstes-release.png): Übungsblatt mit «Exercise details» ganz oben, knapper Trainingsreport («= 45 kg» grau, «45 → 52 kg» orange, «20 → 15 kg» blau), Stats-Reiter «Reports», Home «Your progress» mit Reitern Volume/Body weight und Zeitraum 1w · 1m · 3m · 6m · All. Umsetzung nach Ok
 - Farben: Orange erhöhen, Blau senken (statt Rot), Grau halten, Grün erledigt oder besser; gilt überall
 - Umgesetzt: Übungsblatt als Liste, Trainingsreport, Stats › Reports, Your progress mit Zeitraum, Senken blau. Report vergleicht mit dem letzten Training desselben Workouts; heutiges Gewicht ist das schwerste Arbeitsgewicht (Top Set); Empfehlung entspricht der Progressionslogik direkt nach dem Training
+- Leg Press: Technogym-Stapel 5, 10, 20, 30 … 190 kg, Gewichtsstufe 10 kg (Migration 0025)
