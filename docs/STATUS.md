@@ -1,6 +1,6 @@
 # Stand und nächste Schritte
 
-Zentrale Übergabe für alle KI-Agenten und Sitzungen. Zuerst CLAUDE.md lesen (Regeln, Stack, Konventionen), dann diese Datei. Am Ende jeder Sitzung hier nachführen: Stand, offene Punkte, neue Hinweise. Entscheidungen gehören zusätzlich nach docs/entscheidungen.md.
+Zentrale Übergabe für alle KI-Agenten und Sitzungen. Zuerst CLAUDE.md lesen (Regeln, Stack, Konventionen), dann docs/UEBERGABE.md (Einstieg für neue Chats, offene Punkte fürs nächste Release), dann diese Datei. Am Ende jeder Sitzung hier nachführen: Stand, offene Punkte, neue Hinweise. Entscheidungen gehören zusätzlich nach docs/entscheidungen.md.
 
 Letzte Aktualisierung 19. Oktober 2026
 
@@ -14,6 +14,7 @@ Letzte Aktualisierung 19. Oktober 2026
 
 ## Stand
 
+- Release vom 19. Oktober (Nachmittag): Wiederholungen starten in der Mitte des Bereichs, Warm-up 6 Wiederholungen, Info-Symbol statt Video-Knopf, Lat Pulldown Classic Grip (Migration 0022), neue Übungen Shoulder Press (Machine) und Lateral Raise (Machine) ohne Workout sowie Gewichtsstufen aus Gerätefotos (Migration 0023). 0022 und 0023 auf production ausgeführt und geprüft. Typprüfung, Lint, 126 Tests erfolgreich. Push durch Rodrigo ausstehend. Offene Punkte fürs nächste Release in docs/UEBERGABE.md Abschnitt 7
 - Planüberprüfung vom 19. Oktober live (c1444f5, gepusht durch Rodrigo nach Lint und 125 Tests): Compound 6–10, Pausen 120 s für Lat Pulldown/Seated Row/Leg Press, Main Day B mit Overhead Triceps Extension (Cable) und Seated Leg Curl (Machine), Legende ohne «≈ estimated», TOP kleiner. Migration 0021 um 07:55 auf production ausgeführt und geprüft. Hinweis: Incline Chest Press in Main Day A hat keine gespeicherte Pause (rest_s leer); die beiden neuen Übungen haben noch keine Gewichtsstufe
 - Paket vom 18. Oktober (Trainingslogik): Wiederholungsbereiche nach Kategorie, Progression auf dem Top Set, Spalte «Rec. kg», Warm-up-Satz «W», Increase orange mit markiertem Feld, Max/Min Reps, neue Info-Seite, Chest Press zusammengelegt. Details in docs/entscheidungen.md (18. Oktober). Migrationen 0016 und 0017 auf production ausgeführt und geprüft (keine Schemaänderung, kein refresh-schema nötig). Typprüfung, Lint, 122 Tests und Produktionsbuild erfolgreich; Workout und Info-Seite mit Beispieldaten bei 390 px visuell geprüft. Live seit 18. Oktober 16:01 (4f1ae0c)
 - Zweites Paket vom 18. Oktober: Einstellung «Top set» pro Übung mit Back-off (heute über Training settings steuerbar, Standard 85 %), Spalte «Rec. kg» nur bei Inhalt, Label «TOP», Variante als Untertitel, Triceps Pushdown als Hauptübung mit Variante «Straight Bar», Notizen bereinigt. Migration 0018 ausgeführt und Schema-Cache aktualisiert. Typprüfung, Lint, 123 Tests und Produktionsbuild erfolgreich; Workout bei 390 px visuell geprüft. Es fehlt der Push von main durch Rodrigo
