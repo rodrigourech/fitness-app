@@ -62,6 +62,12 @@ export function nextWeight(top: number, step: number): number {
   return displayWeight(e.top + e.step)
 }
 
+/** Next weight below the top set with a step (one step down, exact on pound stacks, never below one step). */
+export function lowerWeight(top: number, step: number): number {
+  const e = exact(top, step)
+  return displayWeight(Math.max(e.step, e.top - e.step))
+}
+
 /** Index of the first heaviest weight, or -1 without any weight above 0. */
 export function topIndex(weights: (number | null)[]): number {
   let best = -1

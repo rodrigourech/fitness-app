@@ -143,12 +143,16 @@ Owner der Daten über `select user_id from private.app_owner`.
 
 ## **7. Offene Punkte für das nächste Release**
 
-Punkte 1 bis 4 sind als Entwurf abgestimmt (docs/design/naechstes-release.png, Stand 19. Oktober 11:12); vor der Umsetzung das ausdrückliche Ok von Rodrigo einholen.
+Umgesetzt am 19. Oktober (Release nach bfc8f3e, Entwurf docs/design/naechstes-release.png):
 
-1. Übungsblatt im iOS-Listenstil, Werte rechts, Antippen öffnet die Detailansicht, keine Erklärtexte. Reihenfolge: ganz oben eine Zeile «Exercise details» (Name, Varianten, Notizen; ohne Vorschauwert), dann Gruppe Training (Reps, Warm-up set, Top set, Weight step mit lb, Rest), dann Setup (Equipment, Muscles to feel, Videos)
-2. Trainingsreport nach «Finish workout», bewusst knapp: Kopf mit Workout und Datum, drei Kennzahlen gegenüber dem letzten gleichen Workout (Duration, Volume in %, Sets geplant/gemacht), danach «Next workout» mit einer Zeile pro Übung. Gleich: grau «= 45 kg». Erhöhen: orange «45 → 52 kg». Senken: blau «20 → 15 kg». Heutiges Gewicht ist das Top Set, ohne Top Set das Arbeitsgewicht. Bestleistung als kleines «PR» am Übungsnamen. Kein eigener Rekordblock, keine Detailzeilen
-3. Stats erhält oben die Reiter «Overview» (heutiger Inhalt) und «Reports»: eine Zeile pro Training, neueste zuerst (Dauer, Volumen mit Veränderung, Anzahl ↑/↓, PR); Antippen öffnet den Report
-4. Home › Your progress: eine Karte mit Reitern «Volume · kg» (zuerst) und «Body weight», darunter Zeitraum «1w · 1m · 3m · 6m · All» (klein geschrieben, Standard 3m). 1w zeigt Volumen pro Training und Gewicht pro Tag, ab 1m Volumen pro ganze Woche und Gewicht als 7-Tage-Schnitt. Achsen beschriftet, eine Legende, kein Hinweistext unter dem Diagramm. Keine Statusleiste (Woche und Gewicht stehen schon in den Karten darüber)
+- Übungsblatt als Liste: «Exercise details» (Name, Varianten, Notizen) ganz oben, Gruppe Training (Reps, Warm-up set, Top set, Weight step mit lb, Rest), Gruppe Setup (Equipment, Muscles to feel, Videos); jede Zeile öffnet eine Detailansicht mit «‹ Back» (src/components/ExerciseSheet.tsx)
+- Trainingsreport nach «Finish workout» (src/lib/report.ts, src/pages/ReportPage.tsx): Duration, Volume (%), Sets gemacht/geplant gegenüber dem letzten Training desselben Workouts; «Next workout» pro Übung «= 45 kg» grau, «45 → 52 kg» orange, «20 → 15 kg» blau, ohne Stufe «45 kg ↑»; «PR» am Namen. Runs zeigen Distance, Time, Pace
+- Stats mit Reitern «Overview» und «Reports» (Liste aller Reports, Antippen öffnet den Report)
+- Home › Your progress mit Reitern «Volume · kg» und «Body weight» und Zeitraum 1w · 1m · 3m · 6m · All (Standard 3m, pro Gerät gespeichert; src/lib/progress.ts)
+- Senken überall blau (Workout-Banner, Info-Seite, Report)
+
+Weiter offen:
+
 5. Fehlende Gewichtsstufen: Seated Row, Leg Press (Abschnitt 5)
 6. Shoulder Press (Machine) und Lateral Raise (Machine) sind angelegt, aber keinem Workout zugeordnet; Einsatz im Plan offen
 7. Incline Chest Press in Main Day A hat keine gespeicherte Pause (rest_s leer)

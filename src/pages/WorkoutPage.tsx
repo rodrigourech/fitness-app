@@ -48,6 +48,8 @@ interface Props {
   onReauth: () => void
   /** Shrinks the workout to a bar so the rest of the app can be used */
   onMinimize: () => void
+  /** Called with the workout id after «Finish workout» (opens the report) */
+  onFinished?: (workoutId: string) => void
 }
 
 interface ExerciseBlock {
@@ -107,7 +109,7 @@ async function loadBlocks(workoutId: string, templateId: string | null): Promise
   )
 }
 
-export default function WorkoutPage({ workout, onReauth, onMinimize }: Props) {
+export default function WorkoutPage({ workout, onReauth, onMinimize, onFinished }: Props) {
   const blocks = useLiveQuery(() => loadBlocks(workout.id, workout.template_id), [workout.id, workout.template_id])
   const shares = useLiveQuery(getTrainingShares, []) ?? DEFAULT_TRAINING_SHARES
   // One legend for the whole workout when any exercise shows recommendations (decision 19 October 2026)
@@ -127,6 +129,7 @@ export default function WorkoutPage({ workout, onReauth, onMinimize }: Props) {
   async function doFinish() {
     await stopRest()
     await finishWorkout(workout)
+    onFinished?.(workout.id)
   }
 
   async function doCancel() {
@@ -315,7 +318,7 @@ function ExerciseCard({ block, byId, shares, onOpen }: { block: ExerciseBlock; b
           {advice === 'increase' && <p className="mt-2 rounded-md bg-orange-50 px-2 py-1 text-sm text-orange-800 dark:bg-orange-950 dark:text-orange-200">
             <span className="font-semibold">Increase weight</span><span className="text-xs"> · raise the marked weight</span>
           </p>}
-          {advice === 'reduce' && <div className="mt-2 rounded-md bg-red-50 px-2 py-1 text-sm text-red-800 dark:bg-red-950 dark:text-red-200">
+          {advice === 'reduce' && <div className="mt-2 rounded-md bg-indigo-50 px-2 py-1 text-sm text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
             <p className="font-semibold">Reduce weight</p>
             <p className="text-xs">Top set below Min Reps twice at the same weight. Check rest, recovery and form before choosing a lighter weight.</p>
           </div>}

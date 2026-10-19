@@ -2,7 +2,8 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { ColumnChart, LineChart } from '../components/Charts'
 import AppIcon from '../components/AppIcon'
-import { loadAnalytics, weeklyGoal, weeklyVolume } from '../lib/analytics'
+import { loadAnalytics, weeklyGoal } from '../lib/analytics'
+import { PROGRESS_RANGES, volumeBars, weightPoints, type ProgressRange } from '../lib/progress'
 import { readyToIncrease } from '../lib/progression'
 import { bodyWeightSeries } from '../lib/body'
 import { finishedWorkouts } from '../lib/history'
@@ -25,12 +26,11 @@ async function loadSummary() {
   const [data, goal, workouts, weights] = await Promise.all([loadAnalytics(), getWeeklyGoal(), finishedWorkouts(), bodyWeightSeries()])
   const now = new Date()
   const goal12 = weeklyGoal(data.workouts, 12, now, goal)
-  const from = Date.parse(`${goal12.weeks[0]!.start}T00:00:00`)
   return {
     now, workouts: workouts.map(w => w.workout),
-    volume: weeklyVolume(data.sets, from, now),
-    sessions: goal12.weeks.map(w => ({ start: w.start, value: w.strength + w.run })),
-    weightSeries: weights.filter(w => Date.parse(w.entry.measured_on) >= now.getTime() - 90 * 86_400_000).reverse(),
+    sets: data.sets,
+    firstSet: data.sets.reduce<number | null>((m, x) => { const t = Date.parse(x.date); return m === null || t < m ? t : m }, null),
+    weights,
     ready: await readyToIncrease(), goal, week: goal12.thisWeek, streak: goal12.streak,
     last: workouts[0] ?? null, weight: weights[0] ?? null,
     weightWeekAgo: weights.find(w => Date.parse(w.entry.measured_on) <= now.getTime() - 7 * 86_400_000) ?? null,
@@ -96,20 +96,37 @@ function signed(v: number): string {
   return `${r > 0 ? '+' : r < 0 ? '−' : '±'}${Math.abs(r).toFixed(1)} kg`
 }
 type Trend = 'weight' | 'training'
+function stored<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
+  try { const v = localStorage.getItem(key); return allowed.includes(v as T) ? v as T : fallback } catch { return fallback }
+}
+function store(key: string, value: string) { try { localStorage.setItem(key, value) } catch { /* per-device convenience */ } }
+const shortDay = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' })
+const weekdayShort = new Intl.DateTimeFormat('en-GB', { weekday: 'short' })
+
+/** Your progress: tabs Volume and Body weight, range 1w · 1m · 3m · 6m · All (decision 19 October 2026). */
 function TrendCard({ s }: { s: Awaited<ReturnType<typeof loadSummary>> }) {
-  const [trend, setTrend] = useState<Trend>(() => { try { return localStorage.getItem('home-trend') === 'training' ? 'training' : 'weight' } catch { return 'weight' } })
-  function pick(t: Trend) { setTrend(t); try { localStorage.setItem('home-trend', t) } catch { /* per-device convenience */ } }
-  const weekLabel = (start: string) => dayFormat.format(new Date(`${start}T12:00:00`))
+  const [trend, setTrend] = useState<Trend>(() => stored('home-trend', ['training', 'weight'] as const, 'training'))
+  const [range, setRange] = useState<ProgressRange>(() => stored('home-range', PROGRESS_RANGES.map(r => r.key), '3m'))
+  function pick(t: Trend) { setTrend(t); store('home-trend', t) }
+  function pickRange(r: ProgressRange) { setRange(r); store('home-range', r) }
+  const day = (d: string) => new Date(`${d}T12:00:00`)
+  const bars = trend === 'training' ? volumeBars(s.sets, range, s.now, s.firstSet) : []
+  const points = trend === 'weight' ? weightPoints(s.weights, range, s.now) : []
+  const perWorkout = range === '1w'
+  const swatch = 'inline-block h-2.5 w-3.5 rounded-sm align-[-1px] mr-1.5'
   return <section className="home-panel home-trend">
-    <div className="home-panel-heading"><h2>Your progress</h2><span className="home-muted home-small">{trend === 'weight' ? 'Last 90 days' : 'Last 12 weeks'}</span></div>
-    <div className="home-trend-switch" role="group" aria-label="Progress chart"><button aria-pressed={trend === 'weight'} onClick={() => pick('weight')}>Body weight</button><button aria-pressed={trend === 'training'} onClick={() => pick('training')}>Training</button></div>
-    {trend === 'weight' ? s.weightSeries.length < 2 ? <p className="py-6 text-center text-sm text-zinc-500">Log your weight on a few days to see the trend.</p> : <LineChart
-      label="7-day average body weight in kg, last 90 days" formatY={v => `${v.toFixed(1)}`} height={160}
-      points={s.weightSeries.map(p => ({ x: Date.parse(`${p.entry.measured_on}T12:00:00`), y: Math.round(p.avg7 * 10) / 10, tooltip: `${dayFormat.format(new Date(`${p.entry.measured_on}T12:00:00`))}: ${p.entry.weight_kg.toFixed(1)} kg (avg ${p.avg7.toFixed(1)})` }))}
-    /> : <ColumnChart
-      label="Working-set volume in kg and counted training days per week, last 12 weeks" height={160} formatY={v => v >= 1000 ? `${Math.round(v / 1000)}k` : String(Math.round(v))}
-      columns={s.volume.map(w => { const n = s.sessions.find(x => x.start === w.start)?.value ?? 0; return { key: w.start, label: weekLabel(w.start), value: w.value, note: n ? `${n}×` : undefined, tooltip: `Week of ${weekLabel(w.start)}: ${Math.round(w.value).toLocaleString('en-GB')} kg · ${n} counted training days` } })}
+    <div className="home-panel-heading"><h2>Your progress</h2></div>
+    <div className="home-trend-switch" role="group" aria-label="Progress chart"><button aria-pressed={trend === 'training'} onClick={() => pick('training')}>Volume · kg</button><button aria-pressed={trend === 'weight'} onClick={() => pick('weight')}>Body weight</button></div>
+    <div className="home-range-switch" role="group" aria-label="Time range">{PROGRESS_RANGES.map(r => <button key={r.key} aria-pressed={range === r.key} onClick={() => pickRange(r.key)}>{r.label}</button>)}</div>
+    {trend === 'training' ? bars.every(b => b.value === 0) ? <p className="py-6 text-center text-sm text-zinc-500">No workouts in this period.</p> : <ColumnChart
+      label={perWorkout ? 'Working-set volume in kg per workout, last 7 days' : 'Working-set volume in kg per week'} height={160} formatY={v => v >= 1000 ? `${+(v / 1000).toFixed(1)}k` : String(Math.round(v))}
+      columns={bars.map(b => ({ key: b.key, label: perWorkout ? weekdayShort.format(day(b.date)) : shortDay.format(day(b.date)), value: b.value, faded: b.current, tooltip: `${perWorkout ? dayFormat.format(day(b.date)) : `Week of ${shortDay.format(day(b.date))}`}: ${Math.round(b.value).toLocaleString('en-GB')} kg` }))}
+    /> : points.length < 2 ? <p className="py-6 text-center text-sm text-zinc-500">Log your weight on a few days to see the trend.</p> : <LineChart
+      label={perWorkout ? 'Body weight in kg per day, last 7 days' : '7-day average body weight in kg'} formatY={v => v.toFixed(1)} height={160}
+      points={points.map(p => ({ x: day(p.date).getTime(), y: p.kg, tooltip: `${dayFormat.format(day(p.date))}: ${p.measured.toFixed(1)} kg${perWorkout ? '' : ` (avg ${p.kg.toFixed(1)})`}` }))}
     />}
-    <p className="home-muted home-small">{trend === 'weight' ? '7-day average · kg' : 'Volume per week (kg) · strength/run days counted once per kind'}</p>
+    <p className="home-muted home-small home-legend">{trend === 'training'
+      ? <>{perWorkout ? <span><i className={swatch} style={{ background: 'var(--viz-s1)' }} />Volume per workout</span> : <><span><i className={swatch} style={{ background: 'var(--viz-s1)' }} />Volume per week</span><span><i className={swatch} style={{ background: 'var(--viz-s1)', opacity: 0.45 }} />This week</span></>}</>
+      : <span><i className={swatch} style={{ background: 'var(--viz-s1)' }} />{perWorkout ? 'Weight per day · kg' : '7-day average · kg'}</span>}</p>
   </section>
 }

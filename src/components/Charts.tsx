@@ -210,6 +210,8 @@ export interface Column {
   tooltip: ReactNode
   /** Small label above the column (e.g. number of workouts) */
   note?: string
+  /** Lighter column, e.g. the week still running */
+  faded?: boolean
 }
 
 interface ColumnProps {
@@ -272,7 +274,7 @@ export function ColumnChart({ columns, formatY, height = 170, label }: ColumnPro
             const d = h > 0 ? `M${x},${pad.top + ih}V${yTop + r}Q${x},${yTop} ${x + r},${yTop}H${x + bw - r}Q${x + bw},${yTop} ${x + bw},${yTop + r}V${pad.top + ih}Z` : ''
             return (
               <g key={c.key}>
-                {d && <path d={d} fill="var(--viz-s1)" opacity={active === null || active === i ? 1 : 0.55} />}
+                {d && <path d={d} fill="var(--viz-s1)" opacity={(c.faded ? 0.45 : 1) * (active === null || active === i ? 1 : 0.55)} />}
                 {c.note && (
                   <text x={cx} y={yTop - 5} textAnchor="middle" fontSize={11} fontWeight={600} fill="var(--viz-text)">
                     {c.note}

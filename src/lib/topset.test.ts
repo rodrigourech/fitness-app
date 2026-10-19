@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { displayWeight, estimateWeight, increaseMarks, nextWeight, poundStep, recommendations, shareOf, topIndex, warmUpWeight } from './topset'
+import { displayWeight, estimateWeight, increaseMarks, lowerWeight, nextWeight, poundStep, recommendations, shareOf, topIndex, warmUpWeight } from './topset'
 
 describe('top set', () => {
   it('finds the first heaviest weight', () => {
@@ -43,6 +43,9 @@ describe('top set', () => {
     expect(nextWeight(45, 6.8)).toBe(52)
     expect(nextWeight(36, 4.5)).toBe(41)
     expect(nextWeight(40, 10)).toBe(50)
+    expect(lowerWeight(45, 6.8)).toBe(39)
+    expect(lowerWeight(20, 5)).toBe(15)
+    expect(lowerWeight(4.5, 4.5)).toBe(4.5)
   })
 
   it('recommends back-off sets and the next top-set weight with a step', () => {

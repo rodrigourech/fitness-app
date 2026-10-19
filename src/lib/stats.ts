@@ -30,13 +30,14 @@ export interface Best {
   hasHistory: boolean
 }
 
-/** Best values of an exercise over all finished workouts except one. */
-export async function bestBefore(exerciseId: string, excludeWorkoutId: string): Promise<Best> {
+/** Best values of an exercise over all finished workouts except one; with before only workouts started earlier. */
+export async function bestBefore(exerciseId: string, excludeWorkoutId: string, before?: string): Promise<Best> {
   const wes = (await db.workout_exercise.where('exercise_id').equals(exerciseId).toArray()).filter(
     (we) => we.deleted_at === null && we.workout_id !== excludeWorkoutId,
   )
   const workouts = await db.workout.bulkGet(wes.map((we) => we.workout_id))
-  const valid = wes.filter((_, i) => workouts[i] && workouts[i]!.deleted_at === null && workouts[i]!.finished_at !== null)
+  const valid = wes.filter((_, i) => workouts[i] && workouts[i]!.deleted_at === null && workouts[i]!.finished_at !== null
+    && (before === undefined || workouts[i]!.started_at < before))
   const sets = valid.length
     ? (await db.workout_set.where('workout_exercise_id').anyOf(valid.map((we) => we.id)).toArray()).filter(
         (s) => s.deleted_at === null && s.set_type === 'working',

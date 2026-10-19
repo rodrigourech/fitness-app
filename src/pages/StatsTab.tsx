@@ -4,6 +4,9 @@ import { ColumnChart, GoalColumns, Heatmap, HBarChart, LineChart, SideChart, Spa
 import Popover from '../components/Popover'
 import { formatShortDate } from '../lib/chart'
 import { readyToIncrease } from '../lib/progression'
+import { formatMinutes, formatVolume, percentChange, workoutReports } from '../lib/report'
+import { formatDuration, paceSeconds } from '../lib/workout'
+import { ReportView } from './ReportPage'
 import { DEFAULT_WEEKLY_GOAL, getWeeklyGoal, saveWeeklyGoal, type WeeklyGoal } from '../lib/settings'
 import {
   CROWD_LABEL,
@@ -55,7 +58,69 @@ function Empty({ children }: { children: ReactNode }) {
   return <p className="py-4 text-sm text-zinc-500 dark:text-zinc-400">{children}</p>
 }
 
+/** Stats with the tabs Overview and Reports (decision 19 October 2026). */
 export default function StatsTab({ userId }: { userId: string }) {
+  const [view, setView] = useState<'overview' | 'reports'>('overview')
+  // A report opened from the list returns to the list
+  const [open, setOpen] = useState<string | null>(null)
+  if (open) return (
+    <div className="flex flex-col gap-3">
+      <button onClick={() => setOpen(null)} className="self-start rounded-lg bg-zinc-200/70 px-3 py-1.5 text-sm font-semibold dark:bg-zinc-800">‹ Reports</button>
+      <ReportView workoutId={open} />
+    </div>
+  )
+  return (
+    <div className="flex flex-col gap-4">
+      <div role="tablist" aria-label="Stats" className="grid grid-cols-2 gap-1 rounded-xl bg-zinc-200/70 p-1 dark:bg-zinc-900">
+        {(['overview', 'reports'] as const).map((v) => (
+          <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)}
+            className={`rounded-md py-1.5 text-sm font-semibold ${view === v ? 'bg-white shadow-sm dark:bg-zinc-700' : 'text-zinc-500 dark:text-zinc-400'}`}>
+            {v === 'overview' ? 'Overview' : 'Reports'}
+          </button>
+        ))}
+      </div>
+      {view === 'overview' ? <StatsOverview userId={userId} /> : <ReportList onOpen={setOpen} />}
+    </div>
+  )
+}
+
+const reportDay = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+
+function ReportList({ onOpen }: { onOpen: (id: string) => void }) {
+  const reports = useLiveQuery(workoutReports, [])
+  if (reports === undefined) return <p className="text-zinc-500">Loading …</p>
+  if (!reports.length) return <Empty>No finished workouts yet.</Empty>
+  return (
+    <section className="card divide-y divide-zinc-100 px-4 dark:divide-zinc-800">
+      {reports.map((r) => {
+        const t = r.totals
+        const vol = percentChange(t.volume, r.previous?.volume)
+        const up = r.lines.filter((l) => l.advice === 'increase').length
+        const down = r.lines.filter((l) => l.advice === 'reduce').length
+        const pace = paceSeconds(t.runS, t.distanceKm)
+        return (
+          <button key={r.workout.id} onClick={() => onOpen(r.workout.id)} className="block w-full py-3 text-left">
+            <span className="flex items-baseline justify-between gap-3">
+              <span className="font-semibold">{r.name}</span>
+              <span className="shrink-0 text-xs text-zinc-500 dark:text-zinc-400">{reportDay.format(new Date(r.workout.started_at))}</span>
+            </span>
+            <span className="mt-0.5 block text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
+              {r.kind === 'run'
+                ? `${t.distanceKm.toFixed(1)} km · ${formatDuration(t.runS)}${pace !== null ? ` · ${formatDuration(pace)} /km` : ''}`
+                : <>
+                    {formatMinutes(t.durationS)} · {formatVolume(t.volume)} kg
+                    {vol !== null && vol !== 0 && <span className={vol > 0 ? ' text-emerald-700 dark:text-emerald-400' : ' text-red-700 dark:text-red-400'}> {vol > 0 ? '+' : '−'}{Math.abs(vol)} %</span>}
+                    {up > 0 && ` · ↑ ${up}`}{down > 0 && ` · ↓ ${down}`}{r.records > 0 && ` · ${r.records} PR`}
+                  </>}
+            </span>
+          </button>
+        )
+      })}
+    </section>
+  )
+}
+
+function StatsOverview({ userId }: { userId: string }) {
   const data = useLiveQuery(loadAnalytics, [])
   const [range, setRange] = useState<Range>('3m')
   // Fixed per visit of the tab, so all cards use the same reference time
