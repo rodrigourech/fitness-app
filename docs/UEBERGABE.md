@@ -143,12 +143,12 @@ Owner der Daten über `select user_id from private.app_owner`.
 
 ## **7. Offene Punkte für das nächste Release**
 
-Alle Punkte erst nach PNG-Entwurf und ausdrücklichem Ok umsetzen. Entwürfe vom 19. Oktober (release-kommt.png) wurden gezeigt, Ok ausstehend.
+Punkte 1 bis 4 sind als Entwurf abgestimmt (docs/design/naechstes-release.png, Stand 19. Oktober 11:12); vor der Umsetzung das ausdrückliche Ok von Rodrigo einholen.
 
-1. Übungsblatt kompakt im iOS-Listenstil: Werte rechts (Reps, Warm-up set, Top set, Weight step mit lb, Rest; Equipment, Notes, Muscles to feel, Videos; Name and variants), Antippen öffnet Detailansicht, keine Erklärtexte
-2. Trainingsreport nach «Finish workout»: Dauer, Volumen und Sätze im Vergleich zum letzten gleichen Workout, Rekorde, über oder unter Plan, pro Übung ↑ / = / ↓ mit Gewicht fürs nächste Training
-3. Tab «Reports» unter Stats mit allen Reports, neueste zuerst
-4. Home-Übersicht: Statusleiste (Woche, nächstes Workout, Gewicht), Diagramm mit Achsen ab erster Datenwoche, eine Legende, Herkunft «Main Day A» in der Increase-Liste
+1. Übungsblatt im iOS-Listenstil, Werte rechts, Antippen öffnet die Detailansicht, keine Erklärtexte. Reihenfolge: ganz oben eine Zeile «Exercise details» (Name, Varianten, Notizen; ohne Vorschauwert), dann Gruppe Training (Reps, Warm-up set, Top set, Weight step mit lb, Rest), dann Setup (Equipment, Muscles to feel, Videos)
+2. Trainingsreport nach «Finish workout», bewusst knapp: Kopf mit Workout und Datum, drei Kennzahlen gegenüber dem letzten gleichen Workout (Duration, Volume in %, Sets geplant/gemacht), danach «Next workout» mit einer Zeile pro Übung. Gleich: grau «= 45 kg». Erhöhen: orange «45 → 52 kg». Senken: blau «20 → 15 kg». Heutiges Gewicht ist das Top Set, ohne Top Set das Arbeitsgewicht. Bestleistung als kleines «PR» am Übungsnamen. Kein eigener Rekordblock, keine Detailzeilen
+3. Stats erhält oben die Reiter «Overview» (heutiger Inhalt) und «Reports»: eine Zeile pro Training, neueste zuerst (Dauer, Volumen mit Veränderung, Anzahl ↑/↓, PR); Antippen öffnet den Report
+4. Home › Your progress: eine Karte mit Reitern «Volume · kg» (zuerst) und «Body weight», darunter Zeitraum «1w · 1m · 3m · 6m · All» (klein geschrieben, Standard 3m). 1w zeigt Volumen pro Training und Gewicht pro Tag, ab 1m Volumen pro ganze Woche und Gewicht als 7-Tage-Schnitt. Achsen beschriftet, eine Legende, kein Hinweistext unter dem Diagramm. Keine Statusleiste (Woche und Gewicht stehen schon in den Karten darüber)
 5. Fehlende Gewichtsstufen: Seated Row, Leg Press (Abschnitt 5)
 6. Shoulder Press (Machine) und Lateral Raise (Machine) sind angelegt, aber keinem Workout zugeordnet; Einsatz im Plan offen
 7. Incline Chest Press in Main Day A hat keine gespeicherte Pause (rest_s leer)
@@ -156,6 +156,8 @@ Alle Punkte erst nach PNG-Entwurf und ausdrücklichem Ok umsetzen. Entwürfe vom
 9. Ältere Punkte aus docs/STATUS.md: Gewichtseintrag vom 7. Oktober aus dem Papierkorb wiederherstellen, Foto-Passphrase, Wunschliste
 
 Entschieden und nicht umsetzen: Warm-up-Wiederholungen bleiben fest 6–7 (keine zentrale Einstellung), Arme bleiben 8–12.
+
+Farben (Entscheid 19. Oktober, gilt in der ganzen App): Orange = Gewicht erhöhen, Blau = Gewicht senken (bisher Rot, zu nah an Orange), Grau = halten, Grün = erledigt oder besser als letztes Mal. Bei der Umsetzung auch Workout-Banner «Reduce weight» und Info-Seite auf Blau umstellen.
 
 ## **8. Bekannte Stolpersteine**
 

@@ -197,3 +197,5 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
 - Weitere Stufen (Migration 0024): Overhead Triceps Extension 4.5 (gleicher Turm wie Triceps Pushdown), Chest Press 10, Preacher Curl 5. Incline Chest Press (Machine) gibt es im Gym nicht; bleibt erhalten, ist in keinem Workout (ein eigenes Ausblenden in der Übungsliste bräuchte eine Schemaänderung)
 - Bereich 8–12 für Triceps Pushdown, Overhead Triceps Extension und Preacher Curl bleibt
 - Nächstes Release (je zuerst PNG, dann Ok): Übungsblatt kompakt, Trainingsreport mit Tab «Reports», Home-Übersicht. Warm-up-Wiederholungen zentral einstellbar nicht gewünscht
+- Entwürfe fürs nächste Release abgestimmt (docs/design/naechstes-release.png): Übungsblatt mit «Exercise details» ganz oben, knapper Trainingsreport («= 45 kg» grau, «45 → 52 kg» orange, «20 → 15 kg» blau), Stats-Reiter «Reports», Home «Your progress» mit Reitern Volume/Body weight und Zeitraum 1w · 1m · 3m · 6m · All. Umsetzung nach Ok
+- Farben: Orange erhöhen, Blau senken (statt Rot), Grau halten, Grün erledigt oder besser; gilt überall
