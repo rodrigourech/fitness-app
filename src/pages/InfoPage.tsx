@@ -38,7 +38,7 @@ export default function InfoPage({ onDone }: { onDone: () => void }) {
             ))}
           </tbody>
         </table>
-        <Note>Min and Max reps count per set and side.</Note>
+        <Note>Min and Max reps count per set and side. Reps start in the middle of the range.</Note>
       </Section>
 
       <Section title="2 · Next workout">
@@ -50,7 +50,7 @@ export default function InfoPage({ onDone }: { onDone: () => void }) {
 
       <Section title="3 · Sets and Rec. kg">
         <ul className="flex flex-col gap-2 text-sm">
-          <Item swatch="border border-sky-400 border-dashed" title={`W · Warm-up ${shares.warmUp} %`}>10 reps before the work sets. Not counted in volume, records or progression. An empty weight takes the recommendation when checked.</Item>
+          <Item swatch="border border-sky-400 border-dashed" title={`W · Warm-up ${shares.warmUp} %`}>6 reps before the work sets. Not counted in volume, records or progression. An empty weight takes the recommendation when checked.</Item>
           <Item swatch="border border-orange-500 bg-orange-100 dark:bg-orange-500/20" title="TOP · Top set">Heaviest set, first after the warm-up. On Increase it shows ↑ and the next weight.</Item>
           <Item swatch="border border-orange-400 border-dashed" title={`Back-off ${shares.backOff} %`}>The other sets, recommended from today’s top set.</Item>
         </ul>

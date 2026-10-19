@@ -143,6 +143,8 @@ export async function startWorkout(templateId: string, userId: string): Promise<
       .filter((s) => s.deleted_at === null && s.set_type === 'working')
       .sort((a, b) => a.position - b.position)
     const targets = repetitionTargets(ex, byId, planned)
+    // Reps start in the middle of the range, rounded down (decision 19 October 2026: not at Max Reps)
+    const startReps = midReps(targets.minimum, targets.target)
     const we: WorkoutExercise = {
       id: uuid(),
       workout_id: workout.id,
@@ -172,15 +174,15 @@ export async function startWorkout(templateId: string, userId: string): Promise<
             ...measureOf(source),
             ...(weightReps
               ? eff.isUnilateral
-                ? { reps_left: targets.target, reps_right: targets.target }
-                : { reps: targets.target }
+                ? { reps_left: startReps, reps_right: startReps }
+                : { reps: startReps }
               : {}),
           }
         : {
             weight: p.target_weight,
-            reps: eff.trackingType === 'weight_reps' && !eff.isUnilateral ? targets.target : null,
-            reps_left: eff.trackingType === 'weight_reps' && eff.isUnilateral ? targets.target : null,
-            reps_right: eff.trackingType === 'weight_reps' && eff.isUnilateral ? targets.target : null,
+            reps: eff.trackingType === 'weight_reps' && !eff.isUnilateral ? startReps : null,
+            reps_left: eff.trackingType === 'weight_reps' && eff.isUnilateral ? startReps : null,
+            reps_right: eff.trackingType === 'weight_reps' && eff.isUnilateral ? startReps : null,
             duration_s: p.target_duration_s,
             distance_km: p.target_distance_km,
           }
@@ -238,9 +240,9 @@ export async function addExerciseToWorkout(w: Workout, exerciseId: string): Prom
       set_type: 'working',
       ...(p ? measureOf(p) : {
         weight: null,
-        reps: eff.trackingType === 'weight_reps' && !eff.isUnilateral ? eff.targetReps : null,
-        reps_left: eff.trackingType === 'weight_reps' && eff.isUnilateral ? eff.targetReps : null,
-        reps_right: eff.trackingType === 'weight_reps' && eff.isUnilateral ? eff.targetReps : null,
+        reps: eff.trackingType === 'weight_reps' && !eff.isUnilateral ? midReps(eff.minReps, eff.targetReps) : null,
+        reps_left: eff.trackingType === 'weight_reps' && eff.isUnilateral ? midReps(eff.minReps, eff.targetReps) : null,
+        reps_right: eff.trackingType === 'weight_reps' && eff.isUnilateral ? midReps(eff.minReps, eff.targetReps) : null,
         duration_s: null, distance_km: null,
       }),
       rir: null,
@@ -253,7 +255,12 @@ export async function addExerciseToWorkout(w: Workout, exerciseId: string): Prom
   await saveRows('workout_set', sets)
 }
 
-export const WARM_UP_REPS = 10
+/** Middle of the rep range, rounded down: the start value of the reps fields. */
+export function midReps(minimum: number, maximum: number): number {
+  return Math.floor((minimum + maximum) / 2)
+}
+
+export const WARM_UP_REPS = 6
 
 /** Warm-up set W: 10 reps, weight left empty (the app recommends about half of the top set). */
 function warmUpSet(we: WorkoutExercise, unilateral: boolean, userId: string, ts: string): WorkoutSet {

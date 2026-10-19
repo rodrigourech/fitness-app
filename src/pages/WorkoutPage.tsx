@@ -389,31 +389,17 @@ function ExerciseCard({ block, byId, shares, onOpen }: { block: ExerciseBlock; b
   )
 }
 
+/** Small info button with the reference videos (decision 19 October 2026: saves room next to the name). */
 function VideoButton({ links }: { links: ExerciseLink[] }) {
   if (links.length === 0) return null
-  const cls = 'shrink-0 rounded-md bg-sky-100 px-2.5 py-1 text-sm font-semibold text-sky-800 dark:bg-sky-950 dark:text-sky-300'
-  if (links.length === 1) {
-    const l = links[0]!
-    return (
-      <a href={l.url} target="_blank" rel="noopener noreferrer" aria-label={`Video: ${linkLabel(l)}`} className={cls}>
-        ▶ Video
-      </a>
-    )
-  }
+  const cls = 'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-zinc-300 text-sm font-semibold text-zinc-500 dark:border-zinc-600 dark:text-zinc-400'
   return (
-    <Popover label={`▶ Videos (${links.length})`} ariaLabel="Choose a video" triggerClassName={cls} align="right">
+    <Popover label="i" ariaLabel="Exercise videos" triggerClassName={cls} align="right">
       {(close) => (
         <span className="flex flex-col">
-          <span className="mb-1 text-xs text-zinc-500 dark:text-zinc-400">Choose a video</span>
+          <span className="mb-1 text-xs text-zinc-500 dark:text-zinc-400">{links.length === 1 ? 'Video' : 'Videos'}</span>
           {links.map((l) => (
-            <a
-              key={l.id}
-              href={l.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={close}
-              className="truncate rounded-md px-2 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-            >
+            <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" onClick={close} className="truncate rounded-md px-2 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800">
               ▶ {linkLabel(l)}
             </a>
           ))}

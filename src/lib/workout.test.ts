@@ -51,7 +51,7 @@ describe('startWorkout', () => {
     const s = await setsOf(w.id)
     // DAY2 history 2 Oct: Lying Leg Curl 35/35/30 kg x 10
     expect(s['Lying Leg Curl (Machine)']!.sets.map((x) => x.weight)).toEqual([35, 35, 30])
-    // Reps start at the target (10 per side), not at the last performance (decision 15 October 2026)
+    // Reps start in the middle of the range (seed template 10–10), not at the last performance (decisions 15 and 19 October 2026)
     expect(s['Lateral Raise (Cable)']!.sets.map((x) => [x.reps_left, x.reps_right])).toEqual([
       [10, 10],
       [10, 10],
@@ -271,5 +271,14 @@ describe('decisions 9 October 2026', () => {
     // DAY2 history of the same exercise: 35/35/30 kg, not the template target of 40 kg
     expect(s.sets.map((x) => x.weight)).toEqual([35, 35, 30])
     expect(s.we.rest_s).toBe(60)
+  })
+})
+
+describe('start reps', () => {
+  it('starts in the middle of the range, rounded down', async () => {
+    const { midReps } = await import('./workout')
+    expect(midReps(6, 9)).toBe(7)
+    expect(midReps(8, 12)).toBe(10)
+    expect(midReps(10, 15)).toBe(12)
   })
 })

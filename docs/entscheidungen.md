@@ -187,3 +187,6 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
 - Main Day B: Seated Leg Curl (Machine) statt Lying Leg Curl (Maeo 2021: +14.1 % gegenüber +9.3 % Hamstring-Volumen) und Overhead Triceps Extension (Cable) statt Triceps Pushdown (Maeo 2022: rund 40 % mehr Trizepswachstum). Main Day A behält Triceps Pushdown. Neue Übungen ohne Historie, Vorlagengewichte geleert. Overhead Extension mit Seil, Kabel knapp über Hüfthöhe, Video als Link
 - Beinvolumen bewusst bei 3 Sätzen pro Woche und Muskel belassen (Fokus Oberkörper); Laufen ersetzt kein Beintraining für Hypertrophie. Offen: Reihenfolge Rücken und Beine vor Armen
 - Legende im Workout ohne den Hinweis «≈ estimated, no weight step» (Erklärung bleibt auf der Info-Seite); Label TOP in «Rec. kg» eine Stufe kleiner (text-xs)
+- Wiederholungen starten in der Mitte des Bereichs, abgerundet (6–10 → 8, 8–12 → 10, 10–15 → 12), statt bei Max Reps; verhindert, dass nicht korrigierte Werte «Increase» auslösen. Warm-up-Satz mit 6 statt 10 Wiederholungen
+- Video-Knopf im Workout durch kleines Info-Symbol ersetzt (öffnet die Videos)
+- Lat Pulldown: neue Variante «Classic Grip» ersetzt «Neutralgriff breit (schwarz)» in Main Day A und Bonus Day ab dem nächsten Training; das heutige Training bleibt bei der alten Variante (Migration 0022)
