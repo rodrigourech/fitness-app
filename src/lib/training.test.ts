@@ -55,7 +55,7 @@ it('snapshots targets, creates one warm-up set W instead of template warm-ups, n
   const sets = (await db.workout_set.where('workout_exercise_id').equals(we.id).toArray()).sort((a, b) => a.position - b.position)
   expect(sets).toHaveLength(5)
   // Warm-up set W first: 10 reps, weight left empty (decision 18 October 2026)
-  expect(sets[0]).toMatchObject({ set_type: 'warmup', position: 1, weight: null, reps: 6 })
+  expect(sets[0]).toMatchObject({ set_type: 'warmup', position: 1, weight: null, reps: null })
   expect(sets.slice(1).every((s) => s.set_type === 'working' && s.rir === null)).toBe(true)
   expect(sets.slice(1).map((s) => s.position)).toEqual([2, 3, 4, 5])
   await db.exercise.update(ex.id, { target_reps: 15, min_reps: 10, warm_up: false })

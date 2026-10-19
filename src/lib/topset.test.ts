@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { displayWeight, estimateWeight, increaseMarks, recommendations, shareOf, topIndex, warmUpWeight } from './topset'
+import { displayWeight, estimateWeight, increaseMarks, nextWeight, poundStep, recommendations, shareOf, topIndex, warmUpWeight } from './topset'
 
 describe('top set', () => {
   it('finds the first heaviest weight', () => {
@@ -27,6 +27,22 @@ describe('top set', () => {
     expect(shareOf(39, 0.85, 7)).toEqual({ kg: 32, estimate: false })
     expect(shareOf(10, 0.5, 10)).toEqual({ kg: 10, estimate: false })
     expect(shareOf(36, 0.85, null)).toEqual({ kg: 30, estimate: true })
+  })
+
+  it('computes pound stacks on the 5 lb grid so every value matches a kg label', () => {
+    expect(poundStep(4.5)).toBe(10)
+    expect(poundStep(6.8)).toBe(15)
+    expect(poundStep(5)).toBeNull()
+    expect(poundStep(2)).toBeNull()
+    expect(poundStep(null)).toBeNull()
+    expect(shareOf(45, 0.85, 6.8)).toEqual({ kg: 39, estimate: false })
+    expect(shareOf(52, 0.85, 6.8)).toEqual({ kg: 45, estimate: false })
+    expect(shareOf(36, 0.85, 4.5)).toEqual({ kg: 32, estimate: false })
+    expect(shareOf(9, 0.5, 4.5)).toEqual({ kg: 4.5, estimate: false })
+    expect(nextWeight(39, 6.8)).toBe(45)
+    expect(nextWeight(45, 6.8)).toBe(52)
+    expect(nextWeight(36, 4.5)).toBe(41)
+    expect(nextWeight(40, 10)).toBe(50)
   })
 
   it('recommends back-off sets and the next top-set weight with a step', () => {

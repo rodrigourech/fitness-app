@@ -39,6 +39,8 @@ import {
   toggleSetDone,
   updateSet,
   updateWorkout,
+  WARM_UP_HINT,
+  WARM_UP_REPS,
 } from '../lib/workout'
 
 interface Props {
@@ -498,6 +500,13 @@ function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, res
   async function toggle() {
     // An empty warm-up weight takes the recommendation when the set is checked
     if (set.completed_at === null && set.weight === null && rec?.kind === 'warm') await updateSet(set, { weight: rec.kg })
+    // Empty warm-up reps take the lower value of the hint 6–7
+    if (set.completed_at === null && set.set_type === 'warmup' && trackingType === 'weight_reps') {
+      const patch: Partial<WorkoutSet> = unilateral
+        ? { ...(set.reps_left === null ? { reps_left: WARM_UP_REPS } : {}), ...(set.reps_right === null ? { reps_right: WARM_UP_REPS } : {}) }
+        : set.reps === null ? { reps: WARM_UP_REPS } : {}
+      if (Object.keys(patch).length) await updateSet(set, patch)
+    }
     const nowDone = await toggleSetDone(set)
     if (nowDone && restSeconds) await startRest(restSeconds)
   }
@@ -544,11 +553,11 @@ function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, res
           </span>
           {unilateral ? (
             <>
-              <Field label="Reps left" inputMode="numeric" value={formatNumber(set.reps_left)} onCommit={numberCommit('reps_left', true)} warn={belowMinimum(set.reps_left, minimum)} />
-              <Field label="Reps right" inputMode="numeric" value={formatNumber(set.reps_right)} onCommit={numberCommit('reps_right', true)} warn={belowMinimum(set.reps_right, minimum)} />
+              <Field label="Reps left" inputMode="numeric" placeholder={warm ? WARM_UP_HINT : undefined} value={formatNumber(set.reps_left)} onCommit={numberCommit('reps_left', true)} warn={belowMinimum(set.reps_left, minimum)} />
+              <Field label="Reps right" inputMode="numeric" placeholder={warm ? WARM_UP_HINT : undefined} value={formatNumber(set.reps_right)} onCommit={numberCommit('reps_right', true)} warn={belowMinimum(set.reps_right, minimum)} />
             </>
           ) : (
-            <Field label="Reps" inputMode="numeric" value={formatNumber(set.reps)} onCommit={numberCommit('reps', true)} warn={belowMinimum(set.reps, minimum)} />
+            <Field label="Reps" inputMode="numeric" placeholder={warm ? WARM_UP_HINT : undefined} value={formatNumber(set.reps)} onCommit={numberCommit('reps', true)} warn={belowMinimum(set.reps, minimum)} />
           )}
         </>
       )}

@@ -2,7 +2,7 @@
 // Per exercise the setting «Top set» decides the scheme. On: the heaviest set is the top set and every other work set
 // is recommended at the back-off share of today's top set. Off: equal sets, no recommendations for work sets.
 // With a weight step the app walks down from the top set in whole steps, so every recommendation exists on the
-// machine; without one it estimates (5 kg from 20 kg, 1 kg below) and marks the value with ≈.
+// machine (pound stacks such as 4.5 = 10 lb are computed in lb); without one it estimates (5 kg from 20 kg, 1 kg below) and marks the value with ≈.
 // The app never changes a field by itself: recommendations are shown and taken over with a tap.
 
 export interface Suggestion {
@@ -27,13 +27,39 @@ export function estimateWeight(kg: number): number {
   return Math.ceil(kg / step - 0.5) * step
 }
 
+const LB = 0.45359237
+
+/**
+ * Pound stacks labelled in kg (decision 19 October 2026): a step within 0.05 kg of a multiple of 5 lb
+ * (4.5 → 10 lb, 6.8 → 15 lb) is a pound stack. Returns the step in lb, or null for a kg step.
+ */
+export function poundStep(step: number | null): number | null {
+  if (!step || step <= 0) return null
+  const lb = Math.round(step / LB / 5) * 5
+  return lb > 0 && Math.abs(lb * LB - step) <= 0.05 ? lb : null
+}
+
+/** Exact step and top weight in kg: on a pound stack both lie on the 5 lb grid, so every value matches a label. */
+function exact(top: number, step: number): { top: number; step: number } {
+  const lb = poundStep(step)
+  if (lb === null) return { top, step }
+  return { top: Math.round(top / LB / 5) * 5 * LB, step: lb * LB }
+}
+
 /** Weight near share × top. With a step: whole steps down from the top set, the lighter one on a tie. */
 export function shareOf(top: number, share: number, step: number | null): Suggestion {
-  const target = top * share
-  if (!step || step <= 0) return { kg: estimateWeight(target), estimate: true }
-  const maxSteps = Math.max(0, Math.ceil(top / step) - 1)
-  const steps = Math.min(maxSteps, Math.max(0, Math.floor((top - target) / step + 0.5)))
-  return { kg: displayWeight(top - steps * step), estimate: false }
+  if (!step || step <= 0) return { kg: estimateWeight(top * share), estimate: true }
+  const e = exact(top, step)
+  const target = e.top * share
+  const maxSteps = Math.max(0, Math.ceil(e.top / e.step - 1e-9) - 1)
+  const steps = Math.min(maxSteps, Math.max(0, Math.floor((e.top - target) / e.step + 0.5)))
+  return { kg: displayWeight(e.top - steps * e.step), estimate: false }
+}
+
+/** Next weight above the top set with a step (one step up, exact on pound stacks). */
+export function nextWeight(top: number, step: number): number {
+  const e = exact(top, step)
+  return displayWeight(e.top + e.step)
 }
 
 /** Index of the first heaviest weight, or -1 without any weight above 0. */
@@ -54,7 +80,7 @@ export function recommendations(current: (number | null)[], topSet: boolean, bac
   if (top === -1) return current.map(() => null)
   const topKg = current[top]!
   const back = shareOf(topKg, backOff, step)
-  const next = increase && step ? displayWeight(topKg + step) : null
+  const next = increase && step ? nextWeight(topKg, step) : null
   return current.map((_, i) => (i === top ? { kind: 'top', next } : { kind: 'weight', kg: back.kg, estimate: back.estimate }))
 }
 

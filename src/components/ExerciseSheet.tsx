@@ -10,6 +10,7 @@ import { formatDuration } from '../lib/workout'
 import Field from './Field'
 import { validRepetitionTargets } from '../lib/training'
 import { DEFAULT_TRAINING_SHARES, getTrainingShares } from '../lib/settings'
+import { poundStep } from '../lib/topset'
 
 interface Props {
   exerciseId: string
@@ -43,6 +44,7 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
   const { ex, parent, byId, variants, links } = data
   const main = parent ?? ex
   const eff = effective(ex, byId)
+  const lbStep = poundStep(ex.weight_step ?? parent?.weight_step ?? null)
   const focusInherited = ex.parent_id !== null && ex.focus_muscles == null
 
   function toggleRegion(region: string) {
@@ -221,7 +223,8 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
                   <span className="block text-sm font-semibold">Weight step kg</span>
                   <span className="block text-xs text-zinc-500 dark:text-zinc-400">Distance between two plates, as labelled, e.g. 4.5 or 10</span>
                 </span>
-                <span className="w-24 shrink-0">
+                <span className="flex shrink-0 items-center gap-1.5">
+                  <span className="w-20">
                   <Field
                     label="Weight step kg"
                     inputMode="decimal"
@@ -234,9 +237,10 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
                       return true
                     }}
                   />
+                  </span>
+                  {lbStep !== null && <span className="text-xs whitespace-nowrap text-zinc-500 tabular-nums dark:text-zinc-400">({lbStep} lb)</span>}
                 </span>
               </label>
-              {!eff.weightStep && <p className="text-xs text-orange-700 dark:text-orange-300">Without a weight step, recommendations are estimates (≈).</p>}
               <p className="text-xs text-zinc-500 dark:text-zinc-400">Shares for all exercises: More › Training settings.</p>
             </SheetSection>
           </>

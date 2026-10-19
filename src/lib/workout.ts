@@ -163,7 +163,7 @@ export async function startWorkout(templateId: string, userId: string): Promise<
     const prevWorking = prev.filter((s) => s.set_type === 'working')
     // Warm-up as its own set W before the work sets (decision 18 October 2026)
     const warmUp = eff.trackingType === 'weight_reps' && eff.warmUp
-    if (warmUp) sets.push(warmUpSet(we, eff.isUnilateral, userId, ts))
+    if (warmUp) sets.push(warmUpSet(we, userId, ts))
     let workingIndex = 0
     for (const p of planned) {
       const source = prevWorking[workingIndex++] ?? prevWorking.at(-1)
@@ -250,7 +250,7 @@ export async function addExerciseToWorkout(w: Workout, exerciseId: string): Prom
       ...base(w.user_id, ts),
     }
   })
-  if (warmUp) sets.unshift(warmUpSet(we, eff.isUnilateral, w.user_id, ts))
+  if (warmUp) sets.unshift(warmUpSet(we, w.user_id, ts))
   await saveRows('workout_exercise', [we])
   await saveRows('workout_set', sets)
 }
@@ -260,19 +260,21 @@ export function midReps(minimum: number, maximum: number): number {
   return Math.floor((minimum + maximum) / 2)
 }
 
+/** Warm-up reps: shown grey as a hint, saved as the lower value when the empty set is checked (decision 19 October 2026). */
 export const WARM_UP_REPS = 6
+export const WARM_UP_HINT = '6–7'
 
-/** Warm-up set W: 10 reps, weight left empty (the app recommends about half of the top set). */
-function warmUpSet(we: WorkoutExercise, unilateral: boolean, userId: string, ts: string): WorkoutSet {
+/** Warm-up set W: weight and reps left empty; the app shows the recommended weight and 6–7 reps in grey. */
+function warmUpSet(we: WorkoutExercise, userId: string, ts: string): WorkoutSet {
   return {
     id: uuid(),
     workout_exercise_id: we.id,
     position: 1,
     set_type: 'warmup',
     weight: null,
-    reps: unilateral ? null : WARM_UP_REPS,
-    reps_left: unilateral ? WARM_UP_REPS : null,
-    reps_right: unilateral ? WARM_UP_REPS : null,
+    reps: null,
+    reps_left: null,
+    reps_right: null,
     rir: null,
     duration_s: null,
     distance_km: null,

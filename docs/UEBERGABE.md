@@ -48,7 +48,7 @@ npx vitest run
 npm run build
 ```
 
-Stand nach diesem Release 126 Tests in 18 Dateien.
+Stand nach diesem Release 127 Tests in 18 Dateien.
 
 ### **Commits und Push**
 
@@ -93,28 +93,28 @@ git push origin main
 
 ### **Sätze und empfohlene Gewichte**
 
-- Warm-up-Satz «W» mit 6 Wiederholungen bei Warm-up-Anteil (Standard 50 %), zählt nicht für Volumen, Rekorde, Progression
+- Warm-up-Satz «W» bei Warm-up-Anteil (Standard 50 %): Gewicht und «6–7» grau, beim Abhaken mit dem empfohlenen Gewicht und 6 Wiederholungen gespeichert; zählt nicht für Volumen, Rekorde, Progression
 - Einstellung «Top set» pro Übung: an bei allen ausser Lateral Raise. Erster Arbeitssatz ist das Top Set, die übrigen Back-off bei Back-off-Anteil (Standard 85 %) des heutigen Top Sets
 - Anteile zentral unter More › Training settings (training_shares, Grenzen Warm-up 20–90, Back-off 50–95)
 - Spalte «Rec. kg»: TOP orange gefüllt (bei Increase mit ↑ und nächstem Gewicht), Back-off orange gestrichelt, Warm-up blau gestrichelt. Felder ändern sich nie selbst, Übernahme per Tipp
 - Gewichtsstufe pro Übung in kg (src/lib/topset.ts): mit Stufe in ganzen Stufen vom Top Set abwärts, exakt; ohne Stufe geschätzt mit ≈ (ab 20 kg auf 5 kg, darunter auf 1 kg). Anzeige ab 10 kg auf ganze kg
+- lb-Stapel: eine Stufe nahe einem Vielfachen von 5 lb (4.5 = 10 lb, 6.8 = 15 lb) wird in lb gerechnet (`poundStep`), Top Set und Stufe liegen auf dem 5-lb-Raster; so entspricht jede Empfehlung der kg-Beschriftung. Im Übungsblatt steht «(10 lb)» neben der Stufe
 - Alles in kg; lb werden nicht angezeigt
 
 ## **5. Geräte und Gewichtsstufen**
 
 | Übung | Gerät | Stufe | Stand |
 |---|---|---|---|
-| Lateral Raise (Cable), Triceps Pushdown (Cable) | Matrix-Kabelturm, 10 lb, beschriftet 4.5/9/14/18/23 … 86 | 4.5 | in DB |
+| Lateral Raise (Cable), Triceps Pushdown (Cable), Overhead Triceps Extension (Cable) | Matrix-Kabelturm, 10 lb, beschriftet 4.5/9/14/18/23 … 86 | 4.5 | in DB |
 | Lat Pulldown (Cable) | Stapel 15 lb, beschriftet 11/18/25/32/39/45 … 127 | 6.8 | in DB |
 | Seated Leg Curl (Machine) | kg-Stapel | 5 | in DB |
 | Shoulder Press (Machine), Lateral Raise (Machine) | Technogym, 5 kg, gelbes 2.5-kg-Zusatzgewicht | 5 | in DB |
 | Incline Chest Press (Dumbbell) | Kurzhanteln | 2 | in DB |
-| Chest Press (Machine) | Scheiben | 10 (Angabe Rodrigo) | Bestätigung offen |
-| Preacher Curl (Machine) | Scheiben | 5 (Angabe Rodrigo) | Bestätigung offen |
-| Seated Row (Cable) | vermutlich gleicher Stapel wie Lat Pulldown | 6.8 | Foto offen |
-| Leg Press, Overhead Triceps Extension, Incline Chest Press (Machine) | | | Foto offen |
-
-Rundungsproblem bei lb-Stapeln: 45 − 6.8 = 38.2 wird als 38 angezeigt, die Beschriftung ist 39. Vorschlag (Ok ausstehend): Stufen 4.5 und 6.8 intern als 10 lb (4.536 kg) und 15 lb (6.804 kg) rechnen und das Top Set aufs Raster einrasten, damit jede Empfehlung exakt der Beschriftung entspricht.
+| Chest Press (Machine) | Scheiben | 10 | in DB |
+| Preacher Curl (Machine) | Scheiben | 5 | in DB |
+| Seated Row (Cable) | vermutlich gleicher Stapel wie Lat Pulldown | | Rodrigo schaut beim nächsten Training |
+| Leg Press | vordefinierte Stufen ohne Scheiben | | Foto (50 kg eingestellt) erneut senden |
+| Incline Chest Press (Machine) | gibt es im Gym nicht | | in keinem Workout, bleibt erhalten |
 
 ## **6. Wichtige IDs**
 
@@ -143,19 +143,19 @@ Owner der Daten über `select user_id from private.app_owner`.
 
 ## **7. Offene Punkte für das nächste Release**
 
-Alle Punkte erst nach Plan oder Mockup und ausdrücklichem Ok umsetzen.
+Alle Punkte erst nach PNG-Entwurf und ausdrücklichem Ok umsetzen. Entwürfe vom 19. Oktober (release-kommt.png) wurden gezeigt, Ok ausstehend.
 
-1. lb-genaue Rundung für 4.5 und 6.8 (siehe Abschnitt 5); vorgeschlagen, Ok ausstehend
-2. Übungsblatt kompakt im iOS-Listenstil: roter Hinweis «Without a weight step…» entfernen (von Rodrigo als überflüssig bezeichnet), keine Erklärtexte, Detailansichten statt alles auf einer Seite; Mockup sheet-kompakt.png wurde gezeigt, Ok ausstehend
-3. Warm-up-Wiederholungen (heute fest 6) zentral in den Training settings einstellbar
-4. Bereich für Triceps Pushdown und Preacher Curl: 8–12 belassen oder auf 6–10 senken; Entscheid offen
-5. Trainingsreport nach «Finish workout»: Dauer, Volumen und Sätze im Vergleich zum letzten Mal, Bestleistungen, über oder unter Plan, pro Übung ↑ / halten / ↓ fürs nächste Training. Dazu Tab «Reports» unter Stats mit allen bisherigen Reports. Zuerst PNG-Design zeigen
-6. Home-Übersicht: Achsenbeschriftung, Diagramm ab erster Datenwoche, einfachere Legende, Statusleiste, Herkunft «Main Day A» in der Increase-Liste; Bestätigung ausstehend
-7. Fehlende Gewichtsstufen nach Fotos eintragen (Abschnitt 5); Chest Press 10 und Preacher Curl 5 nach Bestätigung
-8. Shoulder Press (Machine) und Lateral Raise (Machine) sind angelegt, aber keinem Workout zugeordnet; Einsatz im Plan offen
-9. Incline Chest Press in Main Day A hat keine gespeicherte Pause (rest_s leer)
-10. Reihenfolge Rücken und Beine vor Armen prüfen (offen seit Planüberprüfung)
-11. Ältere Punkte aus docs/STATUS.md: Gewichtseintrag vom 7. Oktober aus dem Papierkorb wiederherstellen, Foto-Passphrase, Wunschliste
+1. Übungsblatt kompakt im iOS-Listenstil: Werte rechts (Reps, Warm-up set, Top set, Weight step mit lb, Rest; Equipment, Notes, Muscles to feel, Videos; Name and variants), Antippen öffnet Detailansicht, keine Erklärtexte
+2. Trainingsreport nach «Finish workout»: Dauer, Volumen und Sätze im Vergleich zum letzten gleichen Workout, Rekorde, über oder unter Plan, pro Übung ↑ / = / ↓ mit Gewicht fürs nächste Training
+3. Tab «Reports» unter Stats mit allen Reports, neueste zuerst
+4. Home-Übersicht: Statusleiste (Woche, nächstes Workout, Gewicht), Diagramm mit Achsen ab erster Datenwoche, eine Legende, Herkunft «Main Day A» in der Increase-Liste
+5. Fehlende Gewichtsstufen: Seated Row, Leg Press (Abschnitt 5)
+6. Shoulder Press (Machine) und Lateral Raise (Machine) sind angelegt, aber keinem Workout zugeordnet; Einsatz im Plan offen
+7. Incline Chest Press in Main Day A hat keine gespeicherte Pause (rest_s leer)
+8. Reihenfolge Rücken und Beine vor Armen prüfen (offen seit Planüberprüfung)
+9. Ältere Punkte aus docs/STATUS.md: Gewichtseintrag vom 7. Oktober aus dem Papierkorb wiederherstellen, Foto-Passphrase, Wunschliste
+
+Entschieden und nicht umsetzen: Warm-up-Wiederholungen bleiben fest 6–7 (keine zentrale Einstellung), Arme bleiben 8–12.
 
 ## **8. Bekannte Stolpersteine**
 
