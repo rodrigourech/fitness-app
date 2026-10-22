@@ -201,3 +201,11 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
 - Farben: Orange erhöhen, Blau senken (statt Rot), Grau halten, Grün erledigt oder besser; gilt überall
 - Umgesetzt: Übungsblatt als Liste, Trainingsreport, Stats › Reports, Your progress mit Zeitraum, Senken blau. Report vergleicht mit dem letzten Training desselben Workouts; heutiges Gewicht ist das schwerste Arbeitsgewicht (Top Set); Empfehlung entspricht der Progressionslogik direkt nach dem Training
 - Leg Press: Technogym-Stapel 5, 10, 20, 30 … 190 kg, Gewichtsstufe 10 kg (Migration 0025)
+
+## **22. Oktober 2026**
+
+- Markdown-Export für KI-Chats (Claude, ChatGPT): Markdown mit Tabellen, Texte englisch wie die UI, eigene Notizen und Varianten deutsch
+- Einzelnes Workout im Detailblatt unter History: «Copy as Markdown» und «Share» (iOS-Teilen-Menü; nur sichtbar, wo der Browser Teilen anbietet). Inhalt: Zeit und Dauer, Volumen, Gym-Auslastung, Körpergewicht des Tages (sonst 7-Tage-Mittel), Notiz; Vergleich mit dem letzten Training derselben Vorlage wie im Report (Dauer, Volumen, Arbeitssätze, bei Läufen Distanz, Zeit, Pace); pro Übung Bereich, Top set, Pause, Gewichtsstufe, alle Sätze inklusive Warm-up neben den Sätzen des letzten früheren Trainings dieser Übung oder Variante in irgendeinem Workout (wie Spalte Previous), «below min», Volumen mit Vorwert, Kommentar. Keine Next-workout-Empfehlung und keine PRs
+- History-Tab oben «Export for AI» mit Zeitraum 7 days · 30 days · All time (rollend, pro Gerät gespeichert, Standard 30 days): Zusammenfassung (Trainings pro Vorlage, Volumen und Arbeitssätze pro Woche ab Montag, Top Set pro Übung erstes und letztes im Zeitraum), Körpergewicht, aktueller Plan (aktive Vorlagen mit Sätzen, Bereich, Top set, Pause, Stufe, Anteile Warm-up und Back-off), danach jedes Workout vollständig wie der Einzelexport, älteste zuerst
+- Der Text wird beim Öffnen bzw. Zeitraumwechsel vorab erzeugt, weil iOS Safari Zwischenablage und Teilen nur direkt im Tipp erlaubt
+- Kein Mockup vorab (ausdrücklich «direkt so umsetzen»); keine Migration

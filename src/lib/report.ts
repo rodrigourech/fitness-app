@@ -55,7 +55,8 @@ async function partsOf(w: Workout): Promise<Parts> {
   return { wes, sets }
 }
 
-function totalsOf(w: Workout, { sets }: Parts): ReportTotals {
+/** Totals of a workout; sets include those discarded at the finish (deleted_at = finished_at), which count as planned. */
+export function totalsOf(w: Workout, { sets }: Pick<Parts, 'sets'>): ReportTotals {
   const work = sets.filter((s) => s.set_type === 'working')
   // After the finish every remaining set counts as done (imported history has no completed_at)
   const done = work.filter((s) => s.deleted_at === null)

@@ -1,6 +1,6 @@
 # **Übergabe für neue Chats und Agenten**
 
-Stand 19. Oktober 2026. Diese Datei fasst alles zusammen, was ein neuer Chat oder Agent braucht, um am nächsten Release weiterzuarbeiten: Zusammenarbeit, Arbeitsablauf, aktuelle Trainingslogik, Geräte, IDs und offene Punkte. Reihenfolge beim Einstieg:
+Stand 22. Oktober 2026. Diese Datei fasst alles zusammen, was ein neuer Chat oder Agent braucht, um am nächsten Release weiterzuarbeiten: Zusammenarbeit, Arbeitsablauf, aktuelle Trainingslogik, Geräte, IDs und offene Punkte. Reihenfolge beim Einstieg:
 
 1. CLAUDE.md (Regeln, Stack, Architektur, Konventionen)
 2. Diese Datei
@@ -48,7 +48,7 @@ npx vitest run
 npm run build
 ```
 
-Stand nach diesem Release 127 Tests in 18 Dateien.
+Stand nach dem Release vom 22. Oktober 136 Tests in 21 Dateien.
 
 ### **Commits und Push**
 
@@ -142,6 +142,8 @@ git push origin main
 Owner der Daten über `select user_id from private.app_owner`.
 
 ## **7. Offene Punkte für das nächste Release**
+
+Umgesetzt am 22. Oktober: Markdown-Export für KI-Chats (Detailblatt in History «Copy as Markdown» und «Share»; History «Export for AI» mit 7 days · 30 days · All time; src/lib/markdown.ts). Details in docs/entscheidungen.md. iPhone-Test von Copy und Share offen.
 
 Umgesetzt am 19. Oktober (Release nach bfc8f3e, Entwurf docs/design/naechstes-release.png):
 

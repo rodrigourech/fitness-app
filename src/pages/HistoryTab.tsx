@@ -1,9 +1,11 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
+import CopyShare from '../components/CopyShare'
 import CrowdPicker from '../components/CrowdPicker'
 import Sheet from '../components/Sheet'
 import { db, type WorkoutSet } from '../lib/db'
 import { exportJson, exportSetsCsv } from '../lib/export'
+import { EXPORT_RANGES, historyMarkdown, loadExportData, workoutMarkdown, workoutsInRange, type ExportRange } from '../lib/markdown'
 import { deleteWorkout, finishedWorkouts, workoutDetail, type DetailExercise, type WorkoutSummary } from '../lib/history'
 import { effectiveReps, epley, volume } from '../lib/stats'
 import { belowMinimum } from '../lib/progression'
@@ -19,6 +21,7 @@ export default function HistoryTab() {
 
   return (
     <>
+      {list !== undefined && list.length > 0 && <HistoryExport />}
       {list === undefined ? (
         <p className="text-zinc-500">Loading …</p>
       ) : list.length === 0 ? (
@@ -62,10 +65,62 @@ export default function HistoryTab() {
   )
 }
 
+function readRange(): ExportRange {
+  try {
+    const v = localStorage.getItem('history-export-range')
+    if (EXPORT_RANGES.some((r) => r.key === v)) return v as ExportRange
+  } catch {
+    /* per-device convenience */
+  }
+  return '30d'
+}
+
+/** «Export for AI»: the whole history of a period as Markdown (decision 22 October 2026). */
+function HistoryExport() {
+  const [range, setRange] = useState<ExportRange>(readRange)
+  // Built ahead of the tap and kept current while data changes
+  const prepared = useLiveQuery(async () => {
+    const data = await loadExportData()
+    const now = new Date()
+    return { text: historyMarkdown(data, range, now), count: workoutsInRange(data, range, now).length }
+  }, [range])
+  function pick(r: ExportRange) {
+    setRange(r)
+    try {
+      localStorage.setItem('history-export-range', r)
+    } catch {
+      /* per-device convenience */
+    }
+  }
+  const title = EXPORT_RANGES.find((r) => r.key === range)!.title
+  return (
+    <section className="mb-4 card p-3">
+      <h3 className="font-semibold">Export for AI</h3>
+      <p className="mt-0.5 mb-3 text-xs text-zinc-500 dark:text-zinc-400">
+        Markdown with every workout and its previous sets, body weight and the current plan.
+      </p>
+      <div className="home-range-switch" role="group" aria-label="Export period">
+        {EXPORT_RANGES.map((r) => (
+          <button key={r.key} aria-pressed={range === r.key} onClick={() => pick(r.key)}>
+            {r.label}
+          </button>
+        ))}
+      </div>
+      <p className="mb-3 text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
+        {prepared
+          ? `${prepared.count} ${prepared.count === 1 ? 'workout' : 'workouts'} · ${Math.max(1, Math.round(prepared.text.length / 1000))} k characters`
+          : 'Preparing …'}
+      </p>
+      <CopyShare text={prepared?.text} title={`Training history · ${title}`} />
+    </section>
+  )
+}
+
 function WorkoutDetailSheet({ summary, onClose }: { summary: WorkoutSummary; onClose: () => void }) {
   const detail = useLiveQuery(() => workoutDetail(summary.workout.id), [summary.workout.id])
   // Live row, so the crowd rating updates while the sheet is open
   const live = useLiveQuery(() => db.workout.get(summary.workout.id), [summary.workout.id])
+  const markdown = useLiveQuery(async () => workoutMarkdown(await loadExportData(), summary.workout.id), [summary.workout.id])
   const [confirm, setConfirm] = useState(false)
   const w = live ?? summary.workout
   const time = `${timeFormat.format(new Date(w.started_at))}${w.finished_at ? `–${timeFormat.format(new Date(w.finished_at))}` : ''}`
@@ -77,6 +132,9 @@ function WorkoutDetailSheet({ summary, onClose }: { summary: WorkoutSummary; onC
         <Tile label="Duration" value={summary.durationS !== null ? formatDuration(summary.durationS) : '–'} />
         <Tile label="Volume" value={`${Math.round(summary.volume).toLocaleString('en-GB')} kg`} />
       </dl>
+      <div className="mb-4">
+        <CopyShare text={markdown} title={`${w.template_name_snapshot ?? 'Workout'} · ${dateFormat.format(new Date(w.started_at))}`} />
+      </div>
       {w.note && (
         <p className="mb-4 rounded-lg bg-zinc-100 px-3 py-2 text-sm whitespace-pre-line text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
           {w.note}

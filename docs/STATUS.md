@@ -2,7 +2,7 @@
 
 Zentrale Übergabe für alle KI-Agenten und Sitzungen. Zuerst CLAUDE.md lesen (Regeln, Stack, Konventionen), dann docs/UEBERGABE.md (Einstieg für neue Chats, offene Punkte fürs nächste Release), dann diese Datei. Am Ende jeder Sitzung hier nachführen: Stand, offene Punkte, neue Hinweise. Entscheidungen gehören zusätzlich nach docs/entscheidungen.md.
 
-Letzte Aktualisierung 19. Oktober 2026
+Letzte Aktualisierung 22. Oktober 2026
 
 ## Orte
 
@@ -14,6 +14,7 @@ Letzte Aktualisierung 19. Oktober 2026
 
 ## Stand
 
+- Release vom 22. Oktober: Markdown-Export für KI-Chats. Detailblatt eines Workouts unter History mit «Copy as Markdown» und «Share»; History-Tab oben «Export for AI» mit 7 days · 30 days · All time (Zusammenfassung, Körpergewicht, aktueller Plan, alle Workouts mit Previous). Code src/lib/markdown.ts, src/components/CopyShare.tsx, src/lib/clipboard.ts. Keine Migration. Typprüfung, Lint, 136 Tests in 21 Dateien und Build erfolgreich; History und Detailblatt mit Seed-Daten bei 390 px geprüft (kein Überlauf, Kopieren in die Zwischenablage geprüft). Es fehlt der Push von main durch Rodrigo und der Test auf dem iPhone (Copy und Share)
 - Release vom 19. Oktober (Mittag): Übungsblatt als Liste mit Detailansichten, Trainingsreport nach «Finish workout», Stats › Reports, Home › Your progress mit Volume/Body weight und 1w · 1m · 3m · 6m · All, Senken blau. Keine Migration. Typprüfung, Lint, 132 Tests und Build erfolgreich; alle Ansichten mit Beispieldaten bei 390 px geprüft (kein horizontaler Überlauf, keine Konsolenfehler). Push durch Rodrigo
 - Release vom 19. Oktober (Vormittag): Wiederholungen starten in der Mitte des Bereichs, Warm-up 6 Wiederholungen, Info-Symbol statt Video-Knopf, Lat Pulldown Classic Grip (Migration 0022), neue Übungen Shoulder Press (Machine) und Lateral Raise (Machine) ohne Workout sowie Gewichtsstufen aus Gerätefotos (Migrationen 0023, 0024), lb-genaue Rundung für 4.5/6.8, Warm-up grau mit 6–7, roter Hinweis im Übungsblatt entfernt. 0022 bis 0024 auf production ausgeführt und geprüft. Typprüfung, Lint, 127 Tests und Build erfolgreich. Gepusht und live seit 19. Oktober 11:28 (bfc8f3e, Deploy geprüft)
 - Planüberprüfung vom 19. Oktober live (c1444f5, gepusht durch Rodrigo nach Lint und 125 Tests): Compound 6–10, Pausen 120 s für Lat Pulldown/Seated Row/Leg Press, Main Day B mit Overhead Triceps Extension (Cable) und Seated Leg Curl (Machine), Legende ohne «≈ estimated», TOP kleiner. Migration 0021 um 07:55 auf production ausgeführt und geprüft. Hinweis: Incline Chest Press in Main Day A hat keine gespeicherte Pause (rest_s leer); die beiden neuen Übungen haben noch keine Gewichtsstufe
