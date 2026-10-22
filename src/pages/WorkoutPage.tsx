@@ -34,7 +34,9 @@ import {
   parseDuration,
   parseNumber,
   recentTrainingSessions,
+  alternativeOf,
   removeLastSet,
+  switchExercise,
   unskipExercise,
   toggleSetDone,
   updateSet,
@@ -67,6 +69,10 @@ interface ExerciseBlock {
   best: Best
   advice: ProgressionAdvice
   targets: RepetitionTargets
+  /** Exercise the switch leads to: the alternative, or back to the planned exercise (decision 22 October 2026) */
+  switchTo: string | null
+  /** Planned exercise while its alternative is trained */
+  originalName: string | null
 }
 
 async function loadBlocks(workoutId: string, templateId: string | null): Promise<ExerciseBlock[]> {
@@ -90,6 +96,8 @@ async function loadBlocks(workoutId: string, templateId: string | null): Promise
       const defaults = exercise ? repetitionTargets(exercise, byId, planned) : { target: 10, minimum: 7 }
       const targets = { target: we.target_reps ?? defaults.target, minimum: we.min_reps ?? defaults.minimum }
       const eff = exercise ? effective(exercise, byId) : undefined
+      const original = we.original_exercise_id ? byId.get(we.original_exercise_id) : undefined
+      const switchTarget = original ?? (exercise ? alternativeOf(exercise, byId) : null)
       return {
         we,
         exercise,
@@ -104,6 +112,8 @@ async function loadBlocks(workoutId: string, templateId: string | null): Promise
         best: await bestBefore(we.exercise_id, workoutId),
         advice: eff?.trackingType === 'weight_reps' ? progressionAdvice(sessions, targets, eff.isUnilateral, sets.filter((s) => s.set_type === 'working').length, eff.topSet) : null,
         targets,
+        switchTo: switchTarget ? displayName(switchTarget, byId) : null,
+        originalName: original ? displayName(original, byId) : null,
       }
     }),
   )
@@ -257,7 +267,7 @@ export default function WorkoutPage({ workout, onReauth, onMinimize, onFinished 
 }
 
 function ExerciseCard({ block, byId, shares, onOpen }: { block: ExerciseBlock; byId: Map<string, Exercise>; shares: TrainingShares; onOpen: (exerciseId: string) => void }) {
-  const { we, exercise, name, variant, topSet, weightStep, sets, previous, links, best, advice, targets } = block
+  const { we, exercise, name, variant, topSet, weightStep, sets, previous, links, best, advice, targets, switchTo, originalName } = block
   const eff = exercise
     ? effective(exercise, byId)
     : { trackingType: 'weight_reps', isUnilateral: false, floor: null, seat: null, footPosition: null, setupNote: null, focusMuscles: [] as string[], focusCue: null, restS: null }
@@ -307,8 +317,20 @@ function ExerciseCard({ block, byId, shares, onOpen }: { block: ExerciseBlock; b
             {name} <span className="text-zinc-400">›</span>
           </h2>
           {variant && <p className="text-sm text-zinc-700 dark:text-zinc-300">{variant}</p>}
+          {originalName && <p className="text-xs text-zinc-500 dark:text-zinc-400">Alternative for {originalName}</p>}
         </button>
         <span className="flex shrink-0 items-center gap-1">
+          {/* Switch to the alternative and back while no set is done (decision 22 October 2026) */}
+          {switchTo && !sets.some((s) => s.completed_at !== null) && (
+            <button
+              onClick={() => void switchExercise(we)}
+              aria-label={`Switch to ${switchTo}`}
+              title={`Switch to ${switchTo}`}
+              className="flex h-7 shrink-0 items-center rounded-full border border-zinc-300 px-2.5 text-xs font-medium text-zinc-600 dark:border-zinc-600 dark:text-zinc-300"
+            >
+              ⇄ {originalName ? 'Original' : 'Alternative'}
+            </button>
+          )}
           <VideoButton links={links} />
         </span>
       </div>

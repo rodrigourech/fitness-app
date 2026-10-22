@@ -2,7 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useState, type FormEvent } from 'react'
 import { db, displayName, type Exercise } from '../lib/db'
 import { addLink, createVariant, linkLabel, linksFor, normalizeUrl, removeLink, updateExercise } from '../lib/exercise'
-import { effective, parseNumber } from '../lib/workout'
+import { alternativeOf, effective, parseNumber } from '../lib/workout'
 import { regionName } from '../lib/muscles'
 import BodyMap from './BodyMap'
 import RestStepper from './RestStepper'
@@ -37,6 +37,8 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
   }, [currentId])
 
   const shares = useLiveQuery(getTrainingShares, []) ?? DEFAULT_TRAINING_SHARES
+  // All exercises: name of the alternative and the choice list (decision 22 October 2026)
+  const all = useLiveQuery(async () => new Map((await db.exercise.toArray()).map((e) => [e.id, e])), [])
   const [url, setUrl] = useState('')
   const [title, setTitle] = useState('')
   const [urlError, setUrlError] = useState(false)
@@ -83,6 +85,8 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
   const equipment = EQUIPMENT.find(([value]) => value === main.equipment)?.[1] ?? 'Not set'
   const inheritsSwitch = parent && (ex.warm_up != null || ex.top_set != null)
   const back = () => setPage(null)
+  const alternative = all ? alternativeOf(ex, all) : null
+  const altInherited = parent !== undefined && ex.alternative_id == null && alternative !== null
 
   let body: React.ReactNode
   if (page === 'details') {
@@ -198,6 +202,32 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
         </div>
       </Detail>
     )
+  } else if (page === 'alternative') {
+    const family = new Set([main.id, ...variants.map((v) => v.id)])
+    const options = all
+      ? [...all.values()]
+          .filter((e) => e.deleted_at === null && !family.has(e.id) && (!e.parent_id || all.get(e.parent_id)?.deleted_at === null))
+          .map((e) => ({ id: e.id, name: displayName(e, all) }))
+          .sort((a, b) => a.name.localeCompare(b.name))
+      : []
+    const choice = (label: string, active: boolean, onClick: () => void, key?: string) => (
+      <button key={key} onClick={onClick} className="flex min-h-11 w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-[15px]">
+        <span className="min-w-0 truncate">{label}</span>
+        {active && <span className="shrink-0 font-semibold text-accent-ink">✓</span>}
+      </button>
+    )
+    body = (
+      <Detail
+        title="Alternative"
+        onBack={back}
+        note="In a running workout «⇄ Alternative» switches to this exercise while no set is done, for example when the machine is taken. The alternative keeps its own history and progression. Set it on both exercises to switch either way."
+      >
+        <List>
+          {choice(parent ? 'Same as main exercise' : 'None', ex.alternative_id == null, () => void updateExercise(ex, { alternative_id: null }))}
+          {options.map((o) => choice(o.name, ex.alternative_id === o.id, () => void updateExercise(ex, { alternative_id: o.id }), o.id))}
+        </List>
+      </Detail>
+    )
   } else if (page === 'equipment') {
     body = (
       <Detail title="Equipment" onBack={back} note={parent ? 'Shared by all variants.' : undefined}>
@@ -283,6 +313,12 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
             {weightReps && <SwitchRow label="Top set" checked={eff.topSet} onChange={(v) => void updateExercise(ex, { top_set: v })} />}
             {weightReps && <Row label="Weight step" value={stepKg === null ? 'Not set' : `${stepKg} kg${lbStep !== null ? ` (${lbStep} lb)` : ''}`} muted={stepKg === null} onClick={() => setPage('step')} />}
             <Row label="Rest" value={restS ? formatDuration(restS) : 'Off'} muted={!restS} onClick={() => setPage('rest')} />
+            <Row
+              label="Alternative"
+              value={alternative ? `${displayName(alternative, all!)}${altInherited ? ' (inh.)' : ''}` : 'None'}
+              muted={!alternative}
+              onClick={() => setPage('alternative')}
+            />
           </List>
           {inheritsSwitch && (
             <button onClick={() => void updateExercise(ex, { warm_up: null, top_set: null })} className="mt-1.5 px-1 text-left text-xs font-medium text-accent-ink">
@@ -316,7 +352,7 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
   )
 }
 
-type Page = 'details' | 'reps' | 'step' | 'rest' | 'equipment' | 'muscles' | 'videos'
+type Page = 'details' | 'reps' | 'step' | 'rest' | 'alternative' | 'equipment' | 'muscles' | 'videos'
 
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (

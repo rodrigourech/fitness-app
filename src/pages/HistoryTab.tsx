@@ -256,6 +256,7 @@ function ExerciseResult({ ex }: { ex: DetailExercise }) {
         <h3 className="font-semibold">{ex.name}</h3>
         <span className="shrink-0 text-xs text-zinc-500 tabular-nums dark:text-zinc-400">{summary}</span>
       </div>
+      {ex.alternativeFor && <p className="-mt-1.5 mb-2 text-xs text-zinc-500 dark:text-zinc-400">Alternative for {ex.alternativeFor}</p>}
       <table className="text-sm tabular-nums">
         <thead>
           <tr className="text-xs text-zinc-500 dark:text-zinc-400">

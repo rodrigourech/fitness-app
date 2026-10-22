@@ -48,7 +48,7 @@ npx vitest run
 npm run build
 ```
 
-Stand nach dem Release vom 22. Oktober 136 Tests in 21 Dateien.
+Stand nach dem Release vom 22. Oktober 139 Tests in 22 Dateien.
 
 ### **Commits und Push**
 
@@ -144,6 +144,8 @@ Owner der Daten über `select user_id from private.app_owner`.
 ## **7. Offene Punkte für das nächste Release**
 
 Umgesetzt am 22. Oktober: Markdown-Export für KI-Chats (Detailblatt in History «Copy as Markdown» und «Share»; History «Export for AI» mit 7 days · 30 days · All time; src/lib/markdown.ts). Details in docs/entscheidungen.md. iPhone-Test von Copy und Share offen.
+
+Umgesetzt am 22. Oktober (zweites Paket): Alternativübungen (Übungsblatt › Alternative, im Training «⇄ Alternative»/«⇄ Original» bis zum ersten abgehakten Satz). Migration 0026 muss vor dem Push auf production laufen, danach refresh-schema. Paare bisher Chest Press (Machine) und Incline Chest Press (Dumbbell), Triceps Pushdown (Cable) und Overhead Triceps Extension (Cable). Wunschliste: eigener Skip-Knopf, weitere Paare.
 
 Umgesetzt am 19. Oktober (Release nach bfc8f3e, Entwurf docs/design/naechstes-release.png):
 

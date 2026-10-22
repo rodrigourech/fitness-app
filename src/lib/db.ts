@@ -39,6 +39,8 @@ export interface Exercise extends SyncColumns {
   warm_up?: boolean | null
   /** Top set with back-off sets (migration 0018); null on a variant = inherit, null on a main exercise = off */
   top_set?: boolean | null
+  /** Exercise to switch to in a running workout when this one is taken (migration 0026); null on a variant = inherit */
+  alternative_id?: string | null
 }
 
 export interface ExerciseLink extends SyncColumns {
@@ -100,6 +102,8 @@ export interface WorkoutExercise extends SyncColumns {
   target_reps?: number | null
   min_reps?: number | null
   warm_up?: boolean | null
+  /** Planned exercise when the alternative is trained instead (migration 0026); null = as planned */
+  original_exercise_id?: string | null
 }
 
 export interface WorkoutSet extends SyncColumns {

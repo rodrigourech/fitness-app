@@ -41,6 +41,8 @@ export interface DetailExercise {
   unilateral: boolean
   /** Minimum reps per work set (snapshot of the workout, else the exercise setting); null = not weight_reps */
   minReps: number | null
+  /** Planned exercise when its alternative was trained (decision 22 October 2026) */
+  alternativeFor: string | null
   sets: WorkoutSet[]
 }
 
@@ -59,6 +61,7 @@ export async function workoutDetail(workoutId: string): Promise<DetailExercise[]
         skipped: !!we.skipped_at,
         trackingType: eff?.trackingType ?? 'weight_reps',
         unilateral: eff?.isUnilateral ?? false,
+        alternativeFor: we.original_exercise_id && byId.get(we.original_exercise_id) ? displayName(byId.get(we.original_exercise_id)!, byId) : null,
         minReps: (eff?.trackingType ?? 'weight_reps') === 'weight_reps' ? we.min_reps ?? eff?.minReps ?? null : null,
         sets: (await db.workout_set.where('workout_exercise_id').equals(we.id).toArray())
           .filter((s) => s.deleted_at === null)

@@ -285,7 +285,8 @@ function exerciseBlock(data: ExportData, w: Workout, we: WorkoutExercise, index:
     ...(we.rest_s ? [`Rest ${we.rest_s} s`] : []),
     ...(weightReps && stepLabel(eff?.weightStep ?? null) ? [`Weight step ${stepLabel(eff!.weightStep)}`] : []),
   ]
-  const out = [heading(level, `${index}. ${name}`), '']
+  const original = we.original_exercise_id ? data.byId.get(we.original_exercise_id) : undefined
+  const out = [heading(level, `${index}. ${name}${original ? ` (alternative for ${displayName(original, data.byId)})` : ''}`), '']
   if (facts.length) out.push(facts.join(' · '), '')
 
   const mine = done(data.sets.get(we.id))
