@@ -212,3 +212,18 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
 - Alternativübungen: pro Übung eine Alternative im Übungsblatt (Training › Alternative), Varianten erben sie. Im laufenden Training Knopf «⇄ Alternative» neben dem Namen, solange kein Satz der Übung abgehakt ist; zurück mit «⇄ Original». Die Sätze werden mit gleicher Anzahl Arbeitssätze neu angelegt und wie beim Start vorbelegt (Gewicht vom letzten Training der neuen Übung, Wiederholungen aus der Mitte des Bereichs, Warm-up nach deren Einstellung). Die Alternative hat eigene Historie und Progression; im Training, in History und im Markdown-Export steht «Alternative for …». Die Einstellung gilt in eine Richtung; Paare werden auf beiden Übungen gesetzt
 - Keine neuen Übungen: Paare nur aus bestehenden Übungen, zuerst Chest Press (Machine) und Incline Chest Press (Dumbbell) sowie Triceps Pushdown (Cable) und Overhead Triceps Extension (Cable), je in beide Richtungen (Migration 0026). Weitere Paare später besprechen
 - Eigener Skip-Knopf pro Übung in die Wunschliste (nicht zwingend; heute «Remove set» bis zum letzten Satz oder keine abgehakten Sätze beim Abschliessen)
+
+## **26. Oktober 2026**
+
+- Review der Historie 28. September bis 24. Oktober: Konstanz, Brust, Beine und Trizeps gut; Lat Pulldown rückläufig (45 × 10 → 45 × 8), Rücken mit 6 Sätzen pro Woche das kleinste Volumen; Preacher Curl Top Set stabil nach Sprung 15 → 20 kg, nur der dritte Satz fällt ab
+- Bicycle aus Main Day A und B gestrichen: bei Sätzen bis nahe Versagen kaum Nutzen gegenüber spezifischem Aufwärmen (Ribeiro 2014); der Warm-up-Satz der ersten Übung genügt. Bonus Day vorerst unverändert
+- Reihenfolge nach Stockwerk mit genau einem Wechsel, Rücken und Beine unten zuerst, danach oben Brust, Schultern, Arme; Rücken damit immer vor den Armen (Simão 2012). Brust kommt etwas ermüdet, bewusst akzeptiert
+- Neue Übung Chest-Supported Row (Machine), Scheiben, oben, in Main Day A nach Incline Chest Press: 3 Sätze 8–12, 120 s, ohne Top set und Warm-up. Rücken 6 → 9 Sätze pro Woche (Schoenfeld 2017). Test; bewährt sie sich, kann sie Seated Row in Main Day B ersetzen
+- Lat Pulldown und Seated Row 8–12 statt 6–10 und eine Stufe leichter (39 bzw. 32 kg), weil Ausführung und Muskelgefühl noch nicht sitzen (Calatayud 2016, Schoenfeld 2018). Ausnahme von der Compound-Kategorie 6–10. Variante in Main Day A bleibt Classic Grip
+- Gewichtsstufe Seated Row 6.8 kg (gleicher 15-lb-Stapel wie Lat Pulldown, Gewichte 32 und 39 kg in der Historie)
+- Kein harter Zwischensatz vor dem Top Set (z.B. 40 × 10 vor 50): ein Warm-up genügt, kein zweiter Aufwärmsatz (Zeit). Als Notiz bei Chest Press und Triceps Pushdown
+- Preacher Curl bleibt bei 3 Sätzen (Volumen), Pause 90 → 120 s in A und B (Schoenfeld 2016)
+- Lateral Raise bleibt am Kabel, rechts zuerst, bis 15 Wiederholungen; Wechsel auf die Maschine vorerst nicht gewünscht. Shoulder Press nicht in den Plan (Überschneidung mit Brustdrücken)
+- Wochenrhythmus unverändert
+- Alter Plan als archivierte Kopien «Main Day A (until 26 Oct)» und «Main Day B (until 26 Oct)», die aktiven Workouts werden umgestellt statt neu angelegt, weil A/B-Wechsel (feste IDs MAIN_DAY_A/B), Trainingsreport und «Compared with last» an der Workout-ID hängen. Im Archiv zeigen Lat Pulldown und Seated Row ebenfalls 8–12, weil der Bereich pro Übung gilt
+- Umsetzung ohne Logikänderung: Bereiche gelten pro Übung (8–12 wirkt auch im Bonus Day), Startgewicht ist kein Datenfeld und wird einmal manuell eingetragen, Ort oben/unten ergibt sich aus der Reihenfolge
