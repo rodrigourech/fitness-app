@@ -232,3 +232,6 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
 
 - Beinübungen sind oft besetzt und wurden deshalb ausgelassen. Vorgehen: Reihenfolge innerhalb des Stockwerks flexibel, sonst Alternative, erst danach auslassen und die Beinübung im nächsten Training vorziehen
 - Alternative Seated Leg Curl (Machine) und Lying Leg Curl (Machine) in beide Richtungen (Migration 0028); Lying Leg Curl hat eigene Historie und Progression. Leg Press bewusst ohne Alternative
+- Trainingsreport ohne Gesamtvolumen: Der Wert folgt vor allem den gemachten Übungen (Leg Press allein rund 2800 kg) und sagt wenig über Fortschritt. Auch ein Zähler «Better» verworfen (zu abstrakt). Stattdessen nur Abzählbares: Duration, Sets, Records
+- Pro Übung eine Tabellenzeile Last · Today · Next kg (Reihenfolge chronologisch, Wunsch Rodrigo). Last ist das Top Set des letzten früheren Trainings dieser Übung oder Variante in irgendeinem Workout (wie Previous); Top Set = schwerster Satz, bei Gleichstand mit den meisten Wiederholungen, einseitig zählt die schwächere Seite. Differenz in kg und Wiederholungen, Farbe nach kg, bei gleichem Gewicht nach Wiederholungen. Neue Übungen NEW, ausgelassene SKIPPED mit Vorwert
+- Stats › Reports zeigt Dauer und Sätze statt Volumen mit Prozent; Markdown-Export bleibt vorerst unverändert

@@ -4,7 +4,7 @@ import { ColumnChart, GoalColumns, Heatmap, HBarChart, LineChart, SideChart, Spa
 import Popover from '../components/Popover'
 import { formatShortDate } from '../lib/chart'
 import { readyToIncrease } from '../lib/progression'
-import { formatMinutes, formatVolume, percentChange, workoutReports } from '../lib/report'
+import { formatMinutes, workoutReports } from '../lib/report'
 import { formatDuration, paceSeconds } from '../lib/workout'
 import { ReportView } from './ReportPage'
 import { DEFAULT_WEEKLY_GOAL, getWeeklyGoal, saveWeeklyGoal, type WeeklyGoal } from '../lib/settings'
@@ -94,7 +94,6 @@ function ReportList({ onOpen }: { onOpen: (id: string) => void }) {
     <section className="card divide-y divide-zinc-100 px-4 dark:divide-zinc-800">
       {reports.map((r) => {
         const t = r.totals
-        const vol = percentChange(t.volume, r.previous?.volume)
         const up = r.lines.filter((l) => l.advice === 'increase').length
         const down = r.lines.filter((l) => l.advice === 'reduce').length
         const pace = paceSeconds(t.runS, t.distanceKm)
@@ -108,8 +107,7 @@ function ReportList({ onOpen }: { onOpen: (id: string) => void }) {
               {r.kind === 'run'
                 ? `${t.distanceKm.toFixed(1)} km · ${formatDuration(t.runS)}${pace !== null ? ` · ${formatDuration(pace)} /km` : ''}`
                 : <>
-                    {formatMinutes(t.durationS)} · {formatVolume(t.volume)} kg
-                    {vol !== null && vol !== 0 && <span className={vol > 0 ? ' text-emerald-700 dark:text-emerald-400' : ' text-red-700 dark:text-red-400'}> {vol > 0 ? '+' : '−'}{Math.abs(vol)} %</span>}
+                    {formatMinutes(t.durationS)} · {t.sets} / {t.planned} sets
                     {up > 0 && ` · ↑ ${up}`}{down > 0 && ` · ↓ ${down}`}{r.records > 0 && ` · ${r.records} PR`}
                   </>}
             </span>

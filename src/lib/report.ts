@@ -1,6 +1,8 @@
-// Workout report after «Finish workout» and in Stats › Reports (decision 19 October 2026).
-// Three numbers against the last workout of the same template (duration, volume, sets done of planned);
-// strength workouts list one line per exercise with today's weight and the weight for the next workout.
+// Workout report after «Finish workout» and in Stats › Reports (decisions 19 and 29 October 2026).
+// Strength: duration (against the last workout of the same template), sets done of planned and records; one row per
+// exercise with the top set of the last time this exercise or variant was trained, today's top set and the weight for
+// the next workout. Skipped exercises get a row without today's values. Volume is no longer shown (it mostly follows
+// which exercises were done) but still decides whether a workout is a run.
 import { db, type Workout, type WorkoutExercise, type WorkoutSet } from './db'
 import { progressionAdvice, type ProgressionAdvice } from './progression'
 import { bestBefore, recordsOf } from './stats'
@@ -20,10 +22,25 @@ export interface ReportTotals {
   runS: number
 }
 
+/** Heaviest done work set; on a tie the one with the most reps (the weaker side on one-sided sets). */
+export interface TopSet {
+  weight: number
+  reps: number | null
+  repsLeft: number | null
+  repsRight: number | null
+}
+
 export interface ReportLine {
   exerciseId: string
   name: string
-  /** Heaviest weight of the done work sets (the top set) */
+  /** done: at least one work set with weight; skipped: skipped or no done work set */
+  status: 'done' | 'skipped'
+  unilateral: boolean
+  /** Top set today; null when skipped */
+  today: TopSet | null
+  /** Top set of the last earlier workout with this exercise or variant (any workout); null the first time */
+  last: TopSet | null
+  /** Heaviest weight of the done work sets (the top set); 0 when skipped */
   current: number
   /** Weight for the next workout; null on a change without a weight step */
   next: number | null
@@ -82,6 +99,37 @@ async function previousOf(w: Workout): Promise<Workout | null> {
   return list[0] ?? null
 }
 
+/** Reps that count for comparing: reps, or the weaker side of a one-sided set. */
+function repsOf(s: Pick<WorkoutSet, 'reps' | 'reps_left' | 'reps_right'>): number {
+  if (s.reps !== null) return s.reps
+  const sides = [s.reps_left, s.reps_right].filter((r): r is number => r !== null)
+  return sides.length ? Math.min(...sides) : 0
+}
+
+/** Top set of the given work sets: heaviest weight, then most reps; null without a weight above 0. */
+export function topSetOf(sets: Pick<WorkoutSet, 'set_type' | 'weight' | 'reps' | 'reps_left' | 'reps_right'>[]): TopSet | null {
+  let best: (typeof sets)[number] | null = null
+  for (const s of sets) {
+    if (s.set_type !== 'working' || s.weight === null || s.weight <= 0) continue
+    if (!best || s.weight > best.weight! || (s.weight === best.weight && repsOf(s) > repsOf(best))) best = s
+  }
+  return best ? { weight: best.weight!, reps: best.reps, repsLeft: best.reps_left, repsRight: best.reps_right } : null
+}
+
+/** Change of the top set against the last time: «+2 reps», «+5 kg», «+5 kg · −1 rep», «=». */
+export function topSetChange(today: TopSet, last: TopSet): { text: string; tone: 'up' | 'down' | 'same' } {
+  const kg = Math.round((today.weight - last.weight) * 10) / 10
+  const reps = repsOf({ reps: today.reps, reps_left: today.repsLeft, reps_right: today.repsRight })
+    - repsOf({ reps: last.reps, reps_left: last.repsLeft, reps_right: last.repsRight })
+  const sign = (n: number) => (n > 0 ? '+' : '−') + Math.abs(n)
+  const parts = [
+    ...(kg !== 0 ? [`${sign(kg)} kg`] : []),
+    ...(reps !== 0 ? [`${sign(reps)} ${Math.abs(reps) === 1 ? 'rep' : 'reps'}`] : []),
+  ]
+  const tone = kg > 0 ? 'up' : kg < 0 ? 'down' : reps > 0 ? 'up' : reps < 0 ? 'down' : 'same'
+  return { text: parts.length ? parts.join(' · ') : '=', tone }
+}
+
 /** Report of a finished workout, or null if it does not exist (any more). */
 export async function workoutReport(workoutId: string): Promise<WorkoutReport | null> {
   const w = await db.workout.get(workoutId)
@@ -97,16 +145,22 @@ export async function workoutReport(workoutId: string): Promise<WorkoutReport | 
   let records = 0
   for (const we of [...parts.wes].sort((a, b) => a.position - b.position)) {
     const ex = byId.get(we.exercise_id)
-    if (!ex || we.skipped_at) continue
+    if (!ex) continue
     const eff = effective(ex, byId)
     if (eff.trackingType !== 'weight_reps') continue
+    const main = ex.parent_id ? byId.get(ex.parent_id) ?? ex : ex
+    const before = await recentTrainingSessions(we.exercise_id, undefined, w.id, 1)
+    const last = before[0] ? topSetOf(before[0].sets) : null
     const mine = parts.sets.filter((s) => s.workout_exercise_id === we.id && s.deleted_at === null).sort((a, b) => a.position - b.position)
     const work = mine.filter((s) => s.set_type === 'working').map((s) => ({ ...s, completed_at: s.completed_at ?? w.finished_at }))
     const current = Math.max(0, ...work.map((s) => s.weight ?? 0))
-    if (!work.length || current <= 0) continue
+    if (we.skipped_at || !work.length || current <= 0) {
+      lines.push({ exerciseId: ex.id, name: main.name, status: 'skipped', unilateral: eff.isUnilateral, today: null, last, current: 0, next: null, advice: 'hold', record: false })
+      continue
+    }
     // Progression as it stood right after this workout: this performance plus the one before it
     const session: TrainingSession = { workout: w, exercise: we, sets: mine }
-    const sessions = [session, ...(await recentTrainingSessions(we.exercise_id, undefined, w.id, 1))]
+    const sessions = [session, ...before]
     const planned = parts.sets.filter((s) => s.workout_exercise_id === we.id && s.set_type === 'working').length
     const defaults = repetitionTargets(ex, byId, [])
     const targets = { target: we.target_reps ?? defaults.target, minimum: we.min_reps ?? defaults.minimum }
@@ -116,8 +170,7 @@ export async function workoutReport(workoutId: string): Promise<WorkoutReport | 
     const best = await bestBefore(we.exercise_id, w.id, w.started_at)
     const record = work.some((s) => recordsOf(s, best).length > 0)
     if (record) records++
-    const main = ex.parent_id ? byId.get(ex.parent_id) ?? ex : ex
-    lines.push({ exerciseId: ex.id, name: main.name, current, next, advice, record })
+    lines.push({ exerciseId: ex.id, name: main.name, status: 'done', unilateral: eff.isUnilateral, today: topSetOf(work), last, current, next, advice, record })
   }
   const kind = totals.volume === 0 && totals.distanceKm > 0 ? 'run' : 'strength'
   return { workout: w, name: w.template_name_snapshot ?? 'Workout', kind, totals, previous, lines, records }

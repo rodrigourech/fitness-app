@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db, type WorkoutSet } from './db'
-import { formatMinutes, formatVolume, percentChange, workoutReport, workoutReports } from './report'
+import { formatMinutes, formatVolume, percentChange, topSetChange, topSetOf, workoutReport, workoutReports } from './report'
 import { importSeedIfNeeded } from './seed'
 import { finishWorkout, startWorkout, toggleSetDone, updateSet } from './workout'
 
@@ -51,8 +51,15 @@ describe('workout report', () => {
     const rowLine = r.lines.find((l) => l.name === 'Seated Row (Cable)')!
     expect(rowLine.advice).toBe('hold')
     expect(rowLine.next).toBe(rowLine.current)
-    // Exercises without a done set have no line
-    expect(r.lines.length).toBe(2)
+    expect(curlLine).toMatchObject({ status: 'done', today: { weight: 35, reps: 20 } })
+    // Last time = the last earlier workout with this exercise (the imported DAY2 of 2 October: 35 × 10)
+    expect(curlLine.last).toMatchObject({ weight: 35, reps: 10 })
+    // Exercises without a done set appear as skipped rows without today's values
+    const done = r.lines.filter((l) => l.status === 'done')
+    expect(done.length).toBe(2)
+    const skipped = r.lines.filter((l) => l.status === 'skipped')
+    expect(skipped.length).toBeGreaterThan(0)
+    expect(skipped.every((l) => l.today === null && l.next === null && !l.record)).toBe(true)
     expect((await workoutReports())[0]!.workout.id).toBe(w.id)
   })
 
@@ -62,5 +69,23 @@ describe('workout report', () => {
     expect(formatMinutes(58 * 60)).toBe('58 min')
     expect(formatMinutes(65 * 60)).toBe('1 h 05')
     expect(formatVolume(5640)).toBe('5 640')
+  })
+
+  it('takes the heaviest set as top set and describes the change in kg or reps', () => {
+    const w = (weight: number | null, reps: number | null, left: number | null = null, right: number | null = null) =>
+      ({ set_type: 'working' as const, weight, reps, reps_left: left, reps_right: right })
+    expect(topSetOf([w(36, 10), w(41, 7), w(36, 10)])).toMatchObject({ weight: 41, reps: 7 })
+    expect(topSetOf([w(45, 8), w(45, 10)])).toMatchObject({ weight: 45, reps: 10 })
+    expect(topSetOf([{ ...w(20, 6), set_type: 'warmup' as const }, w(null, 10)])).toBeNull()
+    const t = (weight: number, reps: number | null, left: number | null = null, right: number | null = null) =>
+      ({ weight, reps, repsLeft: left, repsRight: right })
+    expect(topSetChange(t(45, 10), t(45, 8))).toEqual({ text: '+2 reps', tone: 'up' })
+    expect(topSetChange(t(24, 10), t(24, 9))).toEqual({ text: '+1 rep', tone: 'up' })
+    expect(topSetChange(t(50, 9), t(40, 10))).toEqual({ text: '+10 kg · −1 rep', tone: 'up' })
+    expect(topSetChange(t(15, 10), t(20, 10))).toEqual({ text: '−5 kg', tone: 'down' })
+    expect(topSetChange(t(20, 10), t(20, 10))).toEqual({ text: '=', tone: 'same' })
+    // One-sided: the weaker side counts
+    expect(topSetChange(t(4.5, null, 12, 12), t(4.5, null, 10, 10))).toEqual({ text: '+2 reps', tone: 'up' })
+    expect(topSetChange(t(4.5, null, 12, 9), t(4.5, null, 12, 12))).toEqual({ text: '−3 reps', tone: 'down' })
   })
 })
