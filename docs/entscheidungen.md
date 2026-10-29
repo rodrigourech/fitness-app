@@ -227,3 +227,8 @@ Neuere Einträge gehen dem Handover (docs/00_handover.md) vor.
 - Wochenrhythmus unverändert
 - Alter Plan als archivierte Kopien «Main Day A (until 26 Oct)» und «Main Day B (until 26 Oct)», die aktiven Workouts werden umgestellt statt neu angelegt, weil A/B-Wechsel (feste IDs MAIN_DAY_A/B), Trainingsreport und «Compared with last» an der Workout-ID hängen. Im Archiv zeigen Lat Pulldown und Seated Row ebenfalls 8–12, weil der Bereich pro Übung gilt
 - Umsetzung ohne Logikänderung: Bereiche gelten pro Übung (8–12 wirkt auch im Bonus Day), Startgewicht ist kein Datenfeld und wird einmal manuell eingetragen, Ort oben/unten ergibt sich aus der Reihenfolge
+
+## **29. Oktober 2026**
+
+- Beinübungen sind oft besetzt und wurden deshalb ausgelassen. Vorgehen: Reihenfolge innerhalb des Stockwerks flexibel, sonst Alternative, erst danach auslassen und die Beinübung im nächsten Training vorziehen
+- Alternative Seated Leg Curl (Machine) und Lying Leg Curl (Machine) in beide Richtungen (Migration 0028); Lying Leg Curl hat eigene Historie und Progression. Leg Press bewusst ohne Alternative
