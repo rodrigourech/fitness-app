@@ -263,3 +263,4 @@ Nachtrag 1. November 2026 (Abend), Entwürfe G1 bis G3 mit Rodrigo abgestimmt:
 - Fortschrittsfotos bleiben verschlüsselt bei Neon (AES-256-GCM mit Foto-Passphrase); verworfen: iPhone-Kurzbefehl ins Album (bei iCloud-Fotos ebenfalls online, Vergleich nur in Fotos) und nur lokal (kein Abgleich, kein Backup)
 - Navigation: Food wird nicht mehr farbig hervorgehoben, sondern wie die anderen Reiter dargestellt (aktiv hellblau); bleibt in der Mitte
 - Erfassung vereinfacht (1. November 16:35): nur noch direkt in der App oder im Chat «Food Tracking» (Claude fragt Fehlendes, trägt nach Ok ein). Die Maske «Log a Meal» (Artifact) wird nicht mehr genutzt und ist nicht angeheftet
+- Claude-Chat direkt in der App (über die Claude-API, eigene Kosten) vorerst nicht umgesetzt; zuerst zwei bis drei Wochen mit dem Chat «Food Tracking» erfassen, danach neu beurteilen (1. November 2026)
