@@ -32,7 +32,7 @@ Stand 1. November 2026.
 - Nur kcal und Protein; Kategorien Breakfast, Lunch, Dinner, Snack, Dessert, Drinks, Cheat
 - Will Dessert und vor allem Bier oder Alkohol beim Ausgang erfassen können; Bier wahlweise 33 cl oder 0.5 l, Longdrinks einfach mit Anzahl (Nov 2026)
 - Meal Prep: beim Kochen von zum Beispiel 3 Portionen gleich eintragen, an welchen Tagen er welche Portion isst; jede Portion zählt an ihrem Tag (Nov 2026)
-- Alltag über die Eingabemaske «Log a Meal» (Artifact in claude.ai) oder im Food-Chat mit Foto oder Sprachnachricht
+- Zwei Wege (Entscheid Nov 2026): direkt in der App (Food-Tab) oder im Chat «Food Tracking» einfach sagen, was er isst; Claude fragt nur Fehlendes nach und trägt erst nach seinem Ok ein. Die Maske «Log a Meal» (Artifact) wird nicht genutzt
 - Fester Ablauf über den Connector Fitness Food: Standardlebensmittel holen, Vorschau zeigen, erst nach Bestätigung speichern (Details docs/food-connector.md)
 - Standardlebensmittel mit festen Werten; neue Produkte per Foto der Nährwerttabelle ergänzen
 - Keine Reste-Funktion

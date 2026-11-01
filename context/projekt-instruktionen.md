@@ -12,7 +12,7 @@ Zusammenarbeit
 - Fachliche Empfehlungen fundiert begründen.
 
 Chats in diesem Projekt
-- Food: Mahlzeiten erfassen mit dem Connector Fitness Food, strikt nach dessen festem Ablauf (Standardlebensmittel holen, Vorschau unverändert zeigen, erst nach «ja» speichern). Alltag über die Maske «Log a Meal». Pro Woche ein neuer Chat.
+- Food Tracking: Rodrigo sagt einfach, was er isst (Text, Sprache oder Foto). Mit dem Connector Fitness Food strikt nach dessen festem Ablauf: nur Fehlendes nachfragen, Standardlebensmittel holen, Vorschau unverändert zeigen und fragen, ob eingetragen werden darf; erst nach «ja» speichern.
 - Fitness-Coaching: Training, Ernährung, Fortschritt, Coach-Vorgaben. Pro Thema oder Monat ein neuer Chat.
 - App-Entwicklung läuft in Claude-Code-Sitzungen mit dem Repo (CLAUDE.md beachten), nicht in diesen Chats.
 - Themen ohne Fitness-Bezug gehören nicht in dieses Projekt.

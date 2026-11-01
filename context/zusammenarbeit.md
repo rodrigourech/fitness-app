@@ -24,7 +24,7 @@ Stand 1. November 2026.
 
 | Chat | Zweck | Lebensdauer |
 |---|---|---|
-| Food | Mahlzeiten mit Foto oder Sprachnachricht, Spezialfälle, neue Produkte; Alltag über die Maske «Log a Meal» | pro Woche ein neuer Chat |
+| Food Tracking | Sagen, was er isst (Text, Sprache, Foto); Claude fragt Fehlendes nach und trägt nach seinem Ok in die App ein; alternativ direkt im Food-Tab | ein Chat, bei Bedarf neu |
 | Fitness-Coaching | Fragen zu Training, Ernährung, Fortschritt, Coach-Vorgaben | pro Thema oder Monat ein neuer Chat |
 | App-Entwicklung | Features und Fehler der App | Claude-Code-Sitzung mit dem Repo, eine pro Feature |
 
