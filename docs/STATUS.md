@@ -2,7 +2,7 @@
 
 Zentrale Übergabe für alle KI-Agenten und Sitzungen. Zuerst CLAUDE.md lesen (Regeln, Stack, Konventionen), dann docs/UEBERGABE.md (Einstieg für neue Chats, offene Punkte fürs nächste Release), dann diese Datei. Am Ende jeder Sitzung hier nachführen: Stand, offene Punkte, neue Hinweise. Entscheidungen gehören zusätzlich nach docs/entscheidungen.md.
 
-Letzte Aktualisierung 29. Oktober 2026
+Letzte Aktualisierung 1. November 2026
 
 ## Orte
 
@@ -14,6 +14,7 @@ Letzte Aktualisierung 29. Oktober 2026
 
 ## Stand
 
+- 1. November: Paket 1 umgesetzt, lokal committet, nicht gepusht. Stats als eine Übersicht (Zielgewicht mit Prognose und 80-%-Bereich, Progression des aktuellen Plans mit Status, Training, Reports, Gym crowd eingeklappt; am Laptop breiter), Report Variante A, Zielgewicht als Einstellung. Code src/lib/forecast.ts, src/lib/planProgress.ts, src/lib/report.ts (formatTopSet, changeCounts, nextTimeSummary), src/lib/settings.ts (goal_weight), src/pages/StatsTab.tsx, src/pages/ReportPage.tsx, Home.tsx (Breite). Typprüfung, Lint, 155 Tests in 24 Dateien erfolgreich; Stats bei 390 und 1280 px hell und dunkel sowie Report bei 390 px mit Rodrigos Daten geprüft (kein Überlauf, keine Konsolenfehler). Migration 0029 (Lateral Raise Machine) vorbereitet, lokal getestet, auf production noch nicht ausgeführt. Offen: Push von main durch Rodrigo, Migration 0029 nach OK, danach Paket 2 (Food-Tab) und Paket 3 (Food-Connector, geführte Eingabe)
 - 29. Oktober: Trainingsreport neu (Variante C, Entwurf abgestimmt): Tiles Duration, Sets, Records statt Volume; Tabelle Exercise · Last · Today · Next kg mit Top Set des letzten Mals derselben Übung oder Variante, Top Set heute mit Differenz in kg oder Wiederholungen («+2 reps», «+10 kg · −1 rep», «=»), NEW ohne Vorwert, SKIPPED für ausgelassene Übungen. Stats › Reports zeigt Sätze statt Volumen mit Prozent. Markdown-Export unverändert. Code src/lib/report.ts (topSetOf, topSetChange), src/pages/ReportPage.tsx, src/pages/StatsTab.tsx. Typprüfung, Lint, 140 Tests in 22 Dateien und Build erfolgreich; Report bei 390 px hell und dunkel geprüft (kein Überlauf). Keine Migration. Es fehlt der Push von main durch Rodrigo
 - 29. Oktober: Alternativpaar Seated Leg Curl und Lying Leg Curl (Migration 0028, auf production ausgeführt). Leg Press bleibt ohne Alternative. 
 - Planüberprüfung vom 26. Oktober, am 27. Oktober 08:54 auf production ausgeführt (Migration 0027, nur Daten): bisheriger Plan archiviert als «Main Day A (until 26 Oct)» und «Main Day B (until 26 Oct)». Main Day A und B behalten ihre IDs und haben den neuen Plan: A Lat Pulldown, Leg Press (unten), Incline Chest Press, Chest-Supported Row, Lateral Raise, Triceps Pushdown V-Grip, Preacher Curl (oben); B Seated Row, Seated Leg Curl (unten), Chest Press, Lateral Raise, Overhead Triceps Extension, Preacher Curl (oben). Bicycle entfernt, Chest-Supported Row (Machine) neu mit Scheiben (8–12, ohne Top set und Warm-up, Stufe offen), Lat Pulldown und Seated Row 8–12, Stufe Seated Row 6.8, Preacher Curl 120 s. Startgewichte 39 kg (Lat Pulldown) und 32 kg (Seated Row) einmal manuell eintragen. Offen: Gewichtsstufe Chest-Supported Row nach dem ersten Training

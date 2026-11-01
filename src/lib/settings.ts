@@ -108,3 +108,29 @@ export async function saveTrainingShares(userId: string, shares: TrainingShares)
     : { id: TRAINING_SHARES_ID, user_id: userId, key: 'training_shares', value, created_at: ts, updated_at: ts, deleted_at: null }
   await saveRows('user_setting', [row])
 }
+
+// --- goal body weight (decision 1 November 2026) ---------------------------------------------
+
+const GOAL_WEIGHT_ID = 'e4b7c2a9-1f3d-4c86-b5e0-7a9d2f6c3b18'
+
+/** Goal weight in kg (30–300, one decimal); null when not set or invalid. */
+export function parseGoalWeight(value: unknown): number | null {
+  const kg = typeof value === 'number' ? value : (value as { kg?: unknown } | null)?.kg
+  return typeof kg === 'number' && Number.isFinite(kg) && kg >= 30 && kg <= 300 ? Math.round(kg * 10) / 10 : null
+}
+
+export async function getGoalWeight(): Promise<number | null> {
+  const row = await db.user_setting.get(GOAL_WEIGHT_ID)
+  return row && row.deleted_at === null ? parseGoalWeight(row.value) : null
+}
+
+export async function saveGoalWeight(userId: string, kg: number): Promise<void> {
+  const value = parseGoalWeight(kg)
+  if (value === null) return
+  const existing = await db.user_setting.get(GOAL_WEIGHT_ID)
+  const ts = new Date().toISOString()
+  const row: UserSetting = existing
+    ? { ...existing, value: { kg: value }, deleted_at: null }
+    : { id: GOAL_WEIGHT_ID, user_id: userId, key: 'goal_weight', value: { kg: value }, created_at: ts, updated_at: ts, deleted_at: null }
+  await saveRows('user_setting', [row])
+}

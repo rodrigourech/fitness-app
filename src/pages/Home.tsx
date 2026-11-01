@@ -117,7 +117,7 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
   if (training) return <TrainingSettingsPage userId={user.id} onDone={() => setTraining(false)} />
 
   return (
-    <main className="home-shell mx-auto max-w-xl px-4">
+    <main className={`home-shell mx-auto px-4 ${tab === 'stats' ? 'max-w-xl lg:max-w-6xl' : 'max-w-xl'}`}>
       <AppBar>
         <button onClick={() => setInfo(true)} className="rounded-md px-2 py-1 text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">
           Info

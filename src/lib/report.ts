@@ -205,3 +205,39 @@ export function formatMinutes(seconds: number | null): string {
 export function formatVolume(kg: number): string {
   return String(Math.round(kg)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u2009')
 }
+
+/** Top set as «45 × 10» or, one-sided, «4.5 × 12/12». */
+export function formatTopSet(t: TopSet, unilateral: boolean): string {
+  const reps = unilateral || t.reps === null ? `${t.repsLeft ?? '–'}/${t.repsRight ?? '–'}` : `${t.reps}`
+  return `${Math.round(t.weight * 10) / 10} × ${reps}`
+}
+
+export interface ChangeCounts {
+  up: number
+  same: number
+  down: number
+  new: number
+}
+
+/** Exercises better, same, lower or new against the last time (skipped exercises do not count). */
+export function changeCounts(lines: ReportLine[]): ChangeCounts {
+  const c: ChangeCounts = { up: 0, same: 0, down: 0, new: 0 }
+  for (const l of lines) {
+    if (!l.today) continue
+    if (!l.last) c.new++
+    else c[topSetChange(l.today, l.last).tone]++
+  }
+  return c
+}
+
+/** «Increase Lateral Raise. Same weight for everything else.» */
+export function nextTimeSummary(lines: ReportLine[]): string {
+  const done = lines.filter((l) => l.status === 'done')
+  const up = done.filter((l) => l.advice === 'increase').map((l) => l.name)
+  const down = done.filter((l) => l.advice === 'reduce').map((l) => l.name)
+  const list = (names: string[]) => names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+  const parts = [...(up.length ? [`Increase ${list(up)}.`] : []), ...(down.length ? [`Reduce ${list(down)}.`] : [])]
+  if (!done.length) return ''
+  if (!parts.length) return 'Same weight for everything.'
+  return up.length + down.length < done.length ? `${parts.join(' ')} Same weight for everything else.` : parts.join(' ')
+}

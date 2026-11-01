@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto'
 import { describe, expect, it } from 'vitest'
 import { db } from './db'
-import { DEFAULT_WEEKLY_GOAL, getTemplateOrder, getWeeklyGoal, moveTemplate, parseWeeklyGoal, saveWeeklyGoal, sortByOrder } from './settings'
+import { DEFAULT_WEEKLY_GOAL, getGoalWeight, getTemplateOrder, parseGoalWeight, saveGoalWeight, getWeeklyGoal, moveTemplate, parseWeeklyGoal, saveWeeklyGoal, sortByOrder } from './settings'
 
 describe('weekly goal setting', () => {
   it('falls back to the default and clamps stored values', () => {
@@ -36,5 +36,21 @@ describe('training shares', () => {
     expect(parseTrainingShares(null)).toEqual(DEFAULT_TRAINING_SHARES)
     expect(parseTrainingShares({ warmUp: 5, backOff: 120 })).toEqual({ warmUp: 20, backOff: 95 })
     expect(parseTrainingShares({ warmUp: 60, backOff: 80 })).toEqual({ warmUp: 60, backOff: 80 })
+  })
+})
+
+describe('goal weight setting', () => {
+  it('accepts 30 to 300 kg with one decimal', () => {
+    expect(parseGoalWeight({ kg: 82 })).toBe(82)
+    expect(parseGoalWeight(81.96)).toBe(82)
+    expect(parseGoalWeight({ kg: 20 })).toBeNull()
+    expect(parseGoalWeight(null)).toBeNull()
+  })
+
+  it('saves into one fixed row', async () => {
+    await saveGoalWeight('u1', 82)
+    await saveGoalWeight('u1', 81.5)
+    expect(await getGoalWeight()).toBe(81.5)
+    expect((await db.user_setting.toArray()).filter((r) => r.key === 'goal_weight')).toHaveLength(1)
   })
 })

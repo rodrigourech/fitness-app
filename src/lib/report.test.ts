@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db, type WorkoutSet } from './db'
-import { formatMinutes, formatVolume, percentChange, topSetChange, topSetOf, workoutReport, workoutReports } from './report'
+import { changeCounts, formatMinutes, formatTopSet, formatVolume, nextTimeSummary, percentChange, topSetChange, topSetOf, workoutReport, workoutReports, type ReportLine } from './report'
 import { importSeedIfNeeded } from './seed'
 import { finishWorkout, startWorkout, toggleSetDone, updateSet } from './workout'
 
@@ -87,5 +87,31 @@ describe('workout report', () => {
     // One-sided: the weaker side counts
     expect(topSetChange(t(4.5, null, 12, 12), t(4.5, null, 10, 10))).toEqual({ text: '+2 reps', tone: 'up' })
     expect(topSetChange(t(4.5, null, 12, 9), t(4.5, null, 12, 12))).toEqual({ text: '−3 reps', tone: 'down' })
+  })
+})
+
+describe('report summaries', () => {
+  const line = (name: string, today: [number, number] | null, last: [number, number] | null, advice: 'increase' | 'hold' | 'reduce' = 'hold'): ReportLine => ({
+    exerciseId: name, name, status: today ? 'done' : 'skipped', unilateral: false,
+    today: today && { weight: today[0], reps: today[1], repsLeft: null, repsRight: null },
+    last: last && { weight: last[0], reps: last[1], repsLeft: null, repsRight: null },
+    current: today?.[0] ?? 0, next: today?.[0] ?? null, advice, record: false,
+  })
+  const lines = [line('Seated Row', [39, 10], [39, 9]), line('Seated Leg Curl', [40, 10], null), line('Chest Press', [50, 8], [50, 9]),
+    line('Lateral Raise', [4.5, 12], [4.5, 12], 'increase'), line('Triceps Pushdown', null, [41, 10])]
+
+  it('counts better, same, lower and new; skipped does not count', () => {
+    expect(changeCounts(lines)).toEqual({ up: 1, same: 1, down: 1, new: 1 })
+  })
+
+  it('summarises the next workout', () => {
+    expect(nextTimeSummary(lines)).toBe('Increase Lateral Raise. Same weight for everything else.')
+    expect(nextTimeSummary(lines.filter((l) => l.advice === 'hold'))).toBe('Same weight for everything.')
+    expect(nextTimeSummary([line('A', [10, 10], null, 'increase'), line('B', [10, 10], null, 'increase')])).toBe('Increase A and B.')
+  })
+
+  it('formats a top set', () => {
+    expect(formatTopSet({ weight: 4.5, reps: null, repsLeft: 12, repsRight: 11 }, true)).toBe('4.5 × 12/11')
+    expect(formatTopSet({ weight: 39, reps: 10, repsLeft: null, repsRight: null }, false)).toBe('39 × 10')
   })
 })
