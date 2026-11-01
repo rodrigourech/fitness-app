@@ -4,6 +4,7 @@ import { Heatmap, Sparkline } from '../components/Charts'
 import Popover from '../components/Popover'
 import { CROWD_LABEL, CROWD_SLOTS, WEEKDAYS, crowdGrid, loadAnalytics, weeklyGoal, type AnalyticsData } from '../lib/analytics'
 import { bodyWeightSeries, todayLocal, type BodyWeightPoint } from '../lib/body'
+import { CALIBRATION_DAYS, PROTEIN_TARGET_G, addDaysKey, byDay, kcalTarget, loadFood, localDay, totalsOf, weekRows } from '../lib/food'
 import { MONTHS, dayOffset, goalProgress, roughDate, weightForecast, type Forecast } from '../lib/forecast'
 import { loadPlanProgress, type PlanProgressRow, type ProgressStatus } from '../lib/planProgress'
 import { formatMinutes, formatTopSet, workoutReports, type WorkoutReport } from '../lib/report'
@@ -67,7 +68,8 @@ export default function StatsTab({ userId }: { userId: string }) {
       <GoalWeightCard userId={userId} className="lg:col-span-3" />
       <ProgressionCard now={now} className="lg:col-span-3" />
       <TrainingCard userId={userId} now={now} />
-      <ReportList limit={3} onOpen={setOpen} onAll={() => setAllReports(true)} className="lg:col-span-2" />
+      <NutritionCard />
+      <ReportList limit={3} onOpen={setOpen} onAll={() => setAllReports(true)} />
       <CrowdCard className="lg:col-span-3" />
     </div>
   )
@@ -406,6 +408,32 @@ function WeeklyGoalEditor({ goal, onSave, onCancel }: { goal: WeeklyGoal; onSave
         <button onClick={() => onSave(draft)} className="flex-1 rounded-lg bg-accent py-2 text-sm font-semibold text-accent-fg">Save</button>
       </div>
     </div>
+  )
+}
+
+// --- nutrition ------------------------------------------------------------------------------
+
+function NutritionCard() {
+  const data = useLiveQuery(loadFood, [])
+  const weights = useLiveQuery(bodyWeightSeries, [])
+  if (data === undefined || weights === undefined) return null
+  const today = localDay(new Date(`${todayLocal()}T12:00:00`))
+  const days = byDay(data.entries)
+  const last7 = [...days.entries()].filter(([k]) => k <= today && k > addDaysKey(today, -7)).map(([, list]) => totalsOf(list))
+  const avg = (f: (t: { kcal: number; protein: number }) => number) => Math.round(last7.reduce((s, t) => s + f(t), 0) / Math.max(1, last7.length))
+  const target = kcalTarget(data.entries, weights.map((p) => ({ date: p.entry.measured_on, kg: p.entry.weight_kg })), today)
+  const cheat = weekRows(data.entries, today).reduce((s, r) => s + r.cheat, 0)
+  return (
+    <Card title="Nutrition" aside="last 7 days">
+      {last7.length === 0 ? <Empty>No entries yet. Log meals in Food or tell Claude.</Empty> : (
+        <div className="grid grid-cols-2 gap-2.5">
+          <Tile label="Avg kcal" value={String(avg((t) => t.kcal))} sub={`target ${target.kcal}${target.kind === 'start' ? ' (start)' : ''}`} />
+          <Tile label="Avg protein" value={String(avg((t) => t.protein))} unit="g" sub={`goal ≥ ${PROTEIN_TARGET_G} g`} tone={avg((t) => t.protein) >= PROTEIN_TARGET_G ? 'green' : undefined} />
+          <Tile label="Cheat meals" value={String(cheat)} sub="this week" />
+          <Tile label="Days logged" value={String(last7.length)} unit="/ 7" sub={target.kind === 'start' ? `${Math.min(target.daysLogged, CALIBRATION_DAYS)}/${CALIBRATION_DAYS} for your target` : 'target from your data'} />
+        </div>
+      )}
+    </Card>
   )
 }
 

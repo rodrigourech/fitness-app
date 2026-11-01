@@ -164,11 +164,13 @@ body {
 .home-quick-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .home-quick-actions button { display: flex; justify-content: center; align-items: center; gap: 7px; background: var(--card); border: 1px solid var(--card-border); border-radius: 11px; min-height: 44px; padding: 9px 5px; font-size: 12px; }
 .home-quick-actions .app-icon { width: 15px; height: 15px; color: var(--viz-muted); }
-.home-navigation { position: fixed; z-index: 20; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 36rem; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 10px 8px calc(10px + env(safe-area-inset-bottom)); background: var(--card); border-top: 1px solid var(--card-border); }
+.home-navigation { position: fixed; z-index: 20; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 36rem; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); padding: 10px 4px calc(10px + env(safe-area-inset-bottom)); background: var(--card); border-top: 1px solid var(--card-border); }
 .home-navigation button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 46px; color: var(--viz-muted); font-size: 11px; }
 .home-nav-icon { border-radius: 8px; padding: 4px 12px; }
 .home-navigation button[aria-current="page"] { color: var(--accent-ink); }
 .home-navigation button[aria-current="page"] .home-nav-icon { background: var(--accent-soft); }
+.home-navigation .home-nav-food .home-nav-icon { background: var(--accent); color: var(--accent-fg); border-radius: 12px; padding: 6px 14px; }
+.home-navigation .home-nav-food[aria-current="page"] .home-nav-icon { background: var(--accent); }
 .home-more-links { display: flex; flex-direction: column; }
 .home-more-links button { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 12px 4px; border-bottom: 1px solid var(--card-border); text-align: left; font-size: 14px; }
 .home-more-links .app-icon { color: var(--viz-muted); }

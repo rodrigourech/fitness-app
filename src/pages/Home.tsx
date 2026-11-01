@@ -11,6 +11,7 @@ import { photoKeyState } from '../lib/photos'
 import ExercisesTab from './ExercisesTab'
 import HistoryTab from './HistoryTab'
 import StatsTab from './StatsTab'
+import FoodTab from './FoodTab'
 import { signOut, type LocalUser } from '../lib/auth'
 import { db, displayName, type Exercise } from '../lib/db'
 import { getTemplateOrder, moveTemplate, sortByOrder } from '../lib/settings'
@@ -42,10 +43,11 @@ interface TemplateCard {
   archivedAt: string | null
 }
 
-type Tab = 'home' | 'templates' | 'exercises' | 'history' | 'stats' | 'body'
-const TABS: Tab[] = ['home', 'templates', 'stats', 'body']
+type Tab = 'home' | 'templates' | 'exercises' | 'history' | 'stats' | 'body' | 'food'
+// Food in the middle and highlighted, used daily (decision 1 November 2026)
+const TABS: Tab[] = ['home', 'templates', 'food', 'stats', 'body']
 // The tab shows the training templates; in the UI they are called workouts (decision 5 October 2026)
-const TAB_LABEL: Record<Tab, string> = { home: 'Home', templates: 'Workouts', exercises: 'Exercises', history: 'History', stats: 'Stats', body: 'Body' }
+const TAB_LABEL: Record<Tab, string> = { home: 'Home', templates: 'Workouts', exercises: 'Exercises', history: 'History', stats: 'Stats', body: 'Body', food: 'Food' }
 
 const dateFormat = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'long' })
 
@@ -132,8 +134,9 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
             key={t}
             aria-current={tab === t ? 'page' : undefined}
             onClick={() => setTab(t)}
+            className={t === 'food' ? 'home-nav-food' : undefined}
           >
-            <span className="home-nav-icon"><AppIcon name={{ home: 'home', templates: 'workout', stats: 'stats', body: 'body', exercises: 'workout', history: 'history' }[t]} /></span>
+            <span className="home-nav-icon"><AppIcon name={{ home: 'home', templates: 'workout', stats: 'stats', body: 'body', exercises: 'workout', history: 'history', food: 'food' }[t]} /></span>
             {TAB_LABEL[t]}
           </button>
         ))}
@@ -145,6 +148,8 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
         <ExercisesTab userId={user.id} />
       ) : tab === 'history' ? (
         <HistoryTab />
+      ) : tab === 'food' ? (
+        <FoodTab userId={user.id} />
       ) : tab === 'stats' ? (
         <StatsTab userId={user.id} />
       ) : tab === 'body' ? (

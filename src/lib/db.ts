@@ -168,6 +168,47 @@ export interface UserSetting extends SyncColumns {
   value: unknown
 }
 
+/** Staple with fixed values per 100 g, per piece or per serving (migration 0030). */
+export interface FoodItem extends SyncColumns {
+  name: string
+  store: string | null
+  basis: '100g' | 'piece' | 'serving'
+  kcal: number
+  protein_g: number
+  /** Grams of one piece or serving, if known */
+  piece_g: number | null
+  /** Grams of one package, if known */
+  package_g: number | null
+  note: string | null
+}
+
+export type FoodCategory = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'cheat'
+
+/** Ingredient of an entry as stored (values of the whole amount, before portions). */
+export interface FoodEntryItem {
+  name: string
+  food_item_id?: string | null
+  /** «250 g», «2 pieces», «1 pack» */
+  amount: string
+  kcal: number
+  protein_g: number
+  source: 'staple' | 'label' | 'estimate'
+}
+
+/** One meal or snack (migration 0030); kcal and protein_g are the eaten portion. */
+export interface FoodEntry extends SyncColumns {
+  eaten_at: string
+  category: FoodCategory
+  title: string
+  detail: string | null
+  items: FoodEntryItem[]
+  kcal: number
+  protein_g: number
+  portions_cooked: number | null
+  portions_eaten: number | null
+  source: 'app' | 'claude'
+}
+
 export interface CatalogExercise {
   id: string
   name: string
@@ -190,6 +231,8 @@ export const SYNC_TABLES = [
   'body_weight',
   'user_setting',
   'body_photo',
+  'food_item',
+  'food_entry',
 ] as const
 export type SyncTable = (typeof SYNC_TABLES)[number]
 
@@ -226,6 +269,8 @@ export const db = new Dexie(databaseName) as Dexie & {
   body_weight: EntityTable<BodyWeight, 'id'>
   user_setting: EntityTable<UserSetting, 'id'>
   body_photo: EntityTable<BodyPhoto, 'id'>
+  food_item: EntityTable<FoodItem, 'id'>
+  food_entry: EntityTable<FoodEntry, 'id'>
   photo_blob: EntityTable<PhotoBlob, 'id'>
   keystore: EntityTable<KeyEntry, 'id'>
   outbox: EntityTable<OutboxEntry, 'seq'>
@@ -259,6 +304,12 @@ db.version(3).stores({
   body_photo: 'id, measured_on',
   photo_blob: 'id, uploaded',
   keystore: 'id',
+})
+
+// Version 4: nutrition (migration 0030)
+db.version(4).stores({
+  food_item: 'id, name',
+  food_entry: 'id, eaten_at',
 })
 
 export async function getMeta(key: string): Promise<string | undefined> {
