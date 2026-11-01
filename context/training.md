@@ -17,7 +17,7 @@ Stand 1. November 2026.
 - Wiederholungen bleiben von Satz zu Satz fast gleich (wenig Abfall)
 - Keine zusätzlichen Aufwärmsätze wegen Zeitaufwand; ein Warm-up-Satz reicht
 - Mag Lateral Raise am Kabel nicht (Ausführung fühlt sich unsauber an); Lat Pulldown und Seated Row sind keine Lieblingsübungen
-- Mag Overhead Triceps Extension nicht; V-Grip beim Triceps Pushdown fühlt sich komisch an, Straight Bar besser, eventuell EZ-Stange (Okt 2026). Ersatz für Main Day B offen, diskutiert wurde Seated Dip (Technogym)
+- Mag Overhead Triceps Extension nicht; V-Grip beim Triceps Pushdown fühlt sich komisch an, Straight Bar besser (Okt 2026). Entscheid Nov 2026: Seated Dip (Technogym) in Main Day B, Pushdown mit Straight Bar in Main Day A
 - Einheiten maximal 60 bis 70 Minuten, 90 s Pause zwischen Sätzen als Ausgangswert (Okt 2026)
 - Wiedereinstieg im September 2026 nach etwa einem Jahr ohne regelmässigen Sport
 - Die Gym-Routine macht ihm Spass (Nov 2026)
