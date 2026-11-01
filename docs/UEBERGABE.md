@@ -99,6 +99,7 @@ git push origin main
 | Incline Chest Press (Dumbbell) | Kurzhanteln | 2 | in DB |
 | Chest Press (Machine) | Scheiben | 10 | in DB |
 | Preacher Curl (Machine) | Scheiben | 5 | in DB |
+| Seated Dip (Machine) | Technogym Pure Strength, gleiche Scheiben wie Chest Press | 10 | in DB (Migration 0034) |
 | Seated Row (Cable) | vermutlich gleicher Stapel wie Lat Pulldown | | Rodrigo schaut beim nächsten Training |
 | Leg Press | Technogym-Stapel 5, 10, 20, 30 … 190 kg | 10 | in DB |
 | Incline Chest Press (Machine) | gibt es im Gym nicht | | in keinem Workout, bleibt erhalten |
