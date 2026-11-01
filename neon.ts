@@ -21,6 +21,17 @@ export default defineConfig({
         PHOTO_BUCKET: "body-photos",
       },
     },
+    // Food connector (MCP server for Claude, see functions/foodmcp.ts and docs/food-connector.md).
+    // Secrets come from .env.local at deploy time and are never committed.
+    foodmcp: {
+      name: "Food connector",
+      source: "./functions/foodmcp.ts",
+      env: {
+        FOOD_MCP_KEY: process.env.FOOD_MCP_KEY ?? "",
+        FOOD_DATABASE_URL: process.env.FOOD_DATABASE_URL ?? "",
+        FOOD_USER_ID: "dfd1eb0d-df8c-4cc6-8602-d1dfda9b41cf",
+      },
+    },
   },
   // Branch policy: per-branch tuning
   branch: (branch) => {
