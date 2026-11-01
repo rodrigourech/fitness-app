@@ -134,7 +134,6 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
             key={t}
             aria-current={tab === t ? 'page' : undefined}
             onClick={() => setTab(t)}
-            className={t === 'food' ? 'home-nav-food' : undefined}
           >
             <span className="home-nav-icon"><AppIcon name={{ home: 'home', templates: 'workout', stats: 'stats', body: 'body', exercises: 'workout', history: 'history', food: 'food' }[t]} /></span>
             {TAB_LABEL[t]}

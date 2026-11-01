@@ -169,8 +169,6 @@ body {
 .home-nav-icon { border-radius: 8px; padding: 4px 12px; }
 .home-navigation button[aria-current="page"] { color: var(--accent-ink); }
 .home-navigation button[aria-current="page"] .home-nav-icon { background: var(--accent-soft); }
-.home-navigation .home-nav-food .home-nav-icon { background: var(--accent); color: var(--accent-fg); border-radius: 12px; padding: 6px 14px; }
-.home-navigation .home-nav-food[aria-current="page"] .home-nav-icon { background: var(--accent); }
 .home-more-links { display: flex; flex-direction: column; }
 .home-more-links button { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 12px 4px; border-bottom: 1px solid var(--card-border); text-align: left; font-size: 14px; }
 .home-more-links .app-icon { color: var(--viz-muted); }
