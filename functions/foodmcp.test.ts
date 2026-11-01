@@ -76,7 +76,9 @@ describe('food connector', () => {
     expect(tools.json.result.tools.map((t: { name: string }) => t.name)).toEqual(['list_staples', 'add_staple', 'preview_meal', 'confirm_meal', 'get_day', 'delete_entry'])
     const preview = await call({ jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'preview_meal', arguments: { category: 'lunch', items: [{ staple_id: RICE.id, quantity: 75, unit: 'g' }] } } }, sql)
     expect(entries).toHaveLength(0)
-    const token = preview.json.result.structuredContent.result.preview_token
+    const text: string = preview.json.result.content[0].text
+    expect(text).toContain('Eintragen? (ja / ändern)')
+    const token = /preview_token: (\S+)/.exec(text)![1]
     const confirm = await call({ jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'confirm_meal', arguments: { preview_token: token } } }, sql)
     expect(confirm.json.result.content[0].text).toContain('Eingetragen als Mittagessen: 263 kcal')
     await call({ jsonrpc: '2.0', id: 5, method: 'tools/call', params: { name: 'confirm_meal', arguments: { preview_token: token } } }, sql)

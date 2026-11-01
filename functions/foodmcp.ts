@@ -392,7 +392,8 @@ async function answer(msg: RpcRequest, env: FoodEnv, sql: Sql, now: Date): Promi
       const name = String(msg.params?.name ?? '')
       try {
         const out = await callTool(name, (msg.params?.arguments as Args) ?? {}, { sql, user: env.FOOD_USER_ID!, key: env.FOOD_MCP_KEY!, now })
-        return rpc(msg.id, { content: [{ type: 'text', text: out.text }], ...(out.data !== undefined ? { structuredContent: { result: out.data } } : {}) })
+        // Text only: clients show structuredContent instead of the text, and the fixed preview format lives in the text
+        return rpc(msg.id, { content: [{ type: 'text', text: out.text }] })
       } catch (e) {
         return rpc(msg.id, { content: [{ type: 'text', text: e instanceof Error ? e.message : String(e) }], isError: true })
       }
