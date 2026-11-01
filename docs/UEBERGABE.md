@@ -1,35 +1,22 @@
 # **Übergabe für neue Chats und Agenten**
 
-Stand 22. Oktober 2026. Diese Datei fasst alles zusammen, was ein neuer Chat oder Agent braucht, um am nächsten Release weiterzuarbeiten: Zusammenarbeit, Arbeitsablauf, aktuelle Trainingslogik, Geräte, IDs und offene Punkte. Reihenfolge beim Einstieg:
+Stand 1. November 2026. Diese Datei fasst alles zusammen, was ein neuer Chat oder Agent braucht, um am nächsten Release weiterzuarbeiten: Zusammenarbeit, Arbeitsablauf, aktuelle Trainingslogik, Geräte, IDs und offene Punkte. Reihenfolge beim Einstieg:
 
 1. CLAUDE.md (Regeln, Stack, Architektur, Konventionen)
-2. Diese Datei
-3. docs/STATUS.md (Verlauf und Stand) und docs/entscheidungen.md (alle Entscheidungen, neuere gehen vor)
-4. Bei Datenbankarbeit db/migrations/README.md und docs/03_datenmodell.md
+2. context/ (Rodrigo, Ziele, Training, Ernährung, Zusammenarbeit)
+3. Diese Datei
+4. docs/STATUS.md (Verlauf und Stand) und docs/entscheidungen.md (alle Entscheidungen, neuere gehen vor)
+5. Bei Datenbankarbeit db/migrations/README.md und docs/03_datenmodell.md
 
 Am Ende jeder Sitzung diese Datei, docs/STATUS.md und docs/entscheidungen.md nachführen.
 
 ## **1. Zusammenarbeit mit Rodrigo**
 
-- Anrede in der Sie-Form, Deutsch mit Schweizer Rechtschreibung (ss statt ß)
-- Ton sachlich, kompakt und streng wie ein guter Dozent; Zustimmung nur, wenn sie begründet ist. Fehler offen benennen und korrigieren
-- Keine Emojis, wenig Fettdruck, Überschriften fett
-- Im Fliesstext keine Doppelpunkte und möglichst keine Gedankenstriche; Doppelpunkte nur vor Listen, Code, Zitaten oder Beispielen
-- Antworten kurz halten; wenn er «kompakt» oder «kompakter» schreibt, nur noch Kernaussagen als Liste oder Tabelle
-- Vor grösseren Änderungen Plan oder Roadmap vorlegen und auf ein ausdrückliches Ok warten. Bei UI-Änderungen zuerst ein PNG-Mockup zeigen (Beispieldaten, 390 px Breite, iPhone)
-- Bei Unklarheiten nachfragen, gern interaktiv mit Auswahlfragen; Annahmen nicht stillschweigend treffen
-- Fachliche Vorschläge fundiert begründen (Literatur), aber in der App selbst keine Quellenangaben
-- Er schreibt oft schnell und mit Tippfehlern oder per Sprachnachricht; Sinn erschliessen, bei echter Mehrdeutigkeit nachfragen
-- UI-Texte auf Englisch, Dokumentation auf Deutsch, eigene Daten (Varianten, Notizen) bleiben deutsch
+Steht in context/zusammenarbeit.md (Ton, Form, Arbeitsweise, Chat-Aufteilung). Seit 1. November 2026 ist der Ordner context/ die Source of Truth zu Rodrigo.
 
 ## **2. Benutzer und Training (Kontext für fachliche Entscheidungen)**
 
-- Krafttraining seit weniger als einem Jahr, ausschliesslich Maschinen und Kurzhanteln
-- Bevorzugt stabile Progression (länger beim gleichen Gewicht, selten zurück) statt schneller Steigerungen
-- Wiederholungen bleiben von Satz zu Satz fast gleich (wenig Abfall)
-- Plan seit 9. Oktober 2026: Main Day A (Montag) und Main Day B (Donnerstag oder Freitag), optional Bonus Day, dazu 7 km Laufen an einem freien Tag. 1–2 Wiederholungen in Reserve, kein Muskelversagen
-- Fokus Oberkörper, Beinvolumen bewusst tief (3 Sätze pro Woche und Muskel)
-- Erhält Input von einem Fitness-Coach (Top Set plus Back-off, Warm-up); Coach-Vorgaben gegen die Literatur prüfen und Abweichungen begründen
+Steht in context/profil.md, context/ziele.md, context/training.md und context/ernaehrung.md. Neue Fakten dort nachführen und als Projekt-Doc claude/context.md spiegeln (context/README.md).
 
 ## **3. Arbeitsablauf und Werkzeuge**
 
@@ -53,7 +40,7 @@ Stand nach dem Release vom 22. Oktober 139 Tests in 22 Dateien.
 ### **Commits und Push**
 
 - Autor immer `Rodrigo Urech <rodrigo.urech@gmail.com>`, Commit-Messages englisch im Stil `feat(scope): ...`, `data: ...`, `docs: ... [skip ci]`
-- Pushen kann nur Rodrigo selbst; Agenten haben keinen GitHub-Schreibzugriff. Er pusht mit:
+- Seit 1. November 2026 hat die Claude GitHub App Schreibzugriff auf fitness-app und fitness-app-web; Cloud-Sitzungen pushen selbst. Ohne Zugriff pusht Rodrigo mit:
 
 ```
 cd C:\Repository\fitness-app

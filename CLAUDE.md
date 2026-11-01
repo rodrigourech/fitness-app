@@ -4,6 +4,7 @@ Persönliche Fitness-App als Ersatz für die Strong App: Trainingsvorlagen, Trai
 
 ## Referenzen
 
+- context/: Source of Truth zu Rodrigo (Profil, Ziele, Training, Ernährung, Zusammenarbeit); vor fachlichen Fragen lesen, neue Fakten dort nachführen und als Projekt-Doc claude/context.md spiegeln (siehe context/README.md)
 - docs/UEBERGABE.md: Einstieg für neue Chats und Agenten (Zusammenarbeit, Arbeitsablauf, Trainingslogik, Geräte, IDs, offene Punkte); zuerst lesen
 - docs/STATUS.md: aktueller Stand, nächste Schritte und Wunschliste; zentrale Übergabe für alle Agenten, am Ende jeder Sitzung nachführen
 - docs/00_handover.md: vollständiger Planungsstand mit Funktionsumfang, Analytics-Definitionen, Datenmodell-Entwurf und Startdaten
