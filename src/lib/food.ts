@@ -1,16 +1,11 @@
 // Nutrition (decisions 1 November 2026): only kcal and protein. Entries come from the app (staples or manual) or from
-// the Food connector (Claude). Daily target: a start value until 14 days are logged, then measured from the data:
-// maintenance = average intake + weight loss per day × 7 700 kcal, target = maintenance − 400 kcal.
+// the Food connector (Claude). Nutrition is kept separate from everything else: the daily kcal target is set by hand
+// (settings.ts) and the weight forecast uses body weight only, so gaps in logging change nothing outside this tab.
+// Meal prep: every cooked portion becomes its own entry on the day it is eaten.
 import { db, type FoodCategory, type FoodEntry, type FoodEntryItem, type FoodItem } from './db'
-import { weightForecast, type WeighIn } from './forecast'
 import { saveRows } from './sync'
 
 export const PROTEIN_TARGET_G = 140
-/** Mifflin-St Jeor with 85.5 kg, 182 cm, 25 years, factor 1.3, minus 400 kcal (decision 1 November 2026) */
-export const START_TARGET_KCAL = 2000
-export const DEFICIT_KCAL = 400
-export const CALIBRATION_DAYS = 14
-const KCAL_PER_KG = 7700
 const DAY = 86_400_000
 
 export const CATEGORY_LABEL: Record<FoodCategory, string> = {
@@ -19,6 +14,21 @@ export const CATEGORY_LABEL: Record<FoodCategory, string> = {
   dinner: 'Dinner',
   snack: 'Snack',
   cheat: 'Cheat meal',
+  dessert: 'Dessert',
+  drinks: 'Drinks',
+}
+
+export const CATEGORIES: FoodCategory[] = ['breakfast', 'lunch', 'dinner', 'snack', 'dessert', 'drinks', 'cheat']
+
+/** Usual time of a category, used when a portion is planned for another day. */
+export const CATEGORY_TIME: Record<FoodCategory, string> = {
+  breakfast: '08:00',
+  lunch: '12:30',
+  snack: '16:00',
+  dinner: '19:00',
+  dessert: '20:30',
+  drinks: '21:00',
+  cheat: '19:00',
 }
 
 /** Local day YYYY-MM-DD of a timestamp. */
@@ -73,6 +83,7 @@ export function mondayOf(day: string): string {
 export interface DayRow extends Totals {
   day: string
   cheat: number
+  drinks: number
 }
 
 /** Monday to Sunday of the week containing the day. */
@@ -82,31 +93,8 @@ export function weekRows(entries: FoodEntry[], day: string): DayRow[] {
   return Array.from({ length: 7 }, (_, i) => {
     const k = addDaysKey(monday, i)
     const list = days.get(k) ?? []
-    return { day: k, ...totalsOf(list), cheat: list.filter((e) => e.category === 'cheat').length }
+    return { day: k, ...totalsOf(list), cheat: list.filter((e) => e.category === 'cheat').length, drinks: list.filter((e) => e.category === 'drinks').length }
   })
-}
-
-export interface KcalTarget {
-  kcal: number
-  kind: 'start' | 'measured'
-  /** Days with at least one entry in the last 28 days */
-  daysLogged: number
-  maintenance: number | null
-}
-
-/**
- * Daily kcal target. Measured once 14 of the last 28 days have entries and the weight trend of the same window
- * is known; until then the start value (decision 1 November 2026).
- */
-export function kcalTarget(entries: FoodEntry[], weights: WeighIn[], today: string): KcalTarget {
-  const days = byDay(entries)
-  const window = [...days.entries()].filter(([k]) => k < today && k >= addDaysKey(today, -28))
-  const daysLogged = window.length
-  const forecast = weightForecast(weights, today, null)
-  if (daysLogged < CALIBRATION_DAYS || !forecast) return { kcal: START_TARGET_KCAL, kind: 'start', daysLogged, maintenance: null }
-  const intake = window.reduce((s, [, list]) => s + totalsOf(list).kcal, 0) / daysLogged
-  const maintenance = Math.round((intake - (forecast.perWeek / 7) * KCAL_PER_KG) / 10) * 10
-  return { kcal: Math.max(1200, maintenance - DEFICIT_KCAL), kind: 'measured', daysLogged, maintenance }
 }
 
 /** Values of an amount of a staple: grams for per-100-g items, count for pieces and servings. */
@@ -137,9 +125,50 @@ export interface EntryDraft {
   portionsEaten?: number | null
 }
 
+export interface PortionSlot {
+  day: string
+  category: FoodCategory
+}
+
+/** Default plan for meal prep: the first portion as chosen, every further one on the following day at lunch. */
+export function defaultPlan(day: string, category: FoodCategory, cooked: number): PortionSlot[] {
+  return Array.from({ length: cooked }, (_, i) => (i === 0 ? { day, category } : { day: addDaysKey(day, i), category: 'lunch' as const }))
+}
+
+/** Timestamp of a planned portion: now for the current meal, otherwise the usual time of the category on that day. */
+export function slotTime(slot: PortionSlot, now: Date): string {
+  if (slot.day === localDay(now) && slot.category === categoryAt(now)) return now.toISOString()
+  return new Date(`${slot.day}T${CATEGORY_TIME[slot.category]}:00`).toISOString()
+}
+
+/** One entry per cooked portion; values are the total divided by the portions (decision 1 November 2026). */
+export function mealPrepDrafts(meal: { title: string; detail: string; items: FoodEntryItem[]; kcal: number; protein: number }, plan: PortionSlot[], now: Date): EntryDraft[] {
+  const n = plan.length
+  const share = portionOf({ kcal: meal.kcal, protein: meal.protein }, n, 1)
+  return plan.map((slot, i) => ({
+    eatenAt: slotTime(slot, now),
+    category: slot.category,
+    title: meal.title,
+    detail: n > 1 ? `Portion ${i + 1} of ${n} · ${meal.detail}` : meal.detail,
+    items: meal.items,
+    kcal: share.kcal,
+    protein: share.protein,
+    portionsCooked: n > 1 ? n : null,
+    portionsEaten: n > 1 ? 1 : null,
+  }))
+}
+
+export async function saveFoodEntries(userId: string, drafts: EntryDraft[]): Promise<void> {
+  await saveRows('food_entry', drafts.map((d) => entryRow(userId, d)))
+}
+
 export async function saveFoodEntry(userId: string, draft: EntryDraft, existing?: FoodEntry): Promise<void> {
+  await saveRows('food_entry', [entryRow(userId, draft, existing)])
+}
+
+function entryRow(userId: string, draft: EntryDraft, existing?: FoodEntry): FoodEntry {
   const ts = new Date().toISOString()
-  const row: FoodEntry = {
+  return {
     ...(existing ?? { id: crypto.randomUUID(), user_id: userId, created_at: ts, updated_at: ts, deleted_at: null, source: 'app' as const }),
     eaten_at: draft.eatenAt,
     category: draft.category,
@@ -151,7 +180,6 @@ export async function saveFoodEntry(userId: string, draft: EntryDraft, existing?
     portions_cooked: draft.portionsCooked ?? null,
     portions_eaten: draft.portionsEaten ?? null,
   }
-  await saveRows('food_entry', [row])
 }
 
 export async function deleteFoodEntry(entry: FoodEntry): Promise<void> {

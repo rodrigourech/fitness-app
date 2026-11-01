@@ -182,7 +182,7 @@ export interface FoodItem extends SyncColumns {
   note: string | null
 }
 
-export type FoodCategory = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'cheat'
+export type FoodCategory = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'cheat' | 'dessert' | 'drinks'
 
 /** Ingredient of an entry as stored (values of the whole amount, before portions). */
 export interface FoodEntryItem {

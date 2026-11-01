@@ -1,38 +1,43 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState, type ReactNode } from 'react'
 import Sheet from '../components/Sheet'
-import { bodyWeightSeries } from '../lib/body'
 import type { FoodCategory, FoodEntry, FoodEntryItem, FoodItem } from '../lib/db'
 import {
-  CALIBRATION_DAYS,
+  CATEGORIES,
   CATEGORY_LABEL,
   PROTEIN_TARGET_G,
   addDaysKey,
   amountText,
   byDay,
   categoryAt,
+  defaultPlan,
   deleteFoodEntry,
   deleteFoodItem,
-  kcalTarget,
   loadFood,
   localDay,
-  portionOf,
+  mealPrepDrafts,
+  saveFoodEntries,
   saveFoodEntry,
   saveFoodItem,
   stapleValues,
   totalsOf,
   weekRows,
+  type PortionSlot,
 } from '../lib/food'
 import { MONTHS } from '../lib/forecast'
+import { getKcalTarget, parseKcalTarget, saveKcalTarget } from '../lib/settings'
 
 // Food tab, variant B (decision 1 November 2026): two numbers for the day, then Today (timeline), Week and Staples.
-// Entries from the Food connector carry the badge «Claude».
+// Entries from the Food connector carry the badge «Claude». Nutrition stays inside this tab: the kcal target is set by
+// hand and nothing here feeds the weight forecast. Meal prep plans every portion on its own day.
 
 type View = 'today' | 'week' | 'staples'
 type SheetState = { kind: 'entry'; entry?: FoodEntry } | { kind: 'staples' } | { kind: 'item'; item?: FoodItem } | null
 
 const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const CATEGORIES: FoodCategory[] = ['breakfast', 'lunch', 'dinner', 'snack', 'cheat']
+const DOT: Partial<Record<FoodCategory, string>> = { cheat: 'bg-orange-500', dessert: 'bg-pink-600', drinks: 'bg-amber-600' }
+/** Days ahead that can be planned and browsed (meal prep). */
+const PLAN_DAYS = 6
 
 function dayTitle(day: string, today: string): string {
   if (day === today) return 'Today'
@@ -52,17 +57,17 @@ function num(n: number): string {
 
 export default function FoodTab({ userId }: { userId: string }) {
   const data = useLiveQuery(loadFood, [])
-  const weights = useLiveQuery(bodyWeightSeries, [])
+  const target = useLiveQuery(getKcalTarget, [])
   const [view, setView] = useState<View>('today')
   const [today] = useState(() => localDay(new Date()))
   const [day, setDay] = useState(today)
   const [sheet, setSheet] = useState<SheetState>(null)
-  if (data === undefined || weights === undefined) return null
+  if (data === undefined || target === undefined) return null
 
   const days = byDay(data.entries)
   const list = days.get(day) ?? []
   const totals = totalsOf(list)
-  const target = kcalTarget(data.entries, weights.map((p) => ({ date: p.entry.measured_on, kg: p.entry.weight_kg })), today)
+  const kcalLeft = target - totals.kcal
   const proteinLeft = PROTEIN_TARGET_G - totals.protein
 
   return (
@@ -70,10 +75,10 @@ export default function FoodTab({ userId }: { userId: string }) {
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4 dark:border-blue-950 dark:bg-blue-950/50">
           <div className="text-xs text-zinc-500 dark:text-zinc-400">kcal {day === today ? 'today' : dayTitle(day, today)}</div>
-          <div className="mt-1 text-3xl font-semibold tracking-tight text-blue-700 tabular-nums dark:text-blue-300">{num(totals.kcal)}</div>
-          <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-            of {num(target.kcal)} · {target.kind === 'start' ? `start target, ${Math.min(target.daysLogged, CALIBRATION_DAYS)}/${CALIBRATION_DAYS} days` : 'your target'}
+          <div className="mt-1 text-3xl font-semibold tracking-tight text-blue-700 tabular-nums dark:text-blue-300">
+            {num(totals.kcal)}<span className="ml-1 text-xs font-normal tracking-normal text-zinc-500">/ {num(target)}</span>
           </div>
+          <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{kcalLeft >= 0 ? `${num(kcalLeft)} left` : `${num(-kcalLeft)} over target`}</div>
         </div>
         <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 dark:border-emerald-950 dark:bg-emerald-950/50">
           <div className="text-xs text-zinc-500 dark:text-zinc-400">Protein</div>
@@ -98,7 +103,7 @@ export default function FoodTab({ userId }: { userId: string }) {
           <div className="flex items-center justify-between">
             <button aria-label="Previous day" onClick={() => setDay(addDaysKey(day, -1))} className="rounded-lg px-3 py-1.5 text-lg">‹</button>
             <span className="text-sm font-semibold">{dayTitle(day, today)}</span>
-            <button aria-label="Next day" disabled={day >= today} onClick={() => setDay(addDaysKey(day, 1))} className="rounded-lg px-3 py-1.5 text-lg disabled:opacity-30">›</button>
+            <button aria-label="Next day" disabled={day >= addDaysKey(today, PLAN_DAYS)} onClick={() => setDay(addDaysKey(day, 1))} className="rounded-lg px-3 py-1.5 text-lg disabled:opacity-30">›</button>
           </div>
           {list.length === 0 ? (
             <p className="card p-4 text-sm text-zinc-500 dark:text-zinc-400">Nothing logged. Tell Claude what you ate, or add it here.</p>
@@ -112,11 +117,11 @@ export default function FoodTab({ userId }: { userId: string }) {
         </>
       )}
 
-      {view === 'week' && <WeekView entries={data.entries} day={day} onOpenDay={(d) => { setDay(d); setView('today') }} />}
+      {view === 'week' && <WeekView userId={userId} entries={data.entries} day={day} target={target} onOpenDay={(d) => { setDay(d); setView('today') }} />}
       {view === 'staples' && <StaplesView items={data.items} onOpen={(item) => setSheet({ kind: 'item', item })} />}
 
       {sheet?.kind === 'entry' && <EntrySheet userId={userId} day={day} entry={sheet.entry} onClose={() => setSheet(null)} />}
-      {sheet?.kind === 'staples' && <StaplesSheet userId={userId} day={day} items={data.items} onClose={() => setSheet(null)} />}
+      {sheet?.kind === 'staples' && <StaplesSheet userId={userId} day={day} today={today} items={data.items} onClose={() => setSheet(null)} />}
       {sheet?.kind === 'item' && <ItemSheet userId={userId} item={sheet.item} onClose={() => setSheet(null)} />}
     </div>
   )
@@ -127,7 +132,7 @@ function TimelineEntry({ entry: e, last, onOpen }: { entry: FoodEntry; last: boo
     <li className="grid grid-cols-[2.75rem_0.75rem_1fr] gap-2">
       <span className="pt-3 text-right text-xs text-zinc-500 tabular-nums dark:text-zinc-400">{time(e.eaten_at)}</span>
       <span className="flex flex-col items-center">
-        <span className={`mt-4 h-2.5 w-2.5 rounded-full ${e.category === 'cheat' ? 'bg-orange-500' : 'bg-accent'}`} />
+        <span className={`mt-4 h-2.5 w-2.5 rounded-full ${DOT[e.category] ?? 'bg-accent'}`} />
         {!last && <span className="w-0.5 flex-1 bg-zinc-200 dark:bg-zinc-800" />}
       </span>
       <button onClick={onOpen} className="card mb-2 p-3 text-left">
@@ -146,10 +151,10 @@ function TimelineEntry({ entry: e, last, onOpen }: { entry: FoodEntry; last: boo
   )
 }
 
-function WeekView({ entries, day, onOpenDay }: { entries: FoodEntry[]; day: string; onOpenDay: (d: string) => void }) {
+function WeekView({ userId, entries, day, target, onOpenDay }: { userId: string; entries: FoodEntry[]; day: string; target: number; onOpenDay: (d: string) => void }) {
   const rows = weekRows(entries, day)
   const logged = rows.filter((r) => r.count > 0)
-  const max = Math.max(3000, ...rows.map((r) => r.kcal))
+  const max = Math.max(3000, target * 1.2, ...rows.map((r) => r.kcal))
   const avg = (f: (r: (typeof rows)[number]) => number) => (logged.length ? Math.round(logged.reduce((s, r) => s + f(r), 0) / logged.length) : 0)
   return (
     <>
@@ -162,21 +167,48 @@ function WeekView({ entries, day, onOpenDay }: { entries: FoodEntry[]; day: stri
           {rows.map((r) => (
             <button key={r.day} onClick={() => onOpenDay(r.day)} className="flex flex-1 flex-col items-center gap-1">
               <span className="text-[10px] text-zinc-500 tabular-nums">{r.kcal ? `${(r.kcal / 1000).toFixed(1)}k` : ''}</span>
-              <span className="flex h-28 items-end">
+              <span className="relative flex h-28 w-full items-end justify-center">
+                <span aria-hidden className="absolute inset-x-0 border-t border-dashed border-zinc-400/70" style={{ bottom: `${(target / max) * 112}px` }} />
                 <span className={`w-5 rounded-t-md rounded-b-sm ${r.day === day ? 'bg-[var(--viz-s1)]' : 'bg-[var(--viz-s1)] opacity-55'}`} style={{ height: `${Math.max(r.kcal ? 4 : 0, (r.kcal / max) * 112)}px` }} />
               </span>
               <span className={`text-[11px] font-semibold tabular-nums ${r.protein >= PROTEIN_TARGET_G ? 'text-emerald-700 dark:text-emerald-400' : 'text-zinc-500'}`}>{r.count ? `${r.protein} g` : '–'}</span>
               <span className="text-[11px] text-zinc-500">{WEEKDAY[new Date(`${r.day}T12:00:00`).getDay()]}</span>
-              <span className="h-3.5 text-[10px] font-semibold text-orange-600">{r.cheat ? 'cheat' : ''}</span>
+              <span className={`h-3.5 text-[10px] font-semibold ${r.cheat ? 'text-orange-600' : 'text-amber-700 dark:text-amber-500'}`}>{r.cheat ? 'cheat' : r.drinks ? 'drinks' : ''}</span>
             </button>
           ))}
         </div>
+        <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">Dashed line · target {num(target)} kcal</p>
       </section>
-      <div className="grid grid-cols-2 gap-3">
-        <Tile label={`Days ≥ ${PROTEIN_TARGET_G} g protein`} value={`${rows.filter((r) => r.protein >= PROTEIN_TARGET_G).length}`} unit="/ 7" />
+      <div className="grid grid-cols-3 gap-2">
+        <Tile label={`≥ ${PROTEIN_TARGET_G} g protein`} value={`${rows.filter((r) => r.protein >= PROTEIN_TARGET_G).length}`} unit="/ 7" />
         <Tile label="Cheat meals" value={String(rows.reduce((s, r) => s + r.cheat, 0))} />
+        <Tile label="Drink nights" value={String(rows.filter((r) => r.drinks > 0).length)} />
       </div>
+      <TargetCard userId={userId} target={target} />
     </>
+  )
+}
+
+function TargetCard({ userId, target }: { userId: string; target: number }) {
+  const [edit, setEdit] = useState<string | null>(null)
+  const value = edit === null ? null : parseKcalTarget(Number(edit.replace(/\s/g, '')))
+  return (
+    <section className="card flex items-center justify-between gap-3 p-4">
+      <div className="min-w-0">
+        <div className="text-sm font-semibold">Daily target</div>
+        <div className="text-xs text-zinc-500 dark:text-zinc-400">Set by hand, not used for the weight forecast</div>
+      </div>
+      {edit === null ? (
+        <button onClick={() => setEdit(String(target))} className="shrink-0 rounded-lg border border-zinc-200 px-3 py-1.5 text-sm tabular-nums dark:border-zinc-700">{num(target)} kcal · Edit</button>
+      ) : (
+        <span className="flex shrink-0 items-center gap-1.5">
+          <input autoFocus inputMode="numeric" aria-label="Daily kcal target" value={edit} onChange={(e) => setEdit(e.target.value)}
+            className="w-20 rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-right text-sm tabular-nums dark:border-zinc-700" />
+          <button disabled={value === null} onClick={() => void saveKcalTarget(userId, value!).then(() => setEdit(null))}
+            className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-accent-fg disabled:opacity-40">Save</button>
+        </span>
+      )}
+    </section>
   )
 }
 
@@ -295,43 +327,33 @@ function ItemList({ items, entry }: { items: FoodEntryItem[]; entry: FoodEntry }
   )
 }
 
-function StaplesSheet({ userId, day, items, onClose }: { userId: string; day: string; items: FoodItem[]; onClose: () => void }) {
-  const [when] = useState(defaultTime(day))
-  const [category, setCategory] = useState<FoodCategory>(categoryAt(new Date(when)))
+function StaplesSheet({ userId, day, today, items, onClose }: { userId: string; day: string; today: string; items: FoodItem[]; onClose: () => void }) {
+  const [now] = useState(() => new Date())
+  const [first, setFirst] = useState<PortionSlot>(() => ({ day, category: day === today ? categoryAt(now) : 'lunch' }))
   const [amounts, setAmounts] = useState<Record<string, string>>({})
-  const [cooked, setCooked] = useState(1)
-  const [eaten, setEaten] = useState(1)
+  const [plan, setPlan] = useState<PortionSlot[]>(() => defaultPlan(day, first.category, 1))
   const chosen = items.flatMap((i) => {
     const q = Number((amounts[i.id] ?? '').replace(',', '.'))
     return q > 0 ? [{ item: i, q, ...stapleValues(i, q) }] : []
   })
   const total = { kcal: chosen.reduce((s, c) => s + c.kcal, 0), protein: chosen.reduce((s, c) => s + c.protein, 0) }
-  const portion = portionOf(total, cooked, Math.min(eaten, cooked))
-  const save = () => void saveFoodEntry(userId, {
-    eatenAt: new Date(when).toISOString(),
-    category,
+  const slots = [first, ...plan.slice(1)]
+  const drafts = mealPrepDrafts({
     title: chosen.map((c) => c.item.name.split(',')[0]).join(', '),
-    detail: [cooked > 1 ? `${eaten} of ${cooked} portions` : null, chosen.map((c) => `${c.item.name.split(',')[0]} ${amountText(c.item, c.q)}`).join(' · ')].filter(Boolean).join(' · '),
+    detail: chosen.map((c) => `${c.item.name.split(',')[0]} ${amountText(c.item, c.q)}`).join(' · '),
     items: chosen.map((c) => ({ name: c.item.name, food_item_id: c.item.id, amount: amountText(c.item, c.q), kcal: c.kcal, protein_g: c.protein, source: 'staple' as const })),
-    kcal: portion.kcal,
-    protein: portion.protein,
-    portionsCooked: cooked > 1 ? cooked : null,
-    portionsEaten: cooked > 1 ? Math.min(eaten, cooked) : null,
-  }).then(onClose)
-  const stepper = (label: string, v: number, set: (n: number) => void, min: number, max: number) => (
-    <div className="flex items-center justify-between gap-2 text-sm">
-      <span>{label}</span>
-      <span className="flex items-center gap-2">
-        <button type="button" disabled={v <= min} onClick={() => set(v - 1)} className="h-8 w-8 rounded-md bg-zinc-100 disabled:opacity-30 dark:bg-zinc-800">−</button>
-        <b className="w-6 text-center tabular-nums">{v}</b>
-        <button type="button" disabled={v >= max} onClick={() => set(v + 1)} className="h-8 w-8 rounded-md bg-zinc-100 disabled:opacity-30 dark:bg-zinc-800">+</button>
-      </span>
-    </div>
-  )
+    kcal: total.kcal,
+    protein: total.protein,
+  }, slots, now)
+  const cooked = slots.length
+  const setCooked = (n: number) => setPlan(n > plan.length ? [...plan, ...defaultPlan(first.day, first.category, n).slice(plan.length)] : plan.slice(0, n))
+  const setSlot = (i: number, slot: PortionSlot) => (i === 0 ? setFirst(slot) : setPlan(plan.map((p, j) => (j === i ? slot : p))))
+  const save = () => void saveFoodEntries(userId, drafts).then(onClose)
+  const days = [...new Set([day, ...Array.from({ length: PLAN_DAYS + 3 }, (_, i) => addDaysKey(today, i - 2))])].sort()
   return (
     <Sheet title="Add from staples" onClose={onClose}>
       <div className="flex flex-col gap-3">
-        <CategoryPicker value={category} onChange={setCategory} />
+        <CategoryPicker value={first.category} onChange={(c) => setFirst({ ...first, category: c })} />
         <div className="flex flex-col">
           {items.map((i) => (
             <label key={i.id} className="flex items-center justify-between gap-3 border-b border-zinc-100 py-2 last:border-0 dark:border-zinc-800">
@@ -344,17 +366,55 @@ function StaplesSheet({ userId, day, items, onClose }: { userId: string; day: st
             </label>
           ))}
         </div>
-        {stepper('Portions cooked', cooked, (n) => { setCooked(n); setEaten(Math.min(eaten, n)) }, 1, 6)}
-        {cooked > 1 && stepper('Portions eaten now', eaten, setEaten, 1, cooked)}
-        <div className="rounded-xl bg-zinc-100 p-3 text-sm tabular-nums dark:bg-zinc-800">
-          {cooked > 1 && <div className="text-xs text-zinc-500">Total {num(total.kcal)} kcal · {Math.round(total.protein)} g</div>}
-          <div className="font-semibold">Your portion {num(portion.kcal)} kcal · {Math.round(portion.protein)} g protein</div>
+        <div className="flex items-center justify-between gap-2 text-sm">
+          <span className="font-semibold">Cooked portions</span>
+          <span className="flex items-center gap-2">
+            <button type="button" aria-label="Fewer portions" disabled={cooked <= 1} onClick={() => setCooked(cooked - 1)} className="h-8 w-8 rounded-md bg-zinc-100 disabled:opacity-30 dark:bg-zinc-800">−</button>
+            <b className="w-6 text-center tabular-nums">{cooked}</b>
+            <button type="button" aria-label="More portions" disabled={cooked >= 6} onClick={() => setCooked(cooked + 1)} className="h-8 w-8 rounded-md bg-zinc-100 disabled:opacity-30 dark:bg-zinc-800">+</button>
+          </span>
         </div>
-        <button disabled={chosen.length === 0} onClick={save} className="rounded-lg bg-accent py-2.5 text-sm font-semibold text-accent-fg disabled:opacity-40">Save</button>
+        {cooked > 1 && (
+          <div className="rounded-xl border border-zinc-200 px-3 py-1 dark:border-zinc-700">
+            <div className="pt-2 text-[11px] font-semibold tracking-wide text-zinc-500 uppercase">When do you eat them?</div>
+            {slots.map((slot, i) => (
+              <div key={i} className="flex items-center justify-between gap-2 border-b border-zinc-100 py-2 last:border-0 dark:border-zinc-800">
+                <span className="min-w-0 text-sm">
+                  <span className="block font-semibold">Portion {i + 1}</span>
+                  <span className="block text-xs text-zinc-500 tabular-nums">{num(drafts[i]?.kcal ?? 0)} kcal · {Math.round(drafts[i]?.protein ?? 0)} g</span>
+                </span>
+                <span className="flex shrink-0 gap-1.5">
+                  <select aria-label={`Portion ${i + 1} day`} value={slot.day} onChange={(e) => setSlot(i, { ...slot, day: e.target.value })} className={select}>
+                    {days.map((d) => <option key={d} value={d}>{dayTitle(d, today)}</option>)}
+                  </select>
+                  <select aria-label={`Portion ${i + 1} meal`} value={slot.category} onChange={(e) => setSlot(i, { ...slot, category: e.target.value as FoodCategory })} className={select}>
+                    {CATEGORIES.map((c) => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
+                  </select>
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="rounded-xl bg-zinc-100 p-3 text-sm tabular-nums dark:bg-zinc-800">
+          {cooked > 1 ? (
+            <>
+              <div className="text-xs text-zinc-500">Total {num(total.kcal)} kcal · {Math.round(total.protein)} g</div>
+              <div className="font-semibold">Per portion {num(drafts[0]?.kcal ?? 0)} kcal · {Math.round(drafts[0]?.protein ?? 0)} g protein</div>
+              <div className="mt-0.5 text-xs text-zinc-500">Each portion becomes its own entry and counts on its day. Move or delete one later if plans change.</div>
+            </>
+          ) : (
+            <div className="font-semibold">{num(total.kcal)} kcal · {Math.round(total.protein)} g protein</div>
+          )}
+        </div>
+        <button disabled={chosen.length === 0} onClick={save} className="rounded-lg bg-accent py-2.5 text-sm font-semibold text-accent-fg disabled:opacity-40">
+          {cooked > 1 ? `Save ${cooked} entries · ${num(total.kcal)} kcal` : 'Save'}
+        </button>
       </div>
     </Sheet>
   )
 }
+
+const select = 'rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-xs dark:border-zinc-700'
 
 function ItemSheet({ userId, item, onClose }: { userId: string; item?: FoodItem; onClose: () => void }) {
   const [name, setName] = useState(item?.name ?? '')

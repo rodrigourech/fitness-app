@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildPreview, handle, itemValues, previewText, signPreview, verifyPreview, zurichDayRange, type FoodEnv, type Sql } from './foodmcp.ts'
+import { buildPreview, handle, itemValues, previewEntries, previewText, signPreview, verifyPreview, zurichDayRange, type FoodEnv, type Sql } from './foodmcp.ts'
 
 const KEY = 'k'.repeat(40)
 const env: FoodEnv = { FOOD_MCP_KEY: KEY, FOOD_DATABASE_URL: 'postgresql://food:pw@ep-x.eu-central-1.aws.neon.tech/neondb', FOOD_USER_ID: 'u1' }
@@ -52,6 +52,23 @@ describe('food connector', () => {
     expect(text).toContain('Schätzung')
   })
 
+  it('meal prep: one entry per portion on its own day', () => {
+    const p = buildPreview({ category: 'dinner', items: [{ staple_id: MINCE.id, quantity: 2, unit: 'pack' }, { staple_id: RICE.id, quantity: 225, unit: 'g' }],
+      portions: [{ eaten_at: '2026-11-01T19:20:00+01:00' }, { eaten_at: '2026-11-02T12:30:00+01:00', category: 'lunch' }, { eaten_at: '2026-11-03T12:30:00+01:00', category: 'lunch' }] }, [MINCE, RICE], NOW)
+    expect(p).toMatchObject({ totalKcal: 1638, kcal: 546, cooked: 3, eaten: 1, category: 'dinner' })
+    const rows = previewEntries(p)
+    expect(rows.map((r) => r.category)).toEqual(['dinner', 'lunch', 'lunch'])
+    expect(rows[1]).toMatchObject({ eatenAt: '2026-11-02T11:30:00.000Z', cooked: 3, eaten: 1 })
+    expect(rows[2]!.detail).toMatch(/^3\. von 3 Portionen/)
+    const text = previewText(p, { kcal: 1000, protein: 100 })
+    expect(text).toContain('Gekocht 3 Portionen')
+    expect(text).toMatch(/Portion 2 +Mittagessen · Mo/)
+    expect(text).toContain('Pro Portion        546 kcal')
+    expect(text).toContain('Heute danach       1 546 kcal')
+    expect(() => buildPreview({ category: 'drinks', items: [{ name: 'Beer', quantity: 1, unit: 'serving', kcal: 210, protein_g: 2.5 }], portions: [{ category: 'brunch' }, {}] }, [], NOW)).toThrow(/Portion 1/)
+    expect(buildPreview({ category: 'drinks', items: [{ name: 'Beer', quantity: 3, unit: 'serving', kcal: 630, protein_g: 7.5 }] }, [], NOW)).toMatchObject({ category: 'drinks', schedule: null, kcal: 630 })
+  })
+
   it('signs previews; a changed token is rejected', async () => {
     const p = buildPreview({ category: 'snack', items: [{ name: 'Skyr', quantity: 150, unit: 'g', kcal: 95, protein_g: 16 }] }, [], new Date())
     const token = await signPreview(KEY, p)
@@ -84,6 +101,15 @@ describe('food connector', () => {
     await call({ jsonrpc: '2.0', id: 5, method: 'tools/call', params: { name: 'confirm_meal', arguments: { preview_token: token } } }, sql)
     expect(entries).toHaveLength(1)
     expect(entries[0]).toMatchObject({ source: 'claude', kcal: 263 })
+    const prep = await call({ jsonrpc: '2.0', id: 7, method: 'tools/call', params: { name: 'preview_meal', arguments: { category: 'dinner', items: [{ staple_id: RICE.id, quantity: 300, unit: 'g' }],
+      portions: [{ eaten_at: '2026-11-01T19:20:00+01:00' }, { eaten_at: '2026-11-02T12:30:00+01:00', category: 'lunch' }] } } }, sql)
+    const prepToken = /preview_token: (\S+)/.exec(prep.json.result.content[0].text)![1]
+    const saved = await call({ jsonrpc: '2.0', id: 8, method: 'tools/call', params: { name: 'confirm_meal', arguments: { preview_token: prepToken } } }, sql)
+    expect(saved.json.result.content[0].text).toContain('Eingetragen: 2 Portionen à 525 kcal')
+    expect(entries).toHaveLength(3)
+    expect(entries.slice(1).map((e) => e.category)).toEqual(['dinner', 'lunch'])
+    await call({ jsonrpc: '2.0', id: 9, method: 'tools/call', params: { name: 'confirm_meal', arguments: { preview_token: prepToken } } }, sql)
+    expect(entries).toHaveLength(3)
     const bad = await call({ jsonrpc: '2.0', id: 6, method: 'tools/call', params: { name: 'confirm_meal', arguments: { preview_token: 'x.y' } } }, sql)
     expect(bad.json.result.isError).toBe(true)
   })

@@ -1,7 +1,8 @@
 import 'fake-indexeddb/auto'
 import { describe, expect, it } from 'vitest'
 import { db, type FoodEntry } from './db'
-import { addDaysKey, amountText, categoryAt, kcalTarget, mondayOf, portionOf, saveFoodEntry, stapleValues, START_TARGET_KCAL, totalsOf, weekRows } from './food'
+import { amountText, categoryAt, defaultPlan, localDay, mealPrepDrafts, mondayOf, portionOf, saveFoodEntries, saveFoodEntry, slotTime, stapleValues, totalsOf, weekRows } from './food'
+import { DEFAULT_KCAL_TARGET, getKcalTarget, parseKcalTarget } from './settings'
 
 const base = { user_id: 'u', created_at: '', updated_at: '', deleted_at: null }
 function entry(day: string, kcal: number, protein = 30, category: FoodEntry['category'] = 'lunch'): FoodEntry {
@@ -22,24 +23,32 @@ describe('food', () => {
     expect(categoryAt(new Date(2026, 10, 1, 8))).toBe('breakfast')
     expect(categoryAt(new Date(2026, 10, 1, 19))).toBe('dinner')
     expect(mondayOf('2026-11-01')).toBe('2026-10-26')
-    const rows = weekRows([entry('2026-10-26', 500), entry('2026-10-26', 700, 40, 'cheat'), entry('2026-11-01', 300)], '2026-11-01')
+    const rows = weekRows([entry('2026-10-26', 500), entry('2026-10-26', 700, 40, 'cheat'), entry('2026-11-01', 300), entry('2026-11-01', 630, 8, 'drinks'), entry('2026-11-01', 210, 2, 'drinks')], '2026-11-01')
     expect(rows).toHaveLength(7)
-    expect(rows[0]).toMatchObject({ day: '2026-10-26', kcal: 1200, protein: 70, cheat: 1 })
+    expect(rows[0]).toMatchObject({ day: '2026-10-26', kcal: 1200, protein: 70, cheat: 1, drinks: 0 })
+    expect(rows[6]).toMatchObject({ kcal: 1140, cheat: 0, drinks: 2 })
     expect(totalsOf([])).toEqual({ kcal: 0, protein: 0, count: 0 })
   })
 
-  it('target: start value until 14 days are logged, then maintenance from intake and weight trend minus 400', () => {
-    const today = '2026-11-20'
-    const weights = Array.from({ length: 10 }, (_, i) => ({ date: addDaysKey(today, -27 + i * 3), kg: 86 - i * 0.15 }))
-    const few = Array.from({ length: 10 }, (_, i) => entry(addDaysKey(today, -1 - i), 2300))
-    expect(kcalTarget(few, weights, today)).toMatchObject({ kind: 'start', kcal: START_TARGET_KCAL, daysLogged: 10 })
-    const many = Array.from({ length: 20 }, (_, i) => entry(addDaysKey(today, -1 - i), 2300))
-    const t = kcalTarget(many, weights, today)
-    // 0.05 kg per day lost → 385 kcal per day on top of 2 300
-    expect(t.kind).toBe('measured')
-    expect(t.maintenance).toBeGreaterThanOrEqual(2680)
-    expect(t.maintenance).toBeLessThanOrEqual(2690)
-    expect(t.kcal).toBe(t.maintenance! - 400)
+  it('meal prep: one entry per portion on its own day', () => {
+    const now = new Date(2026, 10, 1, 19, 5)
+    const plan = defaultPlan('2026-11-01', 'dinner', 3)
+    expect(plan).toEqual([{ day: '2026-11-01', category: 'dinner' }, { day: '2026-11-02', category: 'lunch' }, { day: '2026-11-03', category: 'lunch' }])
+    const drafts = mealPrepDrafts({ title: 'Beef mince, rice', detail: 'Beef mince 500 g · Rice 225 g', items: [], kcal: 1743, protein: 117.6 }, plan, now)
+    expect(drafts).toHaveLength(3)
+    expect(drafts[0]).toMatchObject({ eatenAt: now.toISOString(), category: 'dinner', kcal: 581, protein: 39.2, portionsCooked: 3, portionsEaten: 1, detail: 'Portion 1 of 3 · Beef mince 500 g · Rice 225 g' })
+    expect(localDay(drafts[1]!.eatenAt)).toBe('2026-11-02')
+    expect(new Date(drafts[1]!.eatenAt).getHours()).toBe(12)
+    expect(drafts[2]!.detail).toMatch(/^Portion 3 of 3/)
+    // a single portion stays a normal entry
+    expect(mealPrepDrafts({ title: 'x', detail: 'd', items: [], kcal: 500, protein: 30 }, [{ day: '2026-11-01', category: 'snack' }], now)[0]).toMatchObject({ portionsCooked: null, detail: 'd', kcal: 500 })
+    expect(new Date(slotTime({ day: '2026-11-01', category: 'drinks' }, now)).getHours()).toBe(21)
+  })
+
+  it('kcal target is set by hand only', async () => {
+    expect(parseKcalTarget({ kcal: 2150.4 })).toBe(2150)
+    expect(parseKcalTarget(800)).toBeNull()
+    expect(await getKcalTarget()).toBe(DEFAULT_KCAL_TARGET)
   })
 
   it('saves an entry for sync', async () => {
@@ -47,5 +56,7 @@ describe('food', () => {
     const [row] = await db.food_entry.toArray()
     expect(row).toMatchObject({ title: 'Lunch', kcal: 571, protein_g: 63.3, source: 'app' })
     expect(await db.outbox.where('table').equals('food_entry').count()).toBe(1)
+    await saveFoodEntries('u1', [{ eatenAt: '2026-11-02T11:30:00Z', category: 'lunch', title: 'a', kcal: 1, protein: 1 }, { eatenAt: '2026-11-03T11:30:00Z', category: 'lunch', title: 'a', kcal: 1, protein: 1 }])
+    expect(await db.food_entry.count()).toBe(3)
   })
 })

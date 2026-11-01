@@ -134,3 +134,32 @@ export async function saveGoalWeight(userId: string, kg: number): Promise<void> 
     : { id: GOAL_WEIGHT_ID, user_id: userId, key: 'goal_weight', value: { kg: value }, created_at: ts, updated_at: ts, deleted_at: null }
   await saveRows('user_setting', [row])
 }
+
+// --- daily kcal target (decision 1 November 2026, evening) ------------------------------------
+// Set by hand only. Nutrition stays separate from the weight forecast, so gaps in logging change nothing else.
+
+const KCAL_TARGET_ID = '9b2e6f14-7c3a-4d58-a1e9-5f0c8d2b7a63'
+/** Mifflin-St Jeor with 85.5 kg, 182 cm, 25 years, factor 1.3, minus 400 kcal */
+export const DEFAULT_KCAL_TARGET = 2000
+
+/** Daily kcal target (1000–5000, whole kcal); null when invalid. */
+export function parseKcalTarget(value: unknown): number | null {
+  const kcal = typeof value === 'number' ? value : (value as { kcal?: unknown } | null)?.kcal
+  return typeof kcal === 'number' && Number.isFinite(kcal) && kcal >= 1000 && kcal <= 5000 ? Math.round(kcal) : null
+}
+
+export async function getKcalTarget(): Promise<number> {
+  const row = await db.user_setting.get(KCAL_TARGET_ID)
+  return (row && row.deleted_at === null ? parseKcalTarget(row.value) : null) ?? DEFAULT_KCAL_TARGET
+}
+
+export async function saveKcalTarget(userId: string, kcal: number): Promise<void> {
+  const value = parseKcalTarget(kcal)
+  if (value === null) return
+  const existing = await db.user_setting.get(KCAL_TARGET_ID)
+  const ts = new Date().toISOString()
+  const row: UserSetting = existing
+    ? { ...existing, value: { kcal: value }, deleted_at: null }
+    : { id: KCAL_TARGET_ID, user_id: userId, key: 'kcal_target', value: { kcal: value }, created_at: ts, updated_at: ts, deleted_at: null }
+  await saveRows('user_setting', [row])
+}

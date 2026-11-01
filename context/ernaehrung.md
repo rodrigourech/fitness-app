@@ -24,12 +24,14 @@ Stand 1. November 2026.
 
 - Öl 1 TL pro Pfanne
 - Reis 70 bis 80 g roh pro Portion
-- Cheat Meals ohne Ziel zählen; die App zeigt sie in Stats an
+- Cheat Meals ohne Ziel zählen; die App zeigt sie in der Wochenansicht des Food-Tabs (vorher Stats)
 - Döner ist besser als McDonald's, bleibt aber ein Cheat Meal
 
 ## **Erfassung**
 
-- Nur kcal und Protein; Kategorien Breakfast, Lunch, Dinner, Snack, Cheat
+- Nur kcal und Protein; Kategorien Breakfast, Lunch, Dinner, Snack, Dessert, Drinks, Cheat
+- Will Dessert und vor allem Bier oder Alkohol beim Ausgang erfassen können (Nov 2026)
+- Meal Prep: beim Kochen von zum Beispiel 3 Portionen gleich eintragen, an welchen Tagen er welche Portion isst; jede Portion zählt an ihrem Tag (Nov 2026)
 - Alltag über die Eingabemaske «Log a Meal» (Artifact in claude.ai) oder im Food-Chat mit Foto oder Sprachnachricht
 - Fester Ablauf über den Connector Fitness Food: Standardlebensmittel holen, Vorschau zeigen, erst nach Bestätigung speichern (Details docs/food-connector.md)
 - Standardlebensmittel mit festen Werten; neue Produkte per Foto der Nährwerttabelle ergänzen

@@ -12,7 +12,8 @@ Stand 1. November 2026.
 ## **Ernährung**
 
 - Defizit 400 kcal pro Tag (Entscheid Nov 2026)
-- Startziel 2000 kcal (Mifflin-St Jeor mit 85.5 kg, 182 cm, 25 Jahre, Faktor 1.3 minus 400); nach 14 Tagen Erfassung rechnet die App den Bedarf aus Aufnahme und Gewichtstrend nach
+- Tagesziel 2000 kcal (Mifflin-St Jeor mit 85.5 kg, 182 cm, 25 Jahre, Faktor 1.3 minus 400), nur von Hand änderbar im Food-Tab
+- Ernährung ist bewusst abgekapselt, weil unklar ist, ob er täglich erfasst: keine automatische Nachkalibrierung, die Gewichtsprognose rechnet nur mit dem Körpergewicht (Nov 2026)
 - Protein mindestens 140 g pro Tag
 - Erfasst werden nur kcal und Protein
 

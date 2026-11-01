@@ -21,13 +21,15 @@ export type Sql = (query: string, params?: unknown[]) => Promise<Record<string, 
 const TZ = 'Europe/Zurich'
 const PROTEIN_TARGET_G = 140
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-const CATEGORIES = ['breakfast', 'lunch', 'dinner', 'snack', 'cheat'] as const
+const CATEGORIES = ['breakfast', 'lunch', 'dinner', 'snack', 'dessert', 'drinks', 'cheat'] as const
 type Category = (typeof CATEGORIES)[number]
-const CATEGORY_DE: Record<Category, string> = { breakfast: 'Frühstück', lunch: 'Mittagessen', dinner: 'Abendessen', snack: 'Snack', cheat: 'Cheat Meal' }
+const CATEGORY_DE: Record<Category, string> = { breakfast: 'Frühstück', lunch: 'Mittagessen', dinner: 'Abendessen', snack: 'Snack', dessert: 'Dessert', drinks: 'Drinks', cheat: 'Cheat Meal' }
+const MAX_PORTIONS = 7
 
 export const INSTRUCTIONS = `Food logging for Rodrigo's fitness app. Always answer in German (Swiss spelling, ss instead of ß), formal «Sie».
 Fixed procedure, never skip a step:
-1. Ask only for what is missing, in this order: category and time, ingredients with amounts (pack, grams, pieces), portions cooked and eaten, then for unknown products the pack size or a photo of the nutrition label.
+1. Ask only for what is missing, in this order: category and time, ingredients with amounts (pack, grams, pieces), portions cooked, then for unknown products the pack size or a photo of the nutrition label. Categories: breakfast, lunch, dinner, snack, dessert, drinks (beer, wine, alcohol), cheat.
+   Meal prep (more than one portion cooked): ask on which day and for which meal each portion is eaten and pass them as portions [{eaten_at, category}], one per cooked portion; every portion becomes its own entry on its day. Without an answer: first portion now, the others at lunch on the following days.
 2. Call list_staples first. Use staples by id whenever the ingredient matches; the server computes their values. Estimate only ingredients that are not staples and mark them source "estimate" (or "label" when read from a photo). A new product from a label photo: add_staple first, then use it.
 3. Call preview_meal and show its text to the user unchanged.
 4. Store only after the user confirms (ja, ok, passt): call confirm_meal with the preview token. On a change request, call preview_meal again.
@@ -174,6 +176,8 @@ export interface PreviewPayload {
   totalProtein: number
   cooked: number | null
   eaten: number | null
+  /** Meal prep: one entry per portion at these times (decision 1 November 2026) */
+  schedule: { eatenAt: string; category: Category }[] | null
   kcal: number
   protein: number
 }
@@ -204,35 +208,61 @@ export function itemValues(input: ItemInput, list: Staple[]): PreviewItem {
   return { name: input.name, food_item_id: null, amount: `${q} ${input.unit === 'g' ? 'g' : input.unit}`, kcal: Math.max(0, Math.round(input.kcal)), protein_g: Math.max(0, round1(input.protein_g)), source: input.source ?? 'estimate' }
 }
 
-export function buildPreview(args: { category: Category; title?: string; eaten_at?: string; items: ItemInput[]; portions_cooked?: number; portions_eaten?: number }, list: Staple[], now: Date): PreviewPayload {
+export interface PortionInput {
+  eaten_at?: string
+  category?: string
+}
+
+export function buildPreview(args: { category: Category; title?: string; eaten_at?: string; items: ItemInput[]; portions_cooked?: number; portions_eaten?: number; portions?: PortionInput[] }, list: Staple[], now: Date): PreviewPayload {
   if (!CATEGORIES.includes(args.category)) throw new Error(`category must be one of ${CATEGORIES.join(', ')}.`)
   if (!Array.isArray(args.items) || args.items.length === 0) throw new Error('At least one ingredient is required.')
   const items = args.items.map((i) => itemValues(i, list))
   const totalKcal = items.reduce((s, i) => s + i.kcal, 0)
   const totalProtein = round1(items.reduce((s, i) => s + i.protein_g, 0))
-  const cooked = args.portions_cooked && args.portions_cooked > 1 ? args.portions_cooked : null
-  const eaten = cooked ? Math.min(cooked, args.portions_eaten && args.portions_eaten > 0 ? args.portions_eaten : 1) : null
+  const at = (iso: string | undefined) => (iso && !Number.isNaN(Date.parse(iso)) ? new Date(iso).toISOString() : now.toISOString())
+  let schedule: PreviewPayload['schedule'] = null
+  if (Array.isArray(args.portions) && args.portions.length > 1) {
+    if (args.portions.length > MAX_PORTIONS) throw new Error(`At most ${MAX_PORTIONS} portions.`)
+    schedule = args.portions.map((p, i) => {
+      const category = (p.category ?? (i === 0 ? args.category : 'lunch')) as Category
+      if (!CATEGORIES.includes(category)) throw new Error(`Portion ${i + 1}: category must be one of ${CATEGORIES.join(', ')}.`)
+      return { eatenAt: at(p.eaten_at ?? (i === 0 ? args.eaten_at : undefined)), category }
+    })
+  }
+  const cooked = schedule ? schedule.length : args.portions_cooked && args.portions_cooked > 1 ? args.portions_cooked : null
+  const eaten = schedule ? 1 : cooked ? Math.min(cooked, args.portions_eaten && args.portions_eaten > 0 ? args.portions_eaten : 1) : null
   const f = cooked ? eaten! / cooked : 1
-  const eatenAt = args.eaten_at && !Number.isNaN(Date.parse(args.eaten_at)) ? new Date(args.eaten_at).toISOString() : now.toISOString()
+  const eatenAt = schedule ? schedule[0]!.eatenAt : at(args.eaten_at)
   const title = (args.title?.trim() || items.map((i) => i.name.split(',')[0]).join(', ')).slice(0, 120)
-  const detail = [cooked ? `${eaten} von ${cooked} Portionen` : null, items.map((i) => `${i.name.split(',')[0]} ${i.amount}`).join(' · ')].filter(Boolean).join(' · ')
-  return { createdAt: now.getTime(), eatenAt, category: args.category, title, detail, items, totalKcal, totalProtein, cooked, eaten,
+  const detail = [cooked && !schedule ? `${eaten} von ${cooked} Portionen` : null, items.map((i) => `${i.name.split(',')[0]} ${i.amount}`).join(' · ')].filter(Boolean).join(' · ')
+  return { createdAt: now.getTime(), eatenAt, category: schedule ? schedule[0]!.category : args.category, title, detail, items, totalKcal, totalProtein, cooked, eaten, schedule,
     kcal: Math.round(totalKcal * f), protein: round1(totalProtein * f) }
+}
+
+/** Entries a confirmed preview creates: one, or one per portion for meal prep. */
+export function previewEntries(p: PreviewPayload): { eatenAt: string; category: Category; detail: string | null; cooked: number | null; eaten: number | null }[] {
+  if (!p.schedule) return [{ eatenAt: p.eatenAt, category: p.category, detail: p.detail, cooked: p.cooked, eaten: p.eaten }]
+  const n = p.schedule.length
+  return p.schedule.map((s, i) => ({ eatenAt: s.eatenAt, category: s.category, detail: `${i + 1}. von ${n} Portionen · ${p.detail}`, cooked: n, eaten: 1 }))
 }
 
 const pad = (s: string, n: number) => (s.length >= n ? s.slice(0, n - 1) + '…' : s + ' '.repeat(n - s.length))
 const lpad = (s: string, n: number) => ' '.repeat(Math.max(0, n - s.length)) + s
 const SOURCE_DE = { staple: 'Liste', label: 'Etikett', estimate: 'Schätzung' }
 
-/** Fixed preview format (decision 1 November 2026). */
+/** Fixed preview format (decision 1 November 2026). todayBefore are the totals of the day of the first portion. */
 export function previewText(p: PreviewPayload, todayBefore: { kcal: number; protein: number } | null): string {
+  const firstDay = zurichDay(new Date(p.eatenAt))
+  const sameDay = p.schedule ? p.schedule.filter((s) => zurichDay(new Date(s.eatenAt)) === firstDay).length : 1
   const lines = [
     `Mahlzeit    ${CATEGORY_DE[p.category]} · ${zurichLabel(new Date(p.eatenAt))}`,
     `${pad('Zutat', 28)}${pad('Menge', 10)}${lpad('kcal', 6)}${lpad('Protein', 9)}  Quelle`,
     ...p.items.map((i) => `${pad(i.name, 28)}${pad(i.amount, 10)}${lpad(num(i.kcal), 6)}${lpad(`${round1(i.protein_g)} g`, 9)}  ${SOURCE_DE[i.source]}`),
-    ...(p.cooked ? [`Gekocht ${p.cooked} Portionen · gegessen ${p.eaten}`, `Total              ${num(p.totalKcal)} kcal · ${Math.round(p.totalProtein)} g Protein`] : []),
-    `Ihre Portion       ${num(p.kcal)} kcal · ${Math.round(p.protein)} g Protein`,
-    ...(todayBefore ? [`Heute danach       ${num(todayBefore.kcal + p.kcal)} kcal · ${Math.round(todayBefore.protein + p.protein)} g Protein`] : []),
+    ...(p.cooked && !p.schedule ? [`Gekocht ${p.cooked} Portionen · gegessen ${p.eaten}`, `Total              ${num(p.totalKcal)} kcal · ${Math.round(p.totalProtein)} g Protein`] : []),
+    ...(p.schedule ? [`Gekocht ${p.schedule.length} Portionen`, `Total              ${num(p.totalKcal)} kcal · ${Math.round(p.totalProtein)} g Protein`,
+      ...p.schedule.map((s, i) => `Portion ${i + 1}          ${CATEGORY_DE[s.category]} · ${zurichLabel(new Date(s.eatenAt))}`)] : []),
+    `${p.schedule ? 'Pro Portion       ' : 'Ihre Portion      '} ${num(p.kcal)} kcal · ${Math.round(p.protein)} g Protein`,
+    ...(todayBefore ? [`Heute danach       ${num(todayBefore.kcal + p.kcal * sameDay)} kcal · ${Math.round(todayBefore.protein + p.protein * sameDay)} g Protein`] : []),
     'Eintragen? (ja / ändern)',
   ]
   return '```\n' + lines.join('\n') + '\n```'
@@ -278,8 +308,13 @@ export const TOOLS = [
         eaten_at: { type: 'string', description: 'ISO time with offset; default now' },
         title: { type: 'string' },
         items: { type: 'array', items: itemSchema },
-        portions_cooked: { type: 'number' },
+        portions_cooked: { type: 'number', description: 'Only without portions: cooked portions, eaten now = portions_eaten' },
         portions_eaten: { type: 'number' },
+        portions: {
+          type: 'array',
+          description: 'Meal prep: one element per cooked portion with the time and category it is eaten; each becomes its own entry',
+          items: { type: 'object', properties: { eaten_at: { type: 'string', description: 'ISO time with offset' }, category: { type: 'string', enum: [...CATEGORIES] } }, required: ['eaten_at'] },
+        },
       },
       required: ['category', 'items'],
     },
@@ -328,17 +363,24 @@ export async function callTool(name: string, args: Args, ctx: { sql: Sql; user: 
     case 'confirm_meal': {
       const p = await verifyPreview(key, String(args.preview_token ?? ''))
       if (!p) throw new Error('Invalid or expired preview; call preview_meal again.')
-      const id = crypto.randomUUID()
       const ts = now.toISOString()
-      // A preview confirmed twice is stored once
-      const dup = await sql('select id from public.food_entry where user_id = $1 and deleted_at is null and eaten_at = $2 and title = $3 and kcal = $4', [user, p.eatenAt, p.title, p.kcal])
-      if (dup.length) return { text: 'Bereits eingetragen.', data: { id: dup[0]!.id } }
-      await sql(
-        'insert into public.food_entry (id, user_id, eaten_at, category, title, detail, items, kcal, protein_g, portions_cooked, portions_eaten, source, created_at, updated_at) values ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10,$11,$12,$13,$13)',
-        [id, user, p.eatenAt, p.category, p.title, p.detail, JSON.stringify(p.items), p.kcal, p.protein, p.cooked, p.eaten, 'claude', ts],
-      )
+      let added = 0
+      for (const e of previewEntries(p)) {
+        // A preview confirmed twice is stored once
+        const dup = await sql('select id from public.food_entry where user_id = $1 and deleted_at is null and eaten_at = $2 and title = $3 and kcal = $4', [user, e.eatenAt, p.title, p.kcal])
+        if (dup.length) continue
+        await sql(
+          'insert into public.food_entry (id, user_id, eaten_at, category, title, detail, items, kcal, protein_g, portions_cooked, portions_eaten, source, created_at, updated_at) values ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10,$11,$12,$13,$13)',
+          [crypto.randomUUID(), user, e.eatenAt, e.category, p.title, e.detail, JSON.stringify(p.items), p.kcal, p.protein, e.cooked, e.eaten, 'claude', ts],
+        )
+        added++
+      }
+      if (added === 0) return { text: 'Bereits eingetragen.' }
       const t = await dayTotals(sql, user, zurichDay(new Date(p.eatenAt)))
-      return { text: `Eingetragen als ${CATEGORY_DE[p.category]}: ${num(p.kcal)} kcal · ${Math.round(p.protein)} g Protein.\nHeute total ${num(t.kcal)} kcal · ${Math.round(t.protein)} g Protein (Ziel ≥ ${PROTEIN_TARGET_G} g).`, data: { id } }
+      const head = p.schedule
+        ? `Eingetragen: ${p.schedule.length} Portionen à ${num(p.kcal)} kcal · ${Math.round(p.protein)} g Protein (${p.schedule.map((s) => `${CATEGORY_DE[s.category]} ${zurichLabel(new Date(s.eatenAt)).split(' · ')[0]}`).join(', ')}).`
+        : `Eingetragen als ${CATEGORY_DE[p.category]}: ${num(p.kcal)} kcal · ${Math.round(p.protein)} g Protein.`
+      return { text: `${head}\nHeute total ${num(t.kcal)} kcal · ${Math.round(t.protein)} g Protein (Ziel ≥ ${PROTEIN_TARGET_G} g).` }
     }
     case 'get_day': {
       const day = typeof args.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(args.date) ? args.date : zurichDay(now)
@@ -381,7 +423,7 @@ async function answer(msg: RpcRequest, env: FoodEnv, sql: Sql, now: Date): Promi
       return rpc(msg.id, {
         protocolVersion: typeof msg.params?.protocolVersion === 'string' ? msg.params.protocolVersion : '2025-06-18',
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: 'fitness-food', version: '1.0.0' },
+        serverInfo: { name: 'fitness-food', version: '1.1.0' },
         instructions: INSTRUCTIONS,
       })
     case 'ping':

@@ -4,7 +4,7 @@ Stand 1. November 2026. Claude erfasst Mahlzeiten über einen eigenen kleinen MC
 
 ## **Ablauf in Claude**
 
-1. Fehlendes erfragen, immer in derselben Reihenfolge: Kategorie und Zeit, Zutaten mit Mengen, Portionen gekocht und gegessen, bei unbekannten Produkten Packungsgrösse oder Foto der Nährwerttabelle
+1. Fehlendes erfragen, immer in derselben Reihenfolge: Kategorie und Zeit, Zutaten mit Mengen, Portionen gekocht (bei Meal Prep für jede Portion Tag und Mahlzeit), bei unbekannten Produkten Packungsgrösse oder Foto der Nährwerttabelle
 2. `list_staples`; Standardlebensmittel rechnet der Server selbst, Claude schätzt nur den Rest (Quelle «Schätzung» oder «Etikett»)
 3. `preview_meal` liefert die Vorschau im festen Format und ein signiertes Token; Claude zeigt die Vorschau unverändert
 4. Erst nach «ja» speichert `confirm_meal` genau diese Vorschau (Quelle «Claude» in der App). Ohne Vorschau und Bestätigung ist kein Eintrag möglich
@@ -34,7 +34,7 @@ Schlüssel austauschen: neuen `FOOD_MCP_KEY` in `.env.local`, `neon deploy`, Con
 ```
 Du erfasst meine Mahlzeiten über den Food-Connector. Antworte auf Deutsch (Schweizer Rechtschreibung), Sie-Form, kurz.
 Ablauf immer gleich:
-1. Frage nur nach, was fehlt, in dieser Reihenfolge: Kategorie und Zeit, Zutaten mit Mengen, Portionen gekocht und gegessen, bei unbekannten Produkten Packungsgrösse oder Foto der Nährwerttabelle.
+1. Frage nur nach, was fehlt, in dieser Reihenfolge: Kategorie und Zeit, Zutaten mit Mengen, Portionen gekocht (bei Meal Prep für jede Portion Tag und Mahlzeit), bei unbekannten Produkten Packungsgrösse oder Foto der Nährwerttabelle.
 2. Rufe list_staples auf. Verwende Standardlebensmittel immer über ihre staple_id. Schätze nur, was nicht in der Liste steht.
 3. Ein neues Produkt aus einem Foto zuerst mit add_staple speichern.
 4. Rufe preview_meal auf und zeige die Vorschau unverändert.
@@ -46,3 +46,9 @@ Nur kcal und Protein. Keine Ernährungsratschläge, ausser ich frage danach.
 ## **Geführte Eingabe**
 
 Die Maske (Artifact mit Connector-Zugriff) folgt, sobald der Connector läuft, damit sie gegen die echten Werkzeuge getestet werden kann.
+
+## **Meal Prep, Dessert und Drinks (1. November 2026, Abend)**
+
+- preview_meal nimmt `portions` [{eaten_at, category}], ein Element pro gekochter Portion; confirm_meal legt pro Portion einen Eintrag an. Ohne Angabe fragt Claude nach, Vorgabe erste Portion jetzt, weitere am Folgetag zum Mittagessen
+- Kategorien zusätzlich dessert und drinks (Migration 0032 muss vorher laufen)
+- Nach Änderungen an functions/foodmcp.ts `neon deploy` ausführen; die URL bleibt gleich
