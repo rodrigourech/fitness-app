@@ -1,5 +1,12 @@
 import { defineConfig } from "@neon/config/v1";
 
+// Secrets of the Food connector (FOOD_MCP_KEY, FOOD_DATABASE_URL) live only in .env.local; load them for `neon deploy`
+try {
+  process.loadEnvFile(".env.local");
+} catch {
+  // no .env.local (e.g. in CI): the function keeps its deployed values
+}
+
 export default defineConfig({
   // Neon services
   auth: true, // Managed Better Auth: login with username and password

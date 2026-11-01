@@ -405,7 +405,7 @@ async function answer(msg: RpcRequest, env: FoodEnv, sql: Sql, now: Date): Promi
 export async function handle(req: Request, env: FoodEnv, sqlFactory: (url: string) => Sql = (url) => neonHttp(url), now = new Date()): Promise<Response> {
   const path = new URL(req.url).pathname.replace(/\/+$/, '')
   const key = env.FOOD_MCP_KEY
-  if (!key || key.length < 32 || !env.FOOD_DATABASE_URL || !env.FOOD_USER_ID || path !== `/mcp/${key}`) return new Response('Not found', { status: 404 })
+  if (!key || key.length < 32 || !env.FOOD_DATABASE_URL || !env.FOOD_USER_ID || !path.endsWith(`/mcp/${key}`)) return new Response('Not found', { status: 404 })
   if (req.method !== 'POST') return new Response(null, { status: 405, headers: { allow: 'POST' } })
   let body: unknown
   try {
