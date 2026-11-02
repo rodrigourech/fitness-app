@@ -14,6 +14,7 @@ Letzte Aktualisierung 1. November 2026
 
 ## Stand
 
+- 2. November 10:10: Migration 0036 (Lateral Raise Machine Stufe 2.5 kg) vorbereitet, auf production offen, weil Chrome auf dem Laptop nicht erreichbar war. Beim nächsten Mal über die Neon Console ausführen
 - 2. November 09:30: Kopfzeile Food mit Anzeige des Defizitziels und separatem Zahnrad für Targets, Bedarf mit −/+ 50. Werte Bedarf 2 400, Defizit 400, Tagesziel 2 000 auf production gesetzt (user_setting nutrition_targets) und als Standard im Code
 - 2. November 09:10: Food-Tab mit Bedarf, Defizitziel (Targets), Defizit-Balken, automatischen Tageseinträgen (Shake täglich, Espressi Mo–Fr) und nicht ausgefüllten Tagen. Migration 0035 auf production ausgeführt. Typprüfung, Lint, 167 Tests und Build erfolgreich; Tag, nicht ausgefüllter Tag, Woche und Targets bei 390 px geprüft (Harness, keine Konsolenfehler, kein Überlauf)
 - 1. November 16:35: Erfassung nur noch in der App oder im Chat «Food Tracking» (Connector mit Vorschau und Ok); Maske «Log a Meal» nicht mehr im Einsatz. Projekt-Instruktionen in context/projekt-instruktionen.md angepasst
