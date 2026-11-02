@@ -14,6 +14,7 @@ Letzte Aktualisierung 1. November 2026
 
 ## Stand
 
+- 2. November 13:30: 0036 (Lateral Raise Machine Stufe 2.5) und 0037 (Pushdown Straight Bar ⇄ V-Grip) auf production ausgeführt und geprüft. Trainingsliste Lat Pulldown abgefragt (6 Trainings, heute W 25×6, 39×10, 32×10, 32×10); 0038 steht im SQL Editor, Ausführung wartet auf Rodrigos Ok
 - 2. November 13:20: Lat Pulldown bestätigt (eigene Archivübung, Volumen unverändert, heutiges Training abgeschlossen). Migration 0038 vorbereitet und lokal zweimal getestet. Offen auf production (Laptop mit Chrome nötig): 0036 Lateral Raise Machine Stufe 2.5, 0037 Pushdown Straight Bar ⇄ V-Grip, 0038 Lat Pulldown; vor 0038 die Trainingsliste (Abfrage lp_preview) Rodrigo zeigen
 - 2. November 10:10: Migration 0036 (Lateral Raise Machine Stufe 2.5 kg) vorbereitet, auf production offen, weil Chrome auf dem Laptop nicht erreichbar war. Beim nächsten Mal über die Neon Console ausführen
 - 2. November 09:30: Kopfzeile Food mit Anzeige des Defizitziels und separatem Zahnrad für Targets, Bedarf mit −/+ 50. Werte Bedarf 2 400, Defizit 400, Tagesziel 2 000 auf production gesetzt (user_setting nutrition_targets) und als Standard im Code
