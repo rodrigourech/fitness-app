@@ -77,11 +77,19 @@ export default function FoodTab({ userId }: { userId: string }) {
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">Food</h1>
-        <button onClick={() => setSheet({ kind: 'targets' })} aria-label="Nutrition targets"
-          className="flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[13px] font-semibold shadow-sm tabular-nums dark:border-zinc-700 dark:bg-zinc-900">
-          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.5" /></svg>
-          −{num(targets.deficitKcal)} kcal / day<span className="font-normal text-zinc-400">›</span>
-        </button>
+        <span className="flex items-center gap-2">
+          <span className="flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[13px] font-semibold shadow-sm tabular-nums dark:border-zinc-700 dark:bg-zinc-900">
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.5" /></svg>
+            −{num(targets.deficitKcal)} kcal / day
+          </span>
+          <button onClick={() => setSheet({ kind: 'targets' })} aria-label="Edit nutrition targets"
+            className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+            <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
+            </svg>
+          </button>
+        </span>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <KcalTile label={`kcal ${day === today ? 'today' : day === addDaysKey(today, -1) ? 'yesterday' : dayTitle(day, today)}`} eaten={totals.kcal} targets={targets} counted={counted} />
@@ -268,7 +276,13 @@ function TargetsSheet({ userId, targets, today, onClose }: { userId: string; tar
         <section className="rounded-xl border border-zinc-200 px-3 dark:border-zinc-700">
           <div className={row}>
             <span><span className="block text-sm font-semibold">Daily need</span><span className="block text-xs text-zinc-500">Maintenance, set by hand</span></span>
-            {field(need, setNeed, (n) => save({ ...draft, needKcal: n }), 'Daily need', 'kcal')}
+            <span className="flex items-center gap-1.5">
+              <button aria-label="Need 50 kcal less" onClick={() => { const n = Math.max(1200, draft.needKcal - 50); setNeed(String(n)); save({ ...draft, needKcal: n }) }} className="h-8 w-8 rounded-md bg-zinc-100 text-lg leading-none dark:bg-zinc-800">−</button>
+              <input inputMode="numeric" aria-label="Daily need" value={need} onChange={(e) => setNeed(e.target.value)}
+                onBlur={() => { const n = Number(need.replace(/\s/g, '')); if (Number.isFinite(n) && n > 0) save({ ...draft, needKcal: n }) }}
+                className="w-16 rounded-lg border border-zinc-300 bg-transparent px-1.5 py-1.5 text-center text-sm tabular-nums dark:border-zinc-700" />
+              <button aria-label="Need 50 kcal more" onClick={() => { const n = Math.min(5000, draft.needKcal + 50); setNeed(String(n)); save({ ...draft, needKcal: n }) }} className="h-8 w-8 rounded-md bg-zinc-100 text-lg leading-none dark:bg-zinc-800">+</button>
+            </span>
           </div>
           <div className="border-b border-zinc-100 py-2.5 dark:border-zinc-800">
             <span className="block text-sm font-semibold">Deficit goal per day</span>

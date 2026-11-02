@@ -11,7 +11,7 @@ Stand 1. November 2026.
 
 ## **Ernährung**
 
-- Defizitziel 500 kcal pro Tag (Nov 2026, vorher 400), Bedarf 2 440 kcal (Mifflin-St Jeor mit 85.7 kg, 182 cm, 25 Jahre, Faktor 1.3), Tagesziel 1 940 kcal; alles von Hand unter Food › Targets
+- Bedarf 2 400 kcal (Schätzung Mifflin-St Jeor 2 440), Defizitziel 400 kcal, Tagesziel 2 000 kcal pro Tag (Entscheid 2. Nov 2026); von Hand änderbar unter Food › Zahnrad
 - Ernährung ist bewusst abgekapselt, weil unklar ist, ob er täglich erfasst: keine automatische Nachkalibrierung, die Gewichtsprognose rechnet nur mit dem Körpergewicht (Nov 2026)
 - Protein mindestens 140 g pro Tag
 - Erfasst werden nur kcal und Protein

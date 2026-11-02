@@ -153,8 +153,8 @@ export interface NutritionTargets {
   espresso: boolean
 }
 
-/** Mifflin-St Jeor with 85.7 kg, 182 cm, 25 years, factor 1.3 (desk job, about 5 500 steps) */
-export const DEFAULT_NUTRITION: NutritionTargets = { needKcal: 2440, deficitKcal: 500, proteinG: 140, shake: true, espresso: true }
+/** Rodrigo's values of 2 November 2026: need 2 400 (Mifflin-St Jeor estimate 2 440, rounded), deficit 400, target 2 000 */
+export const DEFAULT_NUTRITION: NutritionTargets = { needKcal: 2400, deficitKcal: 400, proteinG: 140, shake: true, espresso: true }
 
 export function parseNutrition(value: unknown): NutritionTargets {
   const v = (value ?? {}) as Partial<Record<keyof NutritionTargets, unknown>>
