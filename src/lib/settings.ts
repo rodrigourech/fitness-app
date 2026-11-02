@@ -135,31 +135,51 @@ export async function saveGoalWeight(userId: string, kg: number): Promise<void> 
   await saveRows('user_setting', [row])
 }
 
-// --- daily kcal target (decision 1 November 2026, evening) ------------------------------------
-// Set by hand only. Nutrition stays separate from the weight forecast, so gaps in logging change nothing else.
+// --- nutrition targets (decision 2 November 2026) ---------------------------------------------
+// Set by hand in Food › Targets. Need (maintenance) minus the deficit goal gives the daily kcal target. Nutrition stays
+// separate from the weight forecast. shake and espresso switch the automatic daily entries (see food.ts).
 
-const KCAL_TARGET_ID = '9b2e6f14-7c3a-4d58-a1e9-5f0c8d2b7a63'
-/** Mifflin-St Jeor with 85.5 kg, 182 cm, 25 years, factor 1.3, minus 400 kcal */
-export const DEFAULT_KCAL_TARGET = 2000
+const NUTRITION_ID = '9b2e6f14-7c3a-4d58-a1e9-5f0c8d2b7a63'
 
-/** Daily kcal target (1000–5000, whole kcal); null when invalid. */
-export function parseKcalTarget(value: unknown): number | null {
-  const kcal = typeof value === 'number' ? value : (value as { kcal?: unknown } | null)?.kcal
-  return typeof kcal === 'number' && Number.isFinite(kcal) && kcal >= 1000 && kcal <= 5000 ? Math.round(kcal) : null
+export interface NutritionTargets {
+  /** Daily need (maintenance) in kcal */
+  needKcal: number
+  /** Deficit goal per day in kcal */
+  deficitKcal: number
+  proteinG: number
+  /** ESN shake with water every day at 08:00 */
+  shake: boolean
+  /** 3 espressos with milk Monday to Friday at 09:30 */
+  espresso: boolean
 }
 
-export async function getKcalTarget(): Promise<number> {
-  const row = await db.user_setting.get(KCAL_TARGET_ID)
-  return (row && row.deleted_at === null ? parseKcalTarget(row.value) : null) ?? DEFAULT_KCAL_TARGET
+/** Mifflin-St Jeor with 85.7 kg, 182 cm, 25 years, factor 1.3 (desk job, about 5 500 steps) */
+export const DEFAULT_NUTRITION: NutritionTargets = { needKcal: 2440, deficitKcal: 500, proteinG: 140, shake: true, espresso: true }
+
+export function parseNutrition(value: unknown): NutritionTargets {
+  const v = (value ?? {}) as Partial<Record<keyof NutritionTargets, unknown>>
+  const n = (x: unknown, min: number, max: number, fallback: number) => (typeof x === 'number' && Number.isFinite(x) && x >= min && x <= max ? Math.round(x) : fallback)
+  const b = (x: unknown, fallback: boolean) => (typeof x === 'boolean' ? x : fallback)
+  return {
+    needKcal: n(v.needKcal, 1200, 5000, DEFAULT_NUTRITION.needKcal),
+    deficitKcal: n(v.deficitKcal, 0, 1500, DEFAULT_NUTRITION.deficitKcal),
+    proteinG: n(v.proteinG, 40, 300, DEFAULT_NUTRITION.proteinG),
+    shake: b(v.shake, DEFAULT_NUTRITION.shake),
+    espresso: b(v.espresso, DEFAULT_NUTRITION.espresso),
+  }
 }
 
-export async function saveKcalTarget(userId: string, kcal: number): Promise<void> {
-  const value = parseKcalTarget(kcal)
-  if (value === null) return
-  const existing = await db.user_setting.get(KCAL_TARGET_ID)
+export async function getNutrition(): Promise<NutritionTargets> {
+  const row = await db.user_setting.get(NUTRITION_ID)
+  return row && row.deleted_at === null ? parseNutrition(row.value) : DEFAULT_NUTRITION
+}
+
+export async function saveNutrition(userId: string, targets: NutritionTargets): Promise<void> {
+  const value = parseNutrition(targets)
+  const existing = await db.user_setting.get(NUTRITION_ID)
   const ts = new Date().toISOString()
   const row: UserSetting = existing
-    ? { ...existing, value: { kcal: value }, deleted_at: null }
-    : { id: KCAL_TARGET_ID, user_id: userId, key: 'kcal_target', value: { kcal: value }, created_at: ts, updated_at: ts, deleted_at: null }
+    ? { ...existing, key: 'nutrition_targets', value, deleted_at: null }
+    : { id: NUTRITION_ID, user_id: userId, key: 'nutrition_targets', value, created_at: ts, updated_at: ts, deleted_at: null }
   await saveRows('user_setting', [row])
 }

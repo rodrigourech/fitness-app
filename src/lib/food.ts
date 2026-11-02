@@ -3,6 +3,7 @@
 // (settings.ts) and the weight forecast uses body weight only, so gaps in logging change nothing outside this tab.
 // Meal prep: every cooked portion becomes its own entry on the day it is eaten.
 import { db, type FoodCategory, type FoodEntry, type FoodEntryItem, type FoodItem } from './db'
+import { getNutrition, type NutritionTargets } from './settings'
 import { saveRows } from './sync'
 
 export const PROTEIN_TARGET_G = 140
@@ -84,6 +85,13 @@ export interface DayRow extends Totals {
   day: string
   cheat: number
   drinks: number
+  /** At least one entry that is not an automatic daily entry (decision 2 November 2026) */
+  filled: boolean
+}
+
+/** A day counts only with at least one entry besides the automatic daily ones (shake, espressos). */
+export function isFilled(list: Pick<FoodEntry, 'source'>[]): boolean {
+  return list.some((e) => e.source !== 'auto')
 }
 
 /** Monday to Sunday of the week containing the day. */
@@ -93,7 +101,7 @@ export function weekRows(entries: FoodEntry[], day: string): DayRow[] {
   return Array.from({ length: 7 }, (_, i) => {
     const k = addDaysKey(monday, i)
     const list = days.get(k) ?? []
-    return { day: k, ...totalsOf(list), cheat: list.filter((e) => e.category === 'cheat').length, drinks: list.filter((e) => e.category === 'drinks').length }
+    return { day: k, ...totalsOf(list), cheat: list.filter((e) => e.category === 'cheat').length, drinks: list.filter((e) => e.category === 'drinks').length, filled: isFilled(list) }
   })
 }
 
@@ -179,6 +187,68 @@ function entryRow(userId: string, draft: EntryDraft, existing?: FoodEntry): Food
     protein_g: Math.max(0, Math.round(draft.protein * 10) / 10),
     portions_cooked: draft.portionsCooked ?? null,
     portions_eaten: draft.portionsEaten ?? null,
+  }
+}
+
+// --- automatic daily entries (decision 2 November 2026) -----------------------------------------
+// The ESN shake (every day, 08:00) and 3 espressos with milk (Monday to Friday, 09:30) are entered automatically for the
+// current day once a sync has run, so both devices know the server state first. The id is derived from user, day and
+// kind, so two devices create the same row and a deleted row is never created again.
+
+export const SHAKE_STAPLE_ID = 'c5a0f6d1-0001-4f00-8000-00000000000a'
+const ESPRESSO = { kcal: 55, protein: 3 } // 3 × (espresso 2 kcal + 2 tbsp milk 2.5 % about 16 kcal, 1 g protein)
+
+/** Name-based UUID (version 5 layout) from SHA-1. */
+export async function stableUuid(name: string): Promise<string> {
+  const hash = new Uint8Array(await crypto.subtle.digest('SHA-1', new TextEncoder().encode(`fitness-app/${name}`))).slice(0, 16)
+  hash[6] = (hash[6]! & 0x0f) | 0x50
+  hash[8] = (hash[8]! & 0x3f) | 0x80
+  const hex = [...hash].map((b) => b.toString(16).padStart(2, '0')).join('')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
+
+/** Drafts of the automatic entries for a day according to the settings. */
+export function dailyDrafts(day: string, targets: Pick<NutritionTargets, 'shake' | 'espresso'>, shake?: Pick<FoodItem, 'name' | 'kcal' | 'protein_g'>): (EntryDraft & { kind: 'shake' | 'espresso' })[] {
+  const weekday = new Date(`${day}T12:00:00`).getDay()
+  const out: (EntryDraft & { kind: 'shake' | 'espresso' })[] = []
+  if (targets.shake) {
+    const kcal = shake?.kcal ?? 167
+    const protein = shake?.protein_g ?? 34.5
+    out.push({ kind: 'shake', eatenAt: new Date(`${day}T08:00:00`).toISOString(), category: 'breakfast', title: shake?.name ?? 'ESN shake, water',
+      items: [{ name: shake?.name ?? 'ESN shake, water', food_item_id: SHAKE_STAPLE_ID, amount: '1 serving', kcal, protein_g: protein, source: 'staple' }], kcal, protein })
+  }
+  if (targets.espresso && weekday >= 1 && weekday <= 5) {
+    out.push({ kind: 'espresso', eatenAt: new Date(`${day}T09:30:00`).toISOString(), category: 'snack', title: '3 espressos with milk', detail: '2 tbsp milk each',
+      items: [{ name: 'Espresso with milk', food_item_id: null, amount: '3 ×', kcal: ESPRESSO.kcal, protein_g: ESPRESSO.protein, source: 'staple' }], kcal: ESPRESSO.kcal, protein: ESPRESSO.protein })
+  }
+  return out
+}
+
+/** Creates the automatic entries of a day that do not exist yet (deleted ones stay deleted). Returns the number created. */
+export async function ensureDailyEntries(userId: string, day: string, targets: Pick<NutritionTargets, 'shake' | 'espresso'>): Promise<number> {
+  const shake = await db.food_item.get(SHAKE_STAPLE_ID)
+  const rows: FoodEntry[] = []
+  for (const d of dailyDrafts(day, targets, shake && shake.deleted_at === null ? shake : undefined)) {
+    const id = await stableUuid(`${userId}/${day}/${d.kind}`)
+    if (await db.food_entry.get(id)) continue
+    const row = entryRow(userId, d)
+    rows.push({ ...row, id, source: 'auto' })
+  }
+  if (rows.length) await saveRows('food_entry', rows)
+  return rows.length
+}
+
+let dailyRunning = false
+/** Adds today's automatic entries according to the settings (called after each successful sync). */
+export async function addDailyEntries(userId: string, now = new Date()): Promise<void> {
+  if (dailyRunning) return
+  dailyRunning = true
+  try {
+    await ensureDailyEntries(userId, localDay(now), await getNutrition())
+  } catch (err) {
+    console.error('Daily food entries failed', err)
+  } finally {
+    dailyRunning = false
   }
 }
 

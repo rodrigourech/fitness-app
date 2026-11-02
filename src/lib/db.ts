@@ -206,7 +206,7 @@ export interface FoodEntry extends SyncColumns {
   protein_g: number
   portions_cooked: number | null
   portions_eaten: number | null
-  source: 'app' | 'claude'
+  source: 'app' | 'claude' | 'auto'
 }
 
 export interface CatalogExercise {

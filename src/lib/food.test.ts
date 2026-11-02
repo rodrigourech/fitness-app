@@ -1,8 +1,8 @@
 import 'fake-indexeddb/auto'
 import { describe, expect, it } from 'vitest'
 import { db, type FoodEntry } from './db'
-import { amountText, categoryAt, defaultPlan, localDay, mealPrepDrafts, mondayOf, portionOf, saveFoodEntries, saveFoodEntry, slotTime, stapleValues, totalsOf, weekRows } from './food'
-import { DEFAULT_KCAL_TARGET, getKcalTarget, parseKcalTarget } from './settings'
+import { amountText, categoryAt, dailyDrafts, defaultPlan, ensureDailyEntries, isFilled, localDay, mealPrepDrafts, mondayOf, portionOf, saveFoodEntries, saveFoodEntry, slotTime, stableUuid, stapleValues, totalsOf, weekRows } from './food'
+import { DEFAULT_NUTRITION, getNutrition, parseNutrition } from './settings'
 
 const base = { user_id: 'u', created_at: '', updated_at: '', deleted_at: null }
 function entry(day: string, kcal: number, protein = 30, category: FoodEntry['category'] = 'lunch'): FoodEntry {
@@ -45,10 +45,34 @@ describe('food', () => {
     expect(new Date(slotTime({ day: '2026-11-01', category: 'drinks' }, now)).getHours()).toBe(21)
   })
 
-  it('kcal target is set by hand only', async () => {
-    expect(parseKcalTarget({ kcal: 2150.4 })).toBe(2150)
-    expect(parseKcalTarget(800)).toBeNull()
-    expect(await getKcalTarget()).toBe(DEFAULT_KCAL_TARGET)
+  it('nutrition targets are set by hand, invalid values fall back', async () => {
+    expect(parseNutrition({ needKcal: 2500.4, deficitKcal: 400, proteinG: 150, shake: false })).toEqual({ needKcal: 2500, deficitKcal: 400, proteinG: 150, shake: false, espresso: true })
+    expect(parseNutrition({ needKcal: 800, deficitKcal: -5 })).toMatchObject({ needKcal: 2440, deficitKcal: 500 })
+    expect(parseNutrition({ kcal: 2000 })).toEqual(DEFAULT_NUTRITION)
+    expect(await getNutrition()).toEqual(DEFAULT_NUTRITION)
+  })
+
+  it('daily entries: shake every day, espressos Monday to Friday, created once, deleted stays deleted', async () => {
+    expect(dailyDrafts('2026-11-02', { shake: true, espresso: true }).map((d) => d.kind)).toEqual(['shake', 'espresso'])
+    expect(dailyDrafts('2026-11-01', { shake: true, espresso: true }).map((d) => d.kind)).toEqual(['shake'])
+    expect(dailyDrafts('2026-11-02', { shake: false, espresso: false })).toEqual([])
+    expect(await stableUuid('a')).toBe(await stableUuid('a'))
+    expect(await stableUuid('a')).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
+    await db.food_entry.clear()
+    expect(await ensureDailyEntries('u9', '2026-11-03', { shake: true, espresso: true })).toBe(2)
+    expect(await ensureDailyEntries('u9', '2026-11-03', { shake: true, espresso: true })).toBe(0)
+    const rows = await db.food_entry.toArray()
+    expect(rows.every((r) => r.source === 'auto')).toBe(true)
+    expect(rows.map((r) => r.kcal).sort()).toEqual([167, 55].sort())
+    await db.food_entry.update(rows[0]!.id, { deleted_at: '2026-11-03T10:00:00Z' })
+    expect(await ensureDailyEntries('u9', '2026-11-03', { shake: true, espresso: true })).toBe(0)
+    expect(isFilled(rows)).toBe(false)
+    expect(isFilled([...rows, { source: 'app' }])).toBe(true)
+    const week = weekRows([...rows.map((r) => ({ ...r, deleted_at: null })), entry('2026-11-04', 1800)], '2026-11-03')
+    expect(week.find((r) => r.day === '2026-11-03')).toMatchObject({ filled: false, kcal: 222 })
+    expect(week.find((r) => r.day === '2026-11-04')).toMatchObject({ filled: true })
+    await db.food_entry.clear()
+    await db.outbox.clear()
   })
 
   it('saves an entry for sync', async () => {

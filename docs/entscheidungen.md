@@ -264,3 +264,12 @@ Nachtrag 1. November 2026 (Abend), Entwürfe G1 bis G3 mit Rodrigo abgestimmt:
 - Navigation: Food wird nicht mehr farbig hervorgehoben, sondern wie die anderen Reiter dargestellt (aktiv hellblau); bleibt in der Mitte
 - Erfassung vereinfacht (1. November 16:35): nur noch direkt in der App oder im Chat «Food Tracking» (Claude fragt Fehlendes, trägt nach Ok ein). Die Maske «Log a Meal» (Artifact) wird nicht mehr genutzt und ist nicht angeheftet
 - Claude-Chat direkt in der App (über die Claude-API, eigene Kosten) vorerst nicht umgesetzt; zuerst zwei bis drei Wochen mit dem Chat «Food Tracking» erfassen, danach neu beurteilen (1. November 2026)
+
+## **2. November 2026**
+
+Food-Tab, Entwürfe K bis M mit Rodrigo abgestimmt.
+
+- Bedarf und Defizitziel: Unter «Targets» (Knopf «−500 kcal / day» neben dem Titel Food) werden Bedarf (Erhaltung, von Hand, Vorschlag 2 440 kcal nach Mifflin-St Jeor mit 85.7 kg, 182 cm, 25 Jahren, Faktor 1.3), Defizitziel pro Tag (300, 400, 500, 600, 750; Standard 500) und Proteinziel gesetzt (user_setting nutrition_targets, gleiche feste ID wie das frühere kcal_target). Tagesziel = Bedarf − Defizitziel. Die Gewichtsprognose bleibt davon unberührt
+- kcal-Kachel: gegessen / Bedarf, darunter ein dezenter Balken (blau gegessen, orange Defizit bis zum Bedarf, dunkler Strich beim Tagesziel) und «−N kcal deficit»; das Ziel steht nur im Knopf beim Titel
+- Automatische Tageseinträge (source auto, Migration 0035): ESN-Shake mit Wasser jeden Tag 08:00, 3 Espressi mit je 2 EL Milch Montag bis Freitag 09:30 (zusammen 55 kcal, 3 g Protein; Milch ist nicht vernachlässigbar, etwa 10 % des Defizitziels). Angelegt für den aktuellen Tag nach jeder erfolgreichen Synchronisation, ID aus Benutzer, Tag und Art abgeleitet, damit beide Geräte dieselbe Zeile erzeugen und gelöschte nicht zurückkommen. Schalter unter Targets; abweichende Tage von Hand ändern oder löschen
+- Ein vergangener Tag mit nur automatischen Einträgen gilt als nicht ausgefüllt: Hinweis im Tag, Kachel «not counted», in der Woche gestrichelt mit «not filled», zählt in keinem Schnitt. Der laufende Tag gilt immer als gezählt. Woche mit «Ø deficit per day» über die abgeschlossenen gezählten Tage

@@ -2,7 +2,8 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
 import { getLocalUser, signOut, type LocalUser } from './lib/auth'
 import { deletePendingPhotoObjects, uploadPendingPhotos } from './lib/photos'
-import { startBackgroundSync } from './lib/sync'
+import { getSyncStatus, startBackgroundSync, subscribeSyncStatus } from './lib/sync'
+import { addDailyEntries } from './lib/food'
 import { purgeExpired } from './lib/trash'
 import { getActiveWorkout } from './lib/workout'
 import MiniWorkoutBar from './components/MiniWorkoutBar'
@@ -46,8 +47,14 @@ export default function App() {
     onOnline()
     // Photos older than 30 days in the trash are removed for good
     void purgeExpired().catch((err: unknown) => console.error('Trash housekeeping failed', err))
+    // Automatic daily food entries (shake, espressos), only after a sync so both devices know the server state
+    const unsubscribe = subscribeSyncStatus(() => {
+      const st = getSyncStatus()
+      if (st.phase === 'idle' && st.lastSuccess) void addDailyEntries(user.id)
+    })
     return () => {
       stop()
+      unsubscribe()
       window.removeEventListener('online', onOnline)
     }
   }, [user])

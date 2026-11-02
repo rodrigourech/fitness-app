@@ -141,7 +141,7 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
         ))}
         <button onClick={() => setMore(true)} aria-expanded={more} aria-current={tab === 'exercises' || tab === 'history' ? 'page' : undefined}><span className="home-nav-icon"><AppIcon name="more" /></span>More</button>
       </nav>
-      {tab !== 'home' && <h1 className="mb-4 text-2xl font-semibold tracking-tight">{TAB_LABEL[tab]}</h1>}
+      {tab !== 'home' && tab !== 'food' && <h1 className="mb-4 text-2xl font-semibold tracking-tight">{TAB_LABEL[tab]}</h1>}
 
       {tab === 'exercises' ? (
         <ExercisesTab userId={user.id} />

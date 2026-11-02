@@ -19,6 +19,7 @@ Stand 1. November 2026.
 - Morgens ein Shake, an Trainingstagen ein zweiter nach dem Training
 - Standard mit Wasser; mit Milch nur 1 bis 2 Mal pro Woche als Ausnahme
 - Coop Whey Vanille als Reserve
+- Trinkt pro Tag 3 Espressi mit je einem Schuss Milch (max. 2 EL), etwa 55 kcal; an Wochenenden nicht (Nov 2026)
 
 ## **Vereinbarte Richtwerte (Nov 2026)**
 
@@ -36,3 +37,4 @@ Stand 1. November 2026.
 - Fester Ablauf über den Connector Fitness Food: Standardlebensmittel holen, Vorschau zeigen, erst nach Bestätigung speichern (Details docs/food-connector.md)
 - Standardlebensmittel mit festen Werten; neue Produkte per Foto der Nährwerttabelle ergänzen
 - Keine Reste-Funktion
+- Automatische Tageseinträge: Shake mit Wasser jeden Tag, Espressi Montag bis Freitag; ein Tag mit nur diesen Einträgen gilt als nicht ausgefüllt und zählt nicht (Nov 2026)

@@ -5,7 +5,6 @@ import type { FoodCategory, FoodEntry, FoodEntryItem, FoodItem } from '../lib/db
 import {
   CATEGORIES,
   CATEGORY_LABEL,
-  PROTEIN_TARGET_G,
   addDaysKey,
   amountText,
   byDay,
@@ -13,6 +12,8 @@ import {
   defaultPlan,
   deleteFoodEntry,
   deleteFoodItem,
+  ensureDailyEntries,
+  isFilled,
   loadFood,
   localDay,
   mealPrepDrafts,
@@ -25,14 +26,16 @@ import {
   type PortionSlot,
 } from '../lib/food'
 import { MONTHS } from '../lib/forecast'
-import { getKcalTarget, parseKcalTarget, saveKcalTarget } from '../lib/settings'
+import { getNutrition, saveNutrition, type NutritionTargets } from '../lib/settings'
 
-// Food tab, variant B (decision 1 November 2026): two numbers for the day, then Today (timeline), Week and Staples.
-// Entries from the Food connector carry the badge «Claude». Nutrition stays inside this tab: the kcal target is set by
-// hand and nothing here feeds the weight forecast. Meal prep plans every portion on its own day.
+// Food tab, variant B (decision 1 November 2026): two numbers for the day, then Day (timeline), Week and Staples.
+// Entries from the Food connector carry the badge «Claude», automatic daily entries the label «daily». Nutrition stays
+// inside this tab: need and deficit goal are set by hand under Targets (decision 2 November 2026) and nothing here feeds
+// the weight forecast. A past day with only automatic entries is «not filled in» and does not count. Meal prep plans
+// every portion on its own day.
 
 type View = 'today' | 'week' | 'staples'
-type SheetState = { kind: 'entry'; entry?: FoodEntry } | { kind: 'staples' } | { kind: 'item'; item?: FoodItem } | null
+type SheetState = { kind: 'entry'; entry?: FoodEntry } | { kind: 'staples' } | { kind: 'item'; item?: FoodItem } | { kind: 'targets' } | null
 
 const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const DOT: Partial<Record<FoodCategory, string>> = { cheat: 'bg-orange-500', dessert: 'bg-pink-600', drinks: 'bg-amber-600' }
@@ -57,35 +60,40 @@ function num(n: number): string {
 
 export default function FoodTab({ userId }: { userId: string }) {
   const data = useLiveQuery(loadFood, [])
-  const target = useLiveQuery(getKcalTarget, [])
+  const targets = useLiveQuery(getNutrition, [])
   const [view, setView] = useState<View>('today')
   const [today] = useState(() => localDay(new Date()))
   const [day, setDay] = useState(today)
   const [sheet, setSheet] = useState<SheetState>(null)
-  if (data === undefined || target === undefined) return null
+  if (data === undefined || targets === undefined) return null
 
   const days = byDay(data.entries)
   const list = days.get(day) ?? []
   const totals = totalsOf(list)
-  const kcalLeft = target - totals.kcal
-  const proteinLeft = PROTEIN_TARGET_G - totals.protein
+  const counted = day >= today || isFilled(list)
+  const proteinLeft = targets.proteinG - totals.protein
 
   return (
     <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold tracking-tight">Food</h1>
+        <button onClick={() => setSheet({ kind: 'targets' })} aria-label="Nutrition targets"
+          className="flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[13px] font-semibold shadow-sm tabular-nums dark:border-zinc-700 dark:bg-zinc-900">
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.5" /></svg>
+          −{num(targets.deficitKcal)} kcal / day<span className="font-normal text-zinc-400">›</span>
+        </button>
+      </div>
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4 dark:border-blue-950 dark:bg-blue-950/50">
-          <div className="text-xs text-zinc-500 dark:text-zinc-400">kcal {day === today ? 'today' : dayTitle(day, today)}</div>
-          <div className="mt-1 text-3xl font-semibold tracking-tight text-blue-700 tabular-nums dark:text-blue-300">
-            {num(totals.kcal)}<span className="ml-1 text-xs font-normal tracking-normal text-zinc-500">/ {num(target)}</span>
-          </div>
-          <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{kcalLeft >= 0 ? `${num(kcalLeft)} left` : `${num(-kcalLeft)} over target`}</div>
-        </div>
+        <KcalTile label={`kcal ${day === today ? 'today' : day === addDaysKey(today, -1) ? 'yesterday' : dayTitle(day, today)}`} eaten={totals.kcal} targets={targets} counted={counted} />
         <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 dark:border-emerald-950 dark:bg-emerald-950/50">
           <div className="text-xs text-zinc-500 dark:text-zinc-400">Protein</div>
-          <div className="mt-1 text-3xl font-semibold tracking-tight text-emerald-700 tabular-nums dark:text-emerald-300">
-            {totals.protein}<span className="ml-1 text-xs font-normal tracking-normal text-zinc-500">/ {PROTEIN_TARGET_G} g</span>
+          <div className="mt-1 text-[28px] leading-9 font-semibold tracking-tight whitespace-nowrap text-emerald-700 tabular-nums dark:text-emerald-300">
+            {totals.protein}<span className="ml-1 text-xs font-normal tracking-normal text-zinc-500">/ {targets.proteinG} g</span>
           </div>
-          <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{proteinLeft <= 0 ? 'goal reached' : `${proteinLeft} g to go`}</div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-emerald-700/15">
+            <div className="h-full rounded-full bg-emerald-700 dark:bg-emerald-400" style={{ width: `${Math.min(100, (totals.protein / targets.proteinG) * 100)}%` }} />
+          </div>
+          <div className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">{proteinLeft <= 0 ? 'goal reached' : `${proteinLeft} g to go`}</div>
         </div>
       </div>
 
@@ -105,6 +113,11 @@ export default function FoodTab({ userId }: { userId: string }) {
             <span className="text-sm font-semibold">{dayTitle(day, today)}</span>
             <button aria-label="Next day" disabled={day >= addDaysKey(today, PLAN_DAYS)} onClick={() => setDay(addDaysKey(day, 1))} className="rounded-lg px-3 py-1.5 text-lg disabled:opacity-30">›</button>
           </div>
+          {list.length > 0 && !counted && (
+            <p className="rounded-xl bg-orange-50 px-3 py-2.5 text-sm text-orange-700 dark:bg-orange-950/50 dark:text-orange-300">
+              <b>Not filled in.</b> Only the daily entries are logged, so this day does not count in the week and the averages.
+            </p>
+          )}
           {list.length === 0 ? (
             <p className="card p-4 text-sm text-zinc-500 dark:text-zinc-400">Nothing logged. Tell Claude what you ate, or add it here.</p>
           ) : (
@@ -117,12 +130,40 @@ export default function FoodTab({ userId }: { userId: string }) {
         </>
       )}
 
-      {view === 'week' && <WeekView userId={userId} entries={data.entries} day={day} target={target} onOpenDay={(d) => { setDay(d); setView('today') }} />}
+      {view === 'week' && <WeekView entries={data.entries} day={day} today={today} targets={targets} onOpenDay={(d) => { setDay(d); setView('today') }} />}
       {view === 'staples' && <StaplesView items={data.items} onOpen={(item) => setSheet({ kind: 'item', item })} />}
 
       {sheet?.kind === 'entry' && <EntrySheet userId={userId} day={day} entry={sheet.entry} onClose={() => setSheet(null)} />}
       {sheet?.kind === 'staples' && <StaplesSheet userId={userId} day={day} today={today} items={data.items} onClose={() => setSheet(null)} />}
       {sheet?.kind === 'item' && <ItemSheet userId={userId} item={sheet.item} onClose={() => setSheet(null)} />}
+      {sheet?.kind === 'targets' && <TargetsSheet userId={userId} targets={targets} today={today} onClose={() => setSheet(null)} />}
+    </div>
+  )
+}
+
+/** Eaten against need: blue = eaten, orange = deficit up to the need, dark tick = target (need − deficit goal). */
+function KcalTile({ label, eaten, targets, counted }: { label: string; eaten: number; targets: NutritionTargets; counted: boolean }) {
+  const need = targets.needKcal
+  const deficit = need - eaten
+  const pct = (n: number) => `${Math.max(0, Math.min(100, (n / need) * 100))}%`
+  return (
+    <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4 dark:border-blue-950 dark:bg-blue-950/50">
+      <div className="text-xs text-zinc-500 dark:text-zinc-400">{label}</div>
+      <div className="mt-1 text-[28px] leading-9 font-semibold tracking-tight whitespace-nowrap text-blue-700 tabular-nums dark:text-blue-300">
+        {num(eaten)}<span className="ml-1 text-xs font-normal tracking-normal text-zinc-500">/ {num(need)} need</span>
+      </div>
+      <div className="relative mt-2 h-1.5 rounded-full bg-blue-700/10" role="img" aria-label={`${num(eaten)} of ${num(need)} kcal eaten, target ${num(need - targets.deficitKcal)}`}>
+        {counted && <>
+          <span className="absolute inset-y-0 left-0 rounded-l-full bg-[var(--viz-s1)]" style={{ width: pct(eaten) }} />
+          {deficit > 0 && <span className="absolute inset-y-0 right-0 rounded-r-full bg-amber-500" style={{ left: pct(eaten) }} />}
+          <span className="absolute -inset-y-1 w-0.5 bg-zinc-900/55 dark:bg-zinc-100/60" style={{ left: pct(need - targets.deficitKcal) }} />
+        </>}
+      </div>
+      <div className="mt-1.5 text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
+        {!counted ? 'not counted'
+          : deficit >= 0 ? <><b className="font-semibold text-amber-700 dark:text-amber-400">−{num(deficit)} kcal</b> deficit</>
+          : <><b className="font-semibold text-red-700 dark:text-red-400">+{num(-deficit)} kcal</b> surplus</>}
+      </div>
     </div>
   )
 }
@@ -132,13 +173,14 @@ function TimelineEntry({ entry: e, last, onOpen }: { entry: FoodEntry; last: boo
     <li className="grid grid-cols-[2.75rem_0.75rem_1fr] gap-2">
       <span className="pt-3 text-right text-xs text-zinc-500 tabular-nums dark:text-zinc-400">{time(e.eaten_at)}</span>
       <span className="flex flex-col items-center">
-        <span className={`mt-4 h-2.5 w-2.5 rounded-full ${DOT[e.category] ?? 'bg-accent'}`} />
+        <span className={`mt-4 h-2.5 w-2.5 rounded-full ${e.source === 'auto' ? 'bg-zinc-400' : (DOT[e.category] ?? 'bg-accent')}`} />
         {!last && <span className="w-0.5 flex-1 bg-zinc-200 dark:bg-zinc-800" />}
       </span>
       <button onClick={onOpen} className="card mb-2 p-3 text-left">
         <span className="block text-[11px] font-semibold tracking-wide text-zinc-500 uppercase dark:text-zinc-400">{CATEGORY_LABEL[e.category]}</span>
         <span className="mt-0.5 block font-semibold">
           {e.title}
+          {e.source === 'auto' && <span className="ml-1.5 rounded-md bg-zinc-100 px-1.5 py-px align-[1px] text-[10px] font-semibold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">daily</span>}
           {e.source === 'claude' && <span className="ml-1.5 rounded-md bg-violet-50 px-1.5 py-px align-[1px] text-[10px] font-semibold text-violet-700 dark:bg-violet-950 dark:text-violet-300">Claude</span>}
         </span>
         {e.detail && <span className="mt-0.5 block text-xs text-zinc-500 dark:text-zinc-400">{e.detail}</span>}
@@ -151,64 +193,118 @@ function TimelineEntry({ entry: e, last, onOpen }: { entry: FoodEntry; last: boo
   )
 }
 
-function WeekView({ userId, entries, day, target, onOpenDay }: { userId: string; entries: FoodEntry[]; day: string; target: number; onOpenDay: (d: string) => void }) {
+function WeekView({ entries, day, today, targets, onOpenDay }: { entries: FoodEntry[]; day: string; today: string; targets: NutritionTargets; onOpenDay: (d: string) => void }) {
   const rows = weekRows(entries, day)
-  const logged = rows.filter((r) => r.count > 0)
+  const target = targets.needKcal - targets.deficitKcal
+  const counted = rows.filter((r) => r.count > 0 && (r.filled || r.day >= today))
+  const past = counted.filter((r) => r.day < today)
   const max = Math.max(3000, target * 1.2, ...rows.map((r) => r.kcal))
-  const avg = (f: (r: (typeof rows)[number]) => number) => (logged.length ? Math.round(logged.reduce((s, r) => s + f(r), 0) / logged.length) : 0)
+  const avg = (list: typeof rows, f: (r: (typeof rows)[number]) => number) => (list.length ? Math.round(list.reduce((s, r) => s + f(r), 0) / list.length) : 0)
+  const deficit = avg(past, (r) => targets.needKcal - r.kcal)
   return (
     <>
       <section className="card p-4">
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="text-sm font-semibold">Week</h2>
-          <span className="text-xs text-zinc-500 tabular-nums dark:text-zinc-400">{logged.length ? `Ø ${num(avg((r) => r.kcal))} kcal · Ø ${avg((r) => r.protein)} g` : 'no entries'}</span>
+          <span className="text-xs text-zinc-500 tabular-nums dark:text-zinc-400">{counted.length ? `Ø ${num(avg(counted, (r) => r.kcal))} kcal · Ø ${avg(counted, (r) => r.protein)} g · ${counted.length} of 7 days` : 'no entries'}</span>
         </div>
         <div className="mt-3 flex items-end gap-1">
-          {rows.map((r) => (
-            <button key={r.day} onClick={() => onOpenDay(r.day)} className="flex flex-1 flex-col items-center gap-1">
-              <span className="text-[10px] text-zinc-500 tabular-nums">{r.kcal ? `${(r.kcal / 1000).toFixed(1)}k` : ''}</span>
-              <span className="relative flex h-28 w-full items-end justify-center">
-                <span aria-hidden className="absolute inset-x-0 border-t border-dashed border-zinc-400/70" style={{ bottom: `${(target / max) * 112}px` }} />
-                <span className={`w-5 rounded-t-md rounded-b-sm ${r.day === day ? 'bg-[var(--viz-s1)]' : 'bg-[var(--viz-s1)] opacity-55'}`} style={{ height: `${Math.max(r.kcal ? 4 : 0, (r.kcal / max) * 112)}px` }} />
-              </span>
-              <span className={`text-[11px] font-semibold tabular-nums ${r.protein >= PROTEIN_TARGET_G ? 'text-emerald-700 dark:text-emerald-400' : 'text-zinc-500'}`}>{r.count ? `${r.protein} g` : '–'}</span>
-              <span className="text-[11px] text-zinc-500">{WEEKDAY[new Date(`${r.day}T12:00:00`).getDay()]}</span>
-              <span className={`h-3.5 text-[10px] font-semibold ${r.cheat ? 'text-orange-600' : 'text-amber-700 dark:text-amber-500'}`}>{r.cheat ? 'cheat' : r.drinks ? 'drinks' : ''}</span>
-            </button>
-          ))}
+          {rows.map((r) => {
+            const notFilled = r.count > 0 && !r.filled && r.day < today
+            return (
+              <button key={r.day} onClick={() => onOpenDay(r.day)} className="flex flex-1 flex-col items-center gap-1">
+                <span className="h-3 text-[10px] text-zinc-500 tabular-nums">{r.kcal && !notFilled ? `${(r.kcal / 1000).toFixed(1)}k` : ''}</span>
+                <span className="relative flex h-28 w-full items-end justify-center">
+                  <span aria-hidden className="absolute inset-x-0 border-t border-dashed border-zinc-500/40" style={{ bottom: `${(target / max) * 112}px` }} />
+                  {notFilled
+                    ? <span className="h-28 w-5 rounded-md border border-dashed border-zinc-300 dark:border-zinc-700" />
+                    : <span className={`w-5 rounded-t-md rounded-b-sm ${r.day === day ? 'bg-[var(--viz-s1)]' : 'bg-[var(--viz-s1)] opacity-55'}`} style={{ height: `${Math.max(r.kcal ? 4 : 0, (r.kcal / max) * 112)}px` }} />}
+                </span>
+                <span className={`text-[11px] font-semibold tabular-nums ${!notFilled && r.protein >= targets.proteinG ? 'text-emerald-700 dark:text-emerald-400' : 'text-zinc-500'}`}>{r.count && !notFilled ? `${r.protein} g` : '–'}</span>
+                <span className="text-[11px] text-zinc-500">{WEEKDAY[new Date(`${r.day}T12:00:00`).getDay()]}</span>
+                <span className={`h-3.5 text-[10px] font-semibold whitespace-nowrap ${notFilled ? 'text-zinc-400' : r.cheat ? 'text-orange-600' : 'text-amber-700 dark:text-amber-500'}`}>{notFilled ? 'not filled' : r.cheat ? 'cheat' : r.drinks ? 'drinks' : ''}</span>
+              </button>
+            )
+          })}
         </div>
         <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">Dashed line · target {num(target)} kcal</p>
       </section>
-      <div className="grid grid-cols-3 gap-2">
-        <Tile label={`≥ ${PROTEIN_TARGET_G} g protein`} value={`${rows.filter((r) => r.protein >= PROTEIN_TARGET_G).length}`} unit="/ 7" />
+      <div className="grid grid-cols-2 gap-2">
+        <Tile label="Ø deficit per day" value={!past.length ? '–' : deficit >= 0 ? `−${num(deficit)}` : `+${num(-deficit)}`} unit="kcal" />
+        <Tile label={`≥ ${targets.proteinG} g protein`} value={String(counted.filter((r) => r.protein >= targets.proteinG).length)} unit={`/ ${counted.length}`} />
         <Tile label="Cheat meals" value={String(rows.reduce((s, r) => s + r.cheat, 0))} />
         <Tile label="Drink nights" value={String(rows.filter((r) => r.drinks > 0).length)} />
       </div>
-      <TargetCard userId={userId} target={target} />
     </>
   )
 }
 
-function TargetCard({ userId, target }: { userId: string; target: number }) {
-  const [edit, setEdit] = useState<string | null>(null)
-  const value = edit === null ? null : parseKcalTarget(Number(edit.replace(/\s/g, '')))
+function TargetsSheet({ userId, targets, today, onClose }: { userId: string; targets: NutritionTargets; today: string; onClose: () => void }) {
+  const [draft, setDraft] = useState(targets)
+  const [need, setNeed] = useState(String(targets.needKcal))
+  const [protein, setProtein] = useState(String(targets.proteinG))
+  const save = (next: NutritionTargets) => {
+    setDraft(next)
+    void saveNutrition(userId, next).then(() => ensureDailyEntries(userId, today, next))
+  }
+  const field = (value: string, set: (v: string) => void, apply: (n: number) => void, label: string, unit: string) => (
+    <span className="flex items-center gap-1.5">
+      <input inputMode="numeric" aria-label={label} value={value} onChange={(e) => set(e.target.value)}
+        onBlur={() => { const n = Number(value.replace(/\s/g, '')); if (Number.isFinite(n) && n > 0) apply(n) }}
+        className="w-20 rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-right text-sm tabular-nums dark:border-zinc-700" />
+      <span className="w-7 text-xs text-zinc-500">{unit}</span>
+    </span>
+  )
+  const toggle = (on: boolean, set: (v: boolean) => void, label: string) => (
+    <button role="switch" aria-checked={on} aria-label={label} onClick={() => set(!on)}
+      className={`relative h-[26px] w-11 shrink-0 rounded-full transition-colors ${on ? 'bg-emerald-600' : 'bg-zinc-300 dark:bg-zinc-700'}`}>
+      <span className={`absolute top-[3px] h-5 w-5 rounded-full bg-white shadow transition-all ${on ? 'left-[21px]' : 'left-[3px]'}`} />
+    </button>
+  )
+  const row = 'flex items-center justify-between gap-3 border-b border-zinc-100 py-2.5 last:border-0 dark:border-zinc-800'
   return (
-    <section className="card flex items-center justify-between gap-3 p-4">
-      <div className="min-w-0">
-        <div className="text-sm font-semibold">Daily target</div>
-        <div className="text-xs text-zinc-500 dark:text-zinc-400">Set by hand, not used for the weight forecast</div>
+    <Sheet title="Nutrition targets" onClose={onClose}>
+      <div className="flex flex-col gap-3">
+        <section className="rounded-xl border border-zinc-200 px-3 dark:border-zinc-700">
+          <div className={row}>
+            <span><span className="block text-sm font-semibold">Daily need</span><span className="block text-xs text-zinc-500">Maintenance, set by hand</span></span>
+            {field(need, setNeed, (n) => save({ ...draft, needKcal: n }), 'Daily need', 'kcal')}
+          </div>
+          <div className="border-b border-zinc-100 py-2.5 dark:border-zinc-800">
+            <span className="block text-sm font-semibold">Deficit goal per day</span>
+            <div className="mt-2 grid grid-cols-5 gap-1 rounded-lg bg-zinc-100 p-1 text-sm dark:bg-zinc-800">
+              {[300, 400, 500, 600, 750].map((v) => (
+                <button key={v} aria-pressed={draft.deficitKcal === v} onClick={() => save({ ...draft, deficitKcal: v })}
+                  className={`rounded-md py-1.5 tabular-nums ${draft.deficitKcal === v ? 'bg-white font-semibold shadow-sm dark:bg-zinc-700' : 'text-zinc-500'}`}>{v}</button>
+              ))}
+            </div>
+          </div>
+          <div className={row}>
+            <span><span className="block text-sm font-semibold">Daily target</span><span className="block text-xs text-zinc-500">Need − deficit goal</span></span>
+            <b className="text-sm tabular-nums">{num(draft.needKcal - draft.deficitKcal)} kcal</b>
+          </div>
+          <div className={row}>
+            <span className="text-sm font-semibold">Protein goal</span>
+            {field(protein, setProtein, (n) => save({ ...draft, proteinG: n }), 'Protein goal', 'g')}
+          </div>
+        </section>
+        <p className="rounded-xl bg-zinc-100 p-3 text-xs text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+          Estimate of your need: Mifflin-St Jeor with 85.7 kg, 182 cm, 25 years × 1.3 (desk job, about 5 500 steps) = 2 440 kcal. Change it if your weight trend says otherwise. Nothing here changes the weight forecast.
+        </p>
+        <section className="rounded-xl border border-zinc-200 px-3 dark:border-zinc-700">
+          <div className="pt-2.5 text-[11px] font-semibold tracking-wide text-zinc-500 uppercase">Added automatically</div>
+          <div className={row}>
+            <span><span className="block text-sm font-semibold">ESN shake, water</span><span className="block text-xs text-zinc-500">every day · 08:00</span></span>
+            {toggle(draft.shake, (v) => save({ ...draft, shake: v }), 'ESN shake every day')}
+          </div>
+          <div className={row}>
+            <span><span className="block text-sm font-semibold">3 espressos with milk</span><span className="block text-xs text-zinc-500">Mon–Fri · 09:30 · 55 kcal · 3 g</span></span>
+            {toggle(draft.espresso, (v) => save({ ...draft, espresso: v }), 'Espressos Monday to Friday')}
+          </div>
+          <p className="pb-2.5 text-xs text-zinc-500 dark:text-zinc-400">Change or delete them on a day that differs. A day with only these entries counts as not filled in.</p>
+        </section>
       </div>
-      {edit === null ? (
-        <button onClick={() => setEdit(String(target))} className="shrink-0 rounded-lg border border-zinc-200 px-3 py-1.5 text-sm tabular-nums dark:border-zinc-700">{num(target)} kcal · Edit</button>
-      ) : (
-        <span className="flex shrink-0 items-center gap-1.5">
-          <input autoFocus inputMode="numeric" aria-label="Daily kcal target" value={edit} onChange={(e) => setEdit(e.target.value)}
-            className="w-20 rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-right text-sm tabular-nums dark:border-zinc-700" />
-          <button disabled={value === null} onClick={() => void saveKcalTarget(userId, value!).then(() => setEdit(null))}
-            className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-accent-fg disabled:opacity-40">Save</button>
-        </span>
-      )}
-    </section>
+    </Sheet>
   )
 }
 
