@@ -37,6 +37,12 @@ describe('alternative exercises', () => {
     expect(alternativeOf(byId.get(lateral.id)!, byId)?.id).toBe(curl.id)
     const variant: Exercise = { ...curl, id: 'v1', parent_id: lateral.id, name: 'Variante', alternative_id: null }
     expect(alternativeOf(variant, byId)?.id).toBe(curl.id)
+    // A variant's own alternative overrides the inherited one (Pushdown Straight Bar ⇄ V-Grip, 2 November 2026)
+    const sibling: Exercise = { ...curl, id: 'v2', parent_id: lateral.id, name: 'V-Grip', alternative_id: 'v1' }
+    byId.set('v1', variant)
+    byId.set('v2', sibling)
+    expect(alternativeOf({ ...variant, alternative_id: 'v2' }, byId)?.id).toBe('v2')
+    expect(alternativeOf(sibling, byId)?.id).toBe('v1')
     byId.set(curl.id, { ...curl, deleted_at: '2026-10-22T00:00:00Z' })
     expect(alternativeOf(byId.get(lateral.id)!, byId)).toBeNull()
   })

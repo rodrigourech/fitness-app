@@ -18,6 +18,8 @@ Stand 1. November 2026.
 - Keine zusätzlichen Aufwärmsätze wegen Zeitaufwand; ein Warm-up-Satz reicht
 - Mag Lateral Raise am Kabel nicht (Ausführung fühlt sich unsauber an); Lat Pulldown und Seated Row sind keine Lieblingsübungen
 - Mag Overhead Triceps Extension nicht; V-Grip beim Triceps Pushdown fühlt sich komisch an, Straight Bar besser (Okt 2026). Entscheid Nov 2026: Seated Dip (Technogym) in Main Day B, Pushdown mit Straight Bar in Main Day A
+- Triceps Pushdown: Alternative zu Straight Bar ist V-Grip; Progression pro Griff getrennt (Nov 2026)
+- Lat Pulldown ab 2. Nov 2026 mit Top Set 32 kg und voller Bewegung bis Schlüsselbeinhöhe; bisheriger Verlauf mit 39 und 45 kg wegen verkürzter Bewegung archiviert (Umsetzung in der App offen)
 - Einheiten maximal 60 bis 70 Minuten, 90 s Pause zwischen Sätzen als Ausgangswert (Okt 2026)
 - Wiedereinstieg im September 2026 nach etwa einem Jahr ohne regelmässigen Sport
 - Die Gym-Routine macht ihm Spass (Nov 2026)
