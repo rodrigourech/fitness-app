@@ -16,8 +16,13 @@ export type Recommendation =
   | { kind: 'weight'; kg: number; estimate: boolean }
   | null
 
-/** Shown value: whole kg from 10 kg, 0.5 kg below (labels of stacks such as 4.5, 9, 13.5 → 14). */
-export function displayWeight(kg: number): number {
+/**
+ * Shown value: whole kg from 10 kg, 0.5 kg below (labels of stacks such as 4.5, 9, 13.5 → 14). With a kg step that is a
+ * multiple of 2.5 (stack with a 2.5 kg add-on, decision 2 November 2026) exact half kilos stay: 17.5 stays 17.5.
+ */
+export function displayWeight(kg: number, step?: number | null): number {
+  const halfStep = !!step && poundStep(step) === null && Math.abs(step / 2.5 - Math.round(step / 2.5)) < 1e-9
+  if (halfStep && Math.abs(kg * 2 - Math.round(kg * 2)) < 1e-6) return Math.round(kg * 2) / 2
   return kg >= 10 ? Math.round(kg) : Math.round(kg * 2) / 2
 }
 
@@ -53,19 +58,19 @@ export function shareOf(top: number, share: number, step: number | null): Sugges
   const target = e.top * share
   const maxSteps = Math.max(0, Math.ceil(e.top / e.step - 1e-9) - 1)
   const steps = Math.min(maxSteps, Math.max(0, Math.floor((e.top - target) / e.step + 0.5)))
-  return { kg: displayWeight(e.top - steps * e.step), estimate: false }
+  return { kg: displayWeight(e.top - steps * e.step, step), estimate: false }
 }
 
 /** Next weight above the top set with a step (one step up, exact on pound stacks). */
 export function nextWeight(top: number, step: number): number {
   const e = exact(top, step)
-  return displayWeight(e.top + e.step)
+  return displayWeight(e.top + e.step, step)
 }
 
 /** Next weight below the top set with a step (one step down, exact on pound stacks, never below one step). */
 export function lowerWeight(top: number, step: number): number {
   const e = exact(top, step)
-  return displayWeight(Math.max(e.step, e.top - e.step))
+  return displayWeight(Math.max(e.step, e.top - e.step), step)
 }
 
 /** Index of the first heaviest weight, or -1 without any weight above 0. */

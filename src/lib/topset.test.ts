@@ -12,6 +12,12 @@ describe('top set', () => {
     expect(displayWeight(31.5)).toBe(32)
     expect(displayWeight(40.5)).toBe(41)
     expect(displayWeight(4.5)).toBe(4.5)
+    // 2.5 kg step with add-on keeps half kilos (Lateral Raise Machine)
+    expect(displayWeight(17.5, 2.5)).toBe(17.5)
+    expect(displayWeight(31.5, 4.5)).toBe(32)
+    expect(nextWeight(15, 2.5)).toBe(17.5)
+    expect(lowerWeight(20, 2.5)).toBe(17.5)
+    expect(shareOf(20, 0.5, 2.5)).toEqual({ kg: 10, estimate: false })
   })
 
   it('estimates without a step: 5 kg from 20 kg, 1 kg below, halves down', () => {

@@ -95,7 +95,8 @@ git push origin main
 | Lateral Raise (Cable), Triceps Pushdown (Cable), Overhead Triceps Extension (Cable) | Matrix-Kabelturm, 10 lb, beschriftet 4.5/9/14/18/23 … 86 | 4.5 | in DB |
 | Lat Pulldown (Cable) | Stapel 15 lb, beschriftet 11/18/25/32/39/45 … 127 | 6.8 | in DB |
 | Seated Leg Curl (Machine) | kg-Stapel | 5 | in DB |
-| Shoulder Press (Machine), Lateral Raise (Machine) | Technogym, 5 kg, gelbes 2.5-kg-Zusatzgewicht | 5 | in DB |
+| Shoulder Press (Machine) | Technogym, 5 kg, gelbes 2.5-kg-Zusatzgewicht | 5 | in DB |
+| Lateral Raise (Machine) | Technogym Delts Machine, Stapel 2.5, 5, 10 … 65 kg, gelbes 2.5-kg-Zusatzgewicht | 2.5 | Migration 0036 |
 | Incline Chest Press (Dumbbell) | Kurzhanteln | 2 | in DB |
 | Chest Press (Machine) | Scheiben | 10 | in DB |
 | Preacher Curl (Machine) | Scheiben | 5 | in DB |
