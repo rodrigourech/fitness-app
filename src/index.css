@@ -175,6 +175,37 @@ body {
 body:has(.home-navigation) .mini-workout-bar { bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
 body:has(.home-navigation) .undo-toast { bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
 body:has(.home-navigation) .undo-toast.undo-raised { bottom: calc(10.5rem + env(safe-area-inset-bottom)); }
+/* Laptop (from 1024 px, decision 3 November 2026): navigation as a fixed sidebar on the left, all areas including
+   Exercises and History directly; content uses the width next to it. The iPhone layout stays unchanged. */
+.home-navigation .home-nav-brand, .home-navigation .home-nav-desktop { display: none; }
+/* iPhone: the side column dissolves, order as before */
+.home-side { display: contents; }
+.home-intro { order: 0; } .home-hero { order: 1; } .home-summary-grid { order: 2; } .home-progression { order: 3; }
+.home-trend { order: 4; } .home-last { order: 5; } .home-quick-actions { order: 6; } .home-shortcut { order: 7; }
+@media (min-width: 1024px) {
+  .home-shell { padding-bottom: 3rem; margin-left: 0; max-width: 1480px; padding-left: calc(232px + 2.5rem); padding-right: 2.5rem; }
+  .home-shell .app-bar-brand { visibility: hidden; }
+  .home-navigation { top: 0; bottom: 0; left: 0; transform: none; width: 232px; max-width: none; display: flex; flex-direction: column; gap: 2px;
+    padding: 20px 12px; border-top: 0; border-right: 1px solid var(--card-border); overflow-y: auto; }
+  .home-navigation .home-nav-brand { display: flex; align-items: center; gap: 8px; padding: 4px 10px 18px; font-size: 18px; font-weight: 700; letter-spacing: -.3px; color: var(--ink); }
+  .home-navigation .home-nav-desktop { display: flex; }
+  .home-navigation button { flex-direction: row; justify-content: flex-start; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: 10px; font-size: 14px; font-weight: 500; color: var(--ink); }
+  .home-navigation button:hover { background: var(--viz-empty); }
+  .home-navigation .home-nav-icon { padding: 0; background: none !important; display: flex; color: var(--viz-muted); }
+  .home-navigation button[aria-current="page"] { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
+  .home-navigation button[aria-current="page"] .home-nav-icon { color: var(--accent-ink); }
+  .home-nav-gap { height: 14px; }
+  body:has(.home-navigation) .mini-workout-bar, body:has(.home-navigation) .undo-toast { left: 232px; bottom: 0; }
+  body:has(.home-navigation) .undo-toast.undo-raised { bottom: 5.5rem; }
+
+  /* Home: start and progress on the left, week, weight and shortcuts on the right */
+  .home-dashboard { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px 22px; align-items: start;
+    grid-template-rows: auto auto 1fr; grid-template-areas: "intro intro" "hero side" "trend side"; }
+  .home-intro { grid-area: intro; }
+  .home-hero { grid-area: hero; }
+  .home-trend { grid-area: trend; }
+  .home-side { grid-area: side; display: flex; flex-direction: column; gap: 14px; }
+}
 @media (max-width: 359px) {
   .home-summary-grid { grid-template-columns: 1fr; }
   .home-quick-actions button { flex-direction: column; }

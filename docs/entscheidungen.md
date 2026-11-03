@@ -279,3 +279,13 @@ Food-Tab, Entwürfe K bis M mit Rodrigo abgestimmt.
 - Lateral Raise (Machine): Gewichtsstufe 2.5 kg statt 5 kg (Foto vom Block 2. November: 2.5, 5, 10 … 65 und gelbes 2.5-kg-Zusatzgewicht). Mit dem Zusatzgewicht ist jede 2.5er-Stufe erreichbar; ein Sprung von 10 auf 15 kg wäre für einen kleinen Muskel zu gross (Migration 0036)
 - Triceps Pushdown: Alternative zu Straight Bar (Main Day A) ist V-Grip und umgekehrt; die eigene Alternative der Variante übersteuert die geerbte (Seated Dip), geprüft per Test. Seated Dip und Hauptübung Pushdown bleiben gegenseitig Alternativen. Progression, Rekorde und Gewichte bleiben pro Griff getrennt, weil die Lasten je Griff verschieden sind (Migration 0037)
 - Lat Pulldown: Verlauf mit 39 und 45 kg (verkürzte Bewegung bis unter das Kinn) wird archiviert, Neustart mit 32 kg und voller Bewegung bis Schlüsselbeinhöhe. Vorgesehen als eigene archivierte Übung «Lat Pulldown (verkürzt, bis 1. Nov)» statt Variante, damit auch die Stats-Progression (fasst Varianten zusammen) neu startet. Bestätigt 2. November: eigene Übung und Volumen unverändert (Top Set 32, Back-off etwa 25). Umgesetzt am 2. November mit Migration 0038 (auch Bonus Day mit Top Set 32 und Back-off 25)
+
+## **3. November 2026**
+
+- Laptop-Layout ab 1024 px (Entscheid Rodrigo nach Vorschau): Navigation als feste Seitenleiste links mit Home, Workouts, Food, Stats, Body sowie direkt Exercises und History; More bleibt für Fotos, Trash, Einstellungen und Konto. Inhalt bis 1480 px Fensterbreite links neben der Leiste
+- Home am Laptop zweispaltig: links Start eines Trainings und Fortschrittsdiagramm, rechts Woche, Gewicht, Progressionshinweis, letztes Training und Abkürzungen. Am iPhone bleibt die Reihenfolge gleich
+- Food am Laptop: links Kacheln und Tag (Umschalter nur Day und Staples), rechts immer die Woche
+- Workouts und History als Raster (2 bzw. 3 Spalten), Exercises in Spalten mit Hauptübung und Varianten zusammen, Body mit Übersicht links und Liste rechts
+- Laufendes Training, Vorlagen-Editor und Unterseiten bleiben einspaltig, weil sie vor allem am iPhone genutzt werden
+- Das iPhone-Layout bleibt unverändert; Umschaltung rein über die Fensterbreite (CSS lg und useWide)
+

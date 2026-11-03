@@ -27,7 +27,7 @@ export default function HistoryTab() {
       ) : list.length === 0 ? (
         <p className="text-zinc-500">No finished workouts yet.</p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col gap-2 lg:grid lg:grid-cols-2 xl:grid-cols-3">
           {list.map((s) => (
             <li key={s.workout.id}>
               <button
@@ -51,7 +51,7 @@ export default function HistoryTab() {
         </ul>
       )}
 
-      <div className="mt-6 flex gap-2">
+      <div className="mt-6 flex gap-2 lg:max-w-md">
         <button onClick={() => void exportSetsCsv()} className="flex-1 rounded-lg bg-zinc-100 py-2.5 text-sm font-medium dark:bg-zinc-800">
           Export sets (CSV)
         </button>
@@ -94,7 +94,7 @@ function HistoryExport() {
   }
   const title = EXPORT_RANGES.find((r) => r.key === range)!.title
   return (
-    <section className="mb-4 card p-3">
+    <section className="mb-4 card p-3 lg:max-w-xl">
       <h3 className="font-semibold">Export for AI</h3>
       <p className="mt-0.5 mb-3 text-xs text-zinc-500 dark:text-zinc-400">
         Markdown with every workout and its previous sets, body weight and the current plan.

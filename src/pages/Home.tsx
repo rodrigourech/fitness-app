@@ -25,6 +25,7 @@ import TrashPage from './TrashPage'
 import InfoPage from './InfoPage'
 import TrainingSettingsPage from './TrainingSettingsPage'
 import { isBetaSandbox } from '../lib/environment'
+import { useWide } from '../lib/useWide'
 
 interface Props {
   user: LocalUser
@@ -46,6 +47,8 @@ interface TemplateCard {
 type Tab = 'home' | 'templates' | 'exercises' | 'history' | 'stats' | 'body' | 'food'
 // Food in the middle and highlighted, used daily (decision 1 November 2026)
 const TABS: Tab[] = ['home', 'templates', 'food', 'stats', 'body']
+// Laptop sidebar: also Exercises and History directly (decision 3 November 2026)
+const DESKTOP_TABS: Tab[] = ['exercises', 'history']
 // The tab shows the training templates; in the UI they are called workouts (decision 5 October 2026)
 const TAB_LABEL: Record<Tab, string> = { home: 'Home', templates: 'Workouts', exercises: 'Exercises', history: 'History', stats: 'Stats', body: 'Body', food: 'Food' }
 
@@ -87,6 +90,7 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
   const [info, setInfo] = useState(false)
   const [training, setTraining] = useState(false)
   const [more, setMore] = useState(false)
+  const wide = useWide()
   const [photos, setPhotos] = useState(false)
   const photoAccess = useLiveQuery(photoKeyState, [])
   const [showArchive, setShowArchive] = useState(false)
@@ -119,7 +123,7 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
   if (training) return <TrainingSettingsPage userId={user.id} onDone={() => setTraining(false)} />
 
   return (
-    <main className={`home-shell mx-auto px-4 ${tab === 'stats' ? 'max-w-xl lg:max-w-6xl' : 'max-w-xl'}`}>
+    <main className="home-shell mx-auto max-w-xl px-4">
       <AppBar>
         <button onClick={() => setInfo(true)} className="rounded-md px-2 py-1 text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">
           Info
@@ -129,9 +133,11 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
       </AppBar>
 
       <nav className="home-navigation" aria-label="Main navigation">
-        {TABS.map((t) => (
+        <span className="home-nav-brand"><span aria-hidden="true" className="inline-block h-2.5 w-2.5 rounded-full bg-accent" />Fitness App</span>
+        {[...TABS, ...DESKTOP_TABS].map((t) => (
           <button
             key={t}
+            className={DESKTOP_TABS.includes(t) ? 'home-nav-desktop' : undefined}
             aria-current={tab === t ? 'page' : undefined}
             onClick={() => setTab(t)}
           >
@@ -139,7 +145,8 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
             {TAB_LABEL[t]}
           </button>
         ))}
-        <button onClick={() => setMore(true)} aria-expanded={more} aria-current={tab === 'exercises' || tab === 'history' ? 'page' : undefined}><span className="home-nav-icon"><AppIcon name="more" /></span>More</button>
+        <span className="home-nav-desktop home-nav-gap" aria-hidden="true" />
+        <button onClick={() => setMore(true)} aria-expanded={more} aria-current={!wide && (tab === 'exercises' || tab === 'history') ? 'page' : undefined}><span className="home-nav-icon"><AppIcon name="more" /></span>More</button>
       </nav>
       {tab !== 'home' && tab !== 'food' && <h1 className="mb-4 text-2xl font-semibold tracking-tight">{TAB_LABEL[tab]}</h1>}
 
@@ -178,7 +185,7 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
           {showActive && (
             <>
               {active?.length === 0 && <p className="mb-2 text-zinc-500">No active workouts.</p>}
-              <ul className="flex flex-col gap-3">
+              <ul className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:items-start xl:grid-cols-3">
                 {active?.map((c, idx) => {
                   const open = expanded.has(c.id)
                   const ids = active.map((x) => x.id)
@@ -239,7 +246,7 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
               </ul>
               <button
                 onClick={() => void createTemplate(user.id, 'New workout').then(setEditing)}
-                className="mt-3 w-full rounded-xl border border-dashed border-zinc-300 py-3 text-sm font-semibold text-zinc-600 dark:border-zinc-700 dark:text-zinc-300"
+                className="mt-3 w-full rounded-xl border border-dashed border-zinc-300 py-3 text-sm font-semibold text-zinc-600 lg:w-auto lg:px-8 dark:border-zinc-700 dark:text-zinc-300"
               >
                 + New workout
               </button>
@@ -250,7 +257,7 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
             <SectionToggle label="Archive" count={archived?.length ?? 0} open={showArchive} onToggle={() => setShowArchive((v) => !v)} />
           </div>
           {showArchive && (
-            <ul className="flex flex-col gap-2">
+            <ul className="flex flex-col gap-2 lg:grid lg:grid-cols-2 lg:items-start xl:grid-cols-3">
               {archived?.length === 0 && <p className="text-sm text-zinc-500">Archived workouts appear here.</p>}
               {archived?.map((c) => (
                 <li key={c.id} className="card p-3">

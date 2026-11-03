@@ -1,4 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks'
+import { useWide } from '../lib/useWide'
 import { useState, type ReactNode } from 'react'
 import Sheet from '../components/Sheet'
 import type { FoodCategory, FoodEntry, FoodEntryItem, FoodItem } from '../lib/db'
@@ -65,6 +66,7 @@ export default function FoodTab({ userId }: { userId: string }) {
   const [today] = useState(() => localDay(new Date()))
   const [day, setDay] = useState(today)
   const [sheet, setSheet] = useState<SheetState>(null)
+  const wide = useWide()
   if (data === undefined || targets === undefined) return null
 
   const days = byDay(data.entries)
@@ -72,25 +74,12 @@ export default function FoodTab({ userId }: { userId: string }) {
   const totals = totalsOf(list)
   const counted = day >= today || isFilled(list)
   const proteinLeft = targets.proteinG - totals.protein
+  // On the laptop the week has its own column, the switch only offers Day and Staples
+  const shown: View = wide && view === 'week' ? 'today' : view
+  const weekView = <WeekView entries={data.entries} day={day} today={today} targets={targets} onOpenDay={(d) => { setDay(d); setView('today') }} />
 
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Food</h1>
-        <span className="flex items-center gap-2">
-          <span className="flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[13px] font-semibold shadow-sm tabular-nums dark:border-zinc-700 dark:bg-zinc-900">
-            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.5" /></svg>
-            −{num(targets.deficitKcal)} kcal / day
-          </span>
-          <button onClick={() => setSheet({ kind: 'targets' })} aria-label="Edit nutrition targets"
-            className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
-            <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
-            </svg>
-          </button>
-        </span>
-      </div>
+  const dayColumn = (
+    <>
       <div className="grid grid-cols-2 gap-3">
         <KcalTile label={`kcal ${day === today ? 'today' : day === addDaysKey(today, -1) ? 'yesterday' : dayTitle(day, today)}`} eaten={totals.kcal} targets={targets} counted={counted} />
         <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 dark:border-emerald-950 dark:bg-emerald-950/50">
@@ -105,16 +94,16 @@ export default function FoodTab({ userId }: { userId: string }) {
         </div>
       </div>
 
-      <div role="tablist" aria-label="Food" className="grid grid-cols-3 gap-1 rounded-xl bg-zinc-200/70 p-1 dark:bg-zinc-900">
-        {(['today', 'week', 'staples'] as const).map((v) => (
-          <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)}
-            className={`rounded-md py-1.5 text-sm font-semibold ${view === v ? 'bg-white shadow-sm dark:bg-zinc-700' : 'text-zinc-500 dark:text-zinc-400'}`}>
+      <div role="tablist" aria-label="Food" className={`grid ${wide ? 'grid-cols-2' : 'grid-cols-3'} gap-1 rounded-xl bg-zinc-200/70 p-1 dark:bg-zinc-900`}>
+        {(wide ? (['today', 'staples'] as const) : (['today', 'week', 'staples'] as const)).map((v) => (
+          <button key={v} role="tab" aria-selected={shown === v} onClick={() => setView(v)}
+            className={`rounded-md py-1.5 text-sm font-semibold ${shown === v ? 'bg-white shadow-sm dark:bg-zinc-700' : 'text-zinc-500 dark:text-zinc-400'}`}>
             {v === 'today' ? 'Day' : v === 'week' ? 'Week' : 'Staples'}
           </button>
         ))}
       </div>
 
-      {view === 'today' && (
+      {shown === 'today' && (
         <>
           <div className="flex items-center justify-between">
             <button aria-label="Previous day" onClick={() => setDay(addDaysKey(day, -1))} className="rounded-lg px-3 py-1.5 text-lg">‹</button>
@@ -137,9 +126,38 @@ export default function FoodTab({ userId }: { userId: string }) {
           </div>
         </>
       )}
+      {!wide && view === 'week' && weekView}
+      {shown === 'staples' && <StaplesView items={data.items} onOpen={(item) => setSheet({ kind: 'item', item })} />}
+    </>
+  )
 
-      {view === 'week' && <WeekView entries={data.entries} day={day} today={today} targets={targets} onOpenDay={(d) => { setDay(d); setView('today') }} />}
-      {view === 'staples' && <StaplesView items={data.items} onOpen={(item) => setSheet({ kind: 'item', item })} />}
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold tracking-tight">Food</h1>
+        <span className="flex items-center gap-2">
+          <span className="flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[13px] font-semibold shadow-sm tabular-nums dark:border-zinc-700 dark:bg-zinc-900">
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.5" /></svg>
+            −{num(targets.deficitKcal)} kcal / day
+          </span>
+          <button onClick={() => setSheet({ kind: 'targets' })} aria-label="Edit nutrition targets"
+            className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+            <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
+            </svg>
+          </button>
+        </span>
+      </div>
+      {wide ? (
+        // Laptop: day on the left, the week always visible on the right (decision 3 November 2026)
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start gap-6">
+          <div className="flex flex-col gap-3">
+            {dayColumn}
+          </div>
+          <section aria-label="Week" className="flex flex-col gap-3">{weekView}</section>
+        </div>
+      ) : dayColumn}
 
       {sheet?.kind === 'entry' && <EntrySheet userId={userId} day={day} entry={sheet.entry} onClose={() => setSheet(null)} />}
       {sheet?.kind === 'staples' && <StaplesSheet userId={userId} day={day} today={today} items={data.items} onClose={() => setSheet(null)} />}

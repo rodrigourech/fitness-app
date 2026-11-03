@@ -12,10 +12,16 @@ export default function ExercisesTab({ userId }: { userId: string }) {
   const [creating, setCreating] = useState(false)
   const q = query.trim().toLowerCase()
   const filtered = (options ?? []).filter((o) => !q || o.label.toLowerCase().includes(q))
+  // A main exercise and its variants stay together, so the laptop columns never split them (decision 3 November 2026)
+  const groups: (typeof filtered)[] = []
+  for (const o of filtered) {
+    if (o.isVariant && groups.length > 0) groups.at(-1)!.push(o)
+    else groups.push([o])
+  }
 
   return (
     <>
-      <div className="mb-3 flex gap-2">
+      <div className="mb-3 flex gap-2 lg:max-w-md">
         <input
           aria-label="Search exercises"
           placeholder="Search"
@@ -30,15 +36,18 @@ export default function ExercisesTab({ userId }: { userId: string }) {
           + New
         </button>
       </div>
-      <ul className="flex flex-col">
-        {filtered.map((o) => (
-          <li key={o.id}>
-            <button
-              onClick={() => setOpen(o.id)}
-              className={`w-full border-b border-zinc-200 py-3 text-left dark:border-zinc-800 ${o.isVariant ? 'pl-4 text-sm text-zinc-600 dark:text-zinc-300' : 'font-medium'}`}
-            >
-              {o.label}
-            </button>
+      <ul className="flex flex-col lg:block lg:columns-2 lg:gap-x-10 xl:columns-3">
+        {groups.map((g) => (
+          <li key={g[0]!.id} className="break-inside-avoid">
+            {g.map((o) => (
+              <button
+                key={o.id}
+                onClick={() => setOpen(o.id)}
+                className={`w-full border-b border-zinc-200 py-3 text-left dark:border-zinc-800 ${o.isVariant ? 'pl-4 text-sm text-zinc-600 dark:text-zinc-300' : 'font-medium'}`}
+              >
+                {o.label}
+              </button>
+            ))}
           </li>
         ))}
         {options !== undefined && filtered.length === 0 && <li className="py-2 text-sm text-zinc-500">No match.</li>}

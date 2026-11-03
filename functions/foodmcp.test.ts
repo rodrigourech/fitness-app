@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { buildPreview, handle, itemValues, previewEntries, previewText, signPreview, verifyPreview, zurichDayRange, type FoodEnv, type Sql } from './foodmcp.ts'
 
 const KEY = 'k'.repeat(40)
@@ -83,6 +83,10 @@ describe('food connector', () => {
   })
 
   it('MCP: wrong key 404, initialize, tools, preview then confirm', async () => {
+    // The preview token is valid for 24 h from the handler's time (NOW), so the check must run at NOW too
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(NOW)
+    onTestFinished(() => { vi.useRealTimers() })
     const { sql, entries } = fakeSql()
     expect((await call({ jsonrpc: '2.0', id: 1, method: 'initialize' }, sql, '/mcp/wrong')).status).toBe(404)
     const init = await call({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18' } }, sql)

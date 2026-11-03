@@ -65,6 +65,7 @@ export default function HomeTab({ cards, running, onStart, onResume, onOpen }: P
           <button onClick={() => onOpen('templates')} className="home-primary">Open workouts <AppIcon name="arrow" /></button>
         </>}
       </section>
+      <div className="home-side">
       {s && <div className="home-summary-grid">
         <button onClick={() => onOpen('stats')} className="home-summary home-week">
           <span className="home-summary-label">This week <AppIcon name="calendar" /></span>
@@ -79,7 +80,6 @@ export default function HomeTab({ cards, running, onStart, onResume, onOpen }: P
         </button>
       </div>}
       {ready.length > 0 && <section className="home-progression"><AppIcon name="up" /><div><h2>Increase weight next time</h2><ul>{ready.map(r => <li key={`${r.templateId}/${r.exerciseId}`}>{r.name}<span className="home-muted home-small">{r.templateName}</span></li>)}</ul></div></section>}
-      {s && <TrendCard s={s} />}
       {s?.last && <button onClick={() => onOpen('history')} className="home-panel home-last">
         <span className="home-panel-heading"><span className="home-kicker">Last workout</span><AppIcon name="chevron" /></span>
         <span className="home-last-title"><strong>{s.last.workout.template_name_snapshot ?? 'Workout'}</strong><span className="home-muted home-small">{dayFormat.format(new Date(s.last.workout.started_at))}</span></span>
@@ -87,6 +87,8 @@ export default function HomeTab({ cards, running, onStart, onResume, onOpen }: P
       </button>}
       <div className="home-quick-actions"><button onClick={() => onOpen('history')}><AppIcon name="history" />History</button><button onClick={() => onOpen('trash')}><AppIcon name="trash" />Trash</button><button onClick={() => onOpen('account')}><AppIcon name="body" />Account</button></div>
       <button onClick={() => onOpen('info')} className="home-panel home-shortcut"><AppIcon name="guide" /><span><strong>Training guide</strong><small>Rep ranges, warm-up hints &amp; how progression works</small></span><AppIcon name="chevron" /></button>
+      </div>
+      {s && <TrendCard s={s} />}
     </div>
   )
 }

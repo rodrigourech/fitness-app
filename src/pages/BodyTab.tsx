@@ -54,7 +54,9 @@ export default function BodyTab({ userId }: { userId: string }) {
   const [gallery, setGallery] = useState(false)
 
   return (
-    <>
+    // Laptop: summary, photos and new entry on the left, the list on the right (decision 3 November 2026)
+    <div className="lg:grid lg:grid-cols-[minmax(0,22rem)_minmax(0,40rem)] lg:items-start lg:gap-6">
+      <div className="lg:sticky lg:top-6">
       {latest && (
         <div className="mb-4 grid grid-cols-2 gap-2">
           <div className="card p-3">
@@ -113,6 +115,8 @@ export default function BodyTab({ userId }: { userId: string }) {
           + New entry
         </button>
       )}
+
+      </div>
 
       {series && series.length > 0 ? (
         <div className="card divide-y divide-zinc-100 overflow-hidden dark:divide-zinc-800">
@@ -181,7 +185,7 @@ export default function BodyTab({ userId }: { userId: string }) {
       ) : (
         <p className="text-zinc-500">No measurements yet.</p>
       )}
-    </>
+    </div>
   )
 }
 
