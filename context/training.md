@@ -1,6 +1,6 @@
 # **Training**
 
-Stand 2. November 2026.
+Stand 3. November 2026.
 
 ## **Plan**
 
@@ -9,6 +9,7 @@ Stand 2. November 2026.
 - 1 bis 2 Wiederholungen in Reserve, kein Muskelversagen
 - Fokus Oberkörper, Beinvolumen bewusst tief (etwa 3 Sätze pro Woche und Muskel)
 - Seit 1. Nov 2026 Lateral Raise (Machine) statt Cable in Main Day A, Main Day B und Bonus Day; Cable bleibt als Alternative
+- Bonus Day ab 3. Nov 2026 als Lückenfüller (Butterfly, Straight-Arm Pulldown, Face Pull, Lateral Raise, Cable Curl im Wechsel mit Pushdown, Lying Leg Curl optional), höchstens 60 Minuten, Tag unregelmässig; von Rodrigo zum Prüfen vorgemerkt
 
 ## **Vorlieben**
 
@@ -30,6 +31,8 @@ Stand 2. November 2026.
 - Coach-Vorgaben gegen die Literatur prüfen und Abweichungen begründen
 
 ## **Gym**
+
+- Vorhanden laut Rodrigo (Nov 2026): Butterfly / Pec Deck, Kabelzug-Station, Lying Leg Curl
 
 - Zwei Stockwerke: Beinmaschinen, Lat Pulldown und Seated Row unten, alles andere oben; Reihenfolge so wählen, dass wenig Stockwerkwechsel nötig sind
 - Geräte und Gewichtsstufen stehen in docs/UEBERGABE.md (Abschnitt Geräte)
