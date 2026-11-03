@@ -337,7 +337,7 @@ function ExerciseCard({ block, byId, shares, onOpen }: { block: ExerciseBlock; b
       {eff.setupNote && <p className="text-sm whitespace-pre-line text-zinc-500 dark:text-zinc-400">{eff.setupNote}</p>}
       {tt === 'weight_reps' && (
         <>
-          {advice === 'increase' && <p className="mt-2 rounded-md bg-orange-50 px-2 py-1 text-sm text-orange-800 dark:bg-orange-950 dark:text-orange-200">
+          {advice === 'increase' && <p className="mt-2 rounded-md bg-emerald-50 px-2 py-1 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
             <span className="font-semibold">Increase weight</span><span className="text-xs"> · raise the marked weight</span>
           </p>}
           {advice === 'reduce' && <div className="mt-2 rounded-md bg-indigo-50 px-2 py-1 text-sm text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
@@ -445,17 +445,19 @@ function compactPrevious(s: WorkoutSet | undefined, trackingType: string, unilat
   return [s.weight === null ? reps : `${s.weight} × ${reps}`, '']
 }
 
-/** Rec. kg: TOP (or ↑ next weight while the top set should be raised), back-off dashed orange, warm-up dashed blue. */
+/** Rec. kg: TOP orange (or green ↑ next weight while the top set should be raised), back-off dashed orange, warm-up dashed blue. */
 function RecCell({ rec, raise, onUse }: { rec: RecCellValue; raise: boolean; onUse: (kg: number) => void }) {
   if (rec === undefined) return null
   if (rec === null) return <span />
   const solid = 'flex h-10 items-center justify-center rounded-md border border-orange-500 bg-orange-50 text-sm font-extrabold tracking-wide text-orange-700 tabular-nums dark:bg-orange-500/10 dark:text-orange-300'
   if (rec.kind === 'top') {
     if (!raise) return <span className={solid.replace('text-sm', 'text-xs')}>TOP</span>
+    // Raising is good news: green like the «Increase weight» note (decision 3 November 2026)
+    const up = 'flex h-10 items-center justify-center rounded-md border border-emerald-600 bg-emerald-50 text-sm font-extrabold tracking-wide text-emerald-700 tabular-nums dark:bg-emerald-500/10 dark:text-emerald-300'
     const next = rec.next
     return next === null
-      ? <span className={solid} aria-label="Raise the weight">↑</span>
-      : <button onClick={() => onUse(next)} aria-label={`Use ${next} kg`} className={solid}>↑ {next}</button>
+      ? <span className={up} aria-label="Raise the weight">↑</span>
+      : <button onClick={() => onUse(next)} aria-label={`Use ${next} kg`} className={up}>↑ {next}</button>
   }
   const kg = rec.kg
   const tone = rec.kind === 'warm' ? 'border-sky-400 text-sky-700 dark:text-sky-300' : 'border-orange-400 text-orange-700 dark:text-orange-300'
@@ -483,7 +485,7 @@ interface SetRowProps {
   label: string
   /** Rec. kg cell; undefined for exercises without weight */
   rec: RecCellValue
-  /** Weight field marked orange with ↑ while the weight should be raised */
+  /** Weight field marked green with ↑ while the weight should be raised */
   mark: boolean
   previous: [string, string]
   trackingType: string
@@ -574,7 +576,7 @@ function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, res
           <span className="relative">
             <Field label="Weight kg" inputMode="decimal" value={formatNumber(set.weight)} onCommit={numberCommit('weight', false)} mark={mark}
               placeholder={warm && rec?.kind === 'warm' ? (rec.estimate ? `≈ ${rec.kg}` : String(rec.kg)) : undefined} />
-            {mark && <span aria-hidden="true" className="pointer-events-none absolute top-0 right-1 text-[11px] font-extrabold text-orange-500">↑</span>}
+            {mark && <span aria-hidden="true" className="pointer-events-none absolute top-0 right-1 text-[11px] font-extrabold text-emerald-600">↑</span>}
           </span>
           {unilateral ? (
             <>

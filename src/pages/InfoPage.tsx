@@ -102,9 +102,9 @@ function Note({ children }: { children: ReactNode }) {
 }
 
 function Decision({ title, text, values, tone }: { title: string; text: string; values: number[]; tone: 'increase' | 'hold' | 'reduce' }) {
-  const box = tone === 'increase' ? 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200'
+  const box = tone === 'increase' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200'
     : tone === 'reduce' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'
-  const head = tone === 'increase' ? 'text-orange-700 dark:text-orange-300' : tone === 'reduce' ? 'text-indigo-700 dark:text-indigo-300' : ''
+  const head = tone === 'increase' ? 'text-emerald-700 dark:text-emerald-300' : tone === 'reduce' ? 'text-indigo-700 dark:text-indigo-300' : ''
   return (
     <div className="flex items-center justify-between gap-3 border-b border-zinc-100 py-3 first:pt-0 last:border-0 dark:border-zinc-800">
       <div className="min-w-0">

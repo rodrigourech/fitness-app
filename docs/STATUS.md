@@ -14,6 +14,7 @@ Letzte Aktualisierung 3. November 2026
 
 ## Stand
 
+- 3. November (Nachmittag): «Increase weight» überall grün (Home, Training, Top-Set-Empfehlung, Training guide). Typprüfung, Lint, 167 Tests und Build erfolgreich; Home und Training bei 390 px geprüft
 - 3. November: Laptop-Layout ab 1024 px live (Seitenleiste, Home zweispaltig, Food Tag und Woche nebeneinander, Raster für Workouts, History, Exercises, Body zweispaltig; iPhone unverändert). Code src/index.css, src/lib/useWide.ts, Home.tsx, HomeTab.tsx, FoodTab.tsx, BodyTab.tsx, HistoryTab.tsx, ExercisesTab.tsx. Typprüfung, Lint, 167 Tests und Build erfolgreich; bei 1280 px hell und dunkel sowie 390 px geprüft. Nebenbei behoben: Connector-Test war zeitabhängig (Vorschau-Token 24 h) und schlug ab 2. November fehl
 - 2. November 13:40: 0038 Lat Pulldown auf production ausgeführt und geprüft. Alter Verlauf (45 und 39 kg, verkürzt) liegt in «Lat Pulldown (verkürzt, bis 1. Nov)», der neue Lat Pulldown beginnt mit heute 32×10, 32×10; Vorlagen Main Day A und Bonus Day Top Set 32, Back-off 25; Ausführungshinweis in der Notiz. Damit sind 0036 bis 0038 alle auf production
 - 2. November 13:30: 0036 (Lateral Raise Machine Stufe 2.5) und 0037 (Pushdown Straight Bar ⇄ V-Grip) auf production ausgeführt und geprüft. Trainingsliste Lat Pulldown abgefragt (6 Trainings, heute W 25×6, 39×10, 32×10, 32×10); 0038 steht im SQL Editor, Ausführung wartet auf Rodrigos Ok

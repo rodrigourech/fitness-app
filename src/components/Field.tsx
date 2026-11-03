@@ -42,7 +42,7 @@ export default function Field({ value, onCommit, inputMode, label, placeholder, 
       }}
       className={`h-10 w-full min-w-0 rounded-md px-1 text-center text-base tabular-nums outline-none focus:ring-2 focus:ring-zinc-400 disabled:opacity-60 ${
         warn ? 'bg-orange-100 font-semibold text-orange-700 dark:bg-orange-950 dark:text-orange-300' : 'bg-zinc-100 dark:bg-zinc-800'
-      } ${invalid ? 'ring-2 ring-red-500' : mark ? 'font-semibold text-orange-700 ring-2 ring-orange-500 dark:text-orange-300' : ''}`}
+      } ${invalid ? 'ring-2 ring-red-500' : mark ? 'font-semibold text-emerald-700 ring-2 ring-emerald-600 dark:text-emerald-300' : ''}`}
     />
   )
 }

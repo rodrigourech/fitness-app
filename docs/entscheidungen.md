@@ -288,4 +288,4 @@ Food-Tab, Entwürfe K bis M mit Rodrigo abgestimmt.
 - Workouts und History als Raster (2 bzw. 3 Spalten), Exercises in Spalten mit Hauptübung und Varianten zusammen, Body mit Übersicht links und Liste rechts
 - Laufendes Training, Vorlagen-Editor und Unterseiten bleiben einspaltig, weil sie vor allem am iPhone genutzt werden
 - Das iPhone-Layout bleibt unverändert; Umschaltung rein über die Fensterbreite (CSS lg und useWide)
-
+- «Increase weight» ist eine gute Nachricht und deshalb grün statt orange (Wunsch Rodrigo): Hinweis auf Home, Hinweis und markiertes Gewichtsfeld im Training, ↑-Empfehlung beim Top Set, Erklärung im Training guide; wie bisher der grüne ↑-Pill im Report. Orange bleibt für Top Set, Back-off und zu wenig Wiederholungen, Blau/Indigo für Reduce
