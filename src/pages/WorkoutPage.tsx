@@ -489,9 +489,15 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
               onClick={() => void switchExercise(we)}
               aria-label={`Switch to ${switchTo}`}
               title={`Switch to ${switchTo}`}
-              className="flex h-8 shrink-0 items-center rounded-full border border-zinc-300 px-2.5 text-xs font-medium text-zinc-600 dark:border-zinc-600 dark:text-zinc-300"
+              // Round icon like progress and «i» (decision 5 November 2026: the labelled pill squeezed the name);
+              // filled while the alternative is trained, a tap switches back
+              className={`${roundButton} w-8 ${
+                originalName
+                  ? 'border-accent bg-accent-soft text-accent-ink'
+                  : 'border-zinc-300 text-zinc-500 dark:border-zinc-600 dark:text-zinc-400'
+              }`}
             >
-              ⇄ {originalName ? 'Original' : 'Alternative'}
+              <span aria-hidden="true">⇄</span>
             </button>
           )}
           {tt === 'weight_reps' && <ProgressButton state={progress} onClick={() => setProgressOpen(true)} />}
