@@ -88,17 +88,21 @@ export function ChangeChips({ report }: { report: WorkoutReport }) {
   )
 }
 
+// Row layout (decision 5 November 2026): two columns only, so nothing runs over the edge on the iPhone. Left the name
+// and last time with the change; right today and what comes next. «Record» instead of a cut «PR» badge.
 function ExerciseRow({ line: l }: { line: ReportLine }) {
   const change = l.today && l.last ? topSetChange(l.today, l.last) : null
   const skipped = l.status === 'skipped'
+  const tone = change?.tone === 'up' ? 'text-emerald-700 dark:text-emerald-400' : change?.tone === 'down' ? 'text-orange-700 dark:text-orange-400' : 'text-zinc-500 dark:text-zinc-400'
   return (
-    <div className="flex items-center gap-3 border-b border-zinc-100 py-3 last:border-0 dark:border-zinc-800">
+    <div className="flex items-start gap-3 border-b border-zinc-100 py-3 last:border-0 dark:border-zinc-800">
       <div className="min-w-0 flex-1">
-        <div className={`truncate text-sm font-semibold ${skipped ? 'text-zinc-400 dark:text-zinc-500' : ''}`}>
-          {l.name}
-          {l.record && <span className="ml-1.5 rounded bg-amber-100 px-1.5 py-px align-[1px] text-[10px] font-extrabold text-amber-800 dark:bg-amber-900 dark:text-amber-200">PR</span>}
+        <div className={`text-sm leading-snug font-semibold break-words ${skipped ? 'text-zinc-400 dark:text-zinc-500' : ''}`}>{l.name}</div>
+        <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
+          <span>{l.last ? `last ${formatTopSet(l.last, l.unilateral)}` : 'first time'}</span>
+          {!skipped && change && <span className={`font-semibold ${tone}`}>{change.tone === 'same' ? '= same' : change.text}</span>}
+          {l.record && <span className="rounded bg-amber-100 px-1.5 py-px text-[10px] font-bold text-amber-800 dark:bg-amber-900 dark:text-amber-200">Record</span>}
         </div>
-        <div className="text-xs text-zinc-500 tabular-nums dark:text-zinc-400">{l.last ? `last ${formatTopSet(l.last, l.unilateral)}` : 'first time'}</div>
       </div>
       <div className="shrink-0 text-right">
         {skipped ? <span className="text-sm text-zinc-400 dark:text-zinc-500">skipped</span> : (
@@ -107,9 +111,6 @@ function ExerciseRow({ line: l }: { line: ReportLine }) {
             <NextPill line={l} />
           </>
         )}
-      </div>
-      <div className="w-16 shrink-0 text-right">
-        {skipped ? <span className="text-zinc-400">–</span> : change ? <Chip tone={change.tone}>{change.text}</Chip> : <Chip tone="new">new</Chip>}
       </div>
     </div>
   )
@@ -162,9 +163,25 @@ function StrengthTiles({ t, p, report }: { t: ReportTotals; p: ReportTotals | nu
       <Tile label="Sets" value={`${t.sets} / ${t.planned}`} delta={missing <= 0 ? 'as planned' : `${missing} not done`} />
       <div className="rounded-xl bg-zinc-100 p-2.5 dark:bg-zinc-800">
         <div className="text-[11px] text-zinc-500 dark:text-zinc-400">vs last time</div>
-        <div className="mt-1.5"><ChangeChips report={report} /></div>
+        <ChangeSummary report={report} />
       </div>
     </>
+  )
+}
+
+/** Exercises better, the same, lower and new against the last time, written out (decision 5 November 2026). */
+function ChangeSummary({ report }: { report: WorkoutReport }) {
+  const c = changeCounts(report.lines)
+  const parts: [number, string, string][] = [
+    [c.up, 'better', 'text-emerald-700 dark:text-emerald-400'],
+    [c.same, 'same', 'text-zinc-600 dark:text-zinc-300'],
+    [c.down, 'lower', 'text-orange-700 dark:text-orange-400'],
+    [c.new, 'new', 'text-violet-700 dark:text-violet-300'],
+  ]
+  return (
+    <div className="mt-0.5 flex flex-col text-xs leading-snug font-semibold tabular-nums">
+      {parts.filter(([n]) => n > 0).map(([n, label, cls]) => <span key={label} className={cls}>{n} {label}</span>)}
+    </div>
   )
 }
 

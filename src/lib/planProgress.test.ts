@@ -39,11 +39,19 @@ describe('planProgress', () => {
     // Preacher Curl: best on 12 October, five workouts at the same top set since then
     const preacher = [pt('2026-09-28', 19), pt('2026-10-02', 20), pt('2026-10-12', 26.7), pt('2026-10-15', 26.7), pt('2026-10-19', 26.7),
       pt('2026-10-22', 26.7), pt('2026-10-27', 26.7)]
-    expect(progressStatus(preacher, NOW)).toEqual({ status: 'stalled', since: '2026-10-12', changePct: 41 })
+    // Change over the last 4 weeks: from 2 October (last workout before the window) to today
+    expect(progressStatus(preacher, NOW)).toEqual({ status: 'stalled', since: '2026-10-12', changePct: 34 })
     // Three workouts without a new best are not yet stalled
     expect(progressStatus([pt('2026-10-01', 40), pt('2026-10-08', 53), pt('2026-10-15', 53), pt('2026-10-22', 52), pt('2026-10-29', 53)], NOW).status).toBe('strong')
-    expect(progressStatus([pt('2026-10-01', 40), pt('2026-10-08', 44), pt('2026-10-15', 46)], NOW).status).toBe('good')
+    expect(progressStatus([pt('2026-10-01', 40), pt('2026-10-08', 41), pt('2026-10-15', 42)], NOW).status).toBe('good')
     expect(progressStatus([pt('2026-10-01', 40), pt('2026-10-08', 36), pt('2026-10-15', 35)], NOW).status).toBe('lower')
+  })
+
+  it('change covers the last 4 weeks only (decision 5 November 2026)', () => {
+    // Big gains in September, little since: +4 % from the last workout before 4 October is good, not strong
+    const points = [pt('2026-09-01', 30), pt('2026-09-20', 45), pt('2026-10-01', 50), pt('2026-10-15', 51), pt('2026-10-29', 52)]
+    expect(progressStatus(points, NOW)).toEqual({ status: 'good', since: null, changePct: 4 })
+    expect(progressStatus([pt('2026-10-01', 50), pt('2026-10-15', 50.5), pt('2026-10-29', 51)], NOW).status).toBe('flat')
   })
 
   it('one row per trained main exercise with variants, alternative and first and latest top set', () => {

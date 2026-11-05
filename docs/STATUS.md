@@ -14,6 +14,7 @@ Letzte Aktualisierung 5. November 2026
 
 ## Stand
 
+- 5. November 18:00: Stats › Progression über 4 Wochen, Zusammenfassung nach dem Training neu gegliedert (kein Überlauf, «Record», Text statt Chips), Kurzhanteln paarweise (Incline Chest Press 24 → 28). 193 Tests, Build
 - 5. November 17:30: Fortschritt im Training (Zielzeile, Reps-Startwert letztes Mal + 1, grün bei erreichtem Ziel), Progression-Blatt (Training und Stats), Zusammenfassung «N reps to ↑ X», Plateau grau, History nachträglich bearbeiten, Sortieren per langem Drücken und Ziehen (Workouts und Editor). Typprüfung, Lint, 191 Tests, Build; bei 390 px hell und dunkel geprüft; auf echtem iPhone noch nicht getestet
 - 5. November 16:10: Standort (Upstairs/Downstairs) in den Übungsinfos unter Setup › Location, Daten für alle Hauptübungen gesetzt (Migration 0041)
 - 5. November 14:52: Sammelpaket aus dem Coaching umgesetzt (Migration 0040 auf production, geprüft): Lateral Raise (Machine) im unteren Block, Chest-Press-Satz vom 29. Okt wiederhergestellt, Incline Chest Press 120 s. context/training.md und ernaehrung.md nachgeführt. Hinweis beim Beenden mit Liste der offenen Sätze und «Mark as done and finish» live (Typprüfung, Lint, 169 Tests, Build)

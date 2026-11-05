@@ -512,6 +512,15 @@ export async function cancelWorkout(w: Workout): Promise<void> {
   await updateWorkout(w, { deleted_at: ts })
 }
 
+/**
+ * Dumbbells in pairs (decision 5 November 2026): the weight is entered as the total of both dumbbells (2 × 12 = 24),
+ * the weight step as labelled on one dumbbell (2 kg). The next total is therefore two steps higher (24 → 28).
+ * One-sided dumbbell exercises use one dumbbell and keep the step.
+ */
+export function pairStep(step: number | null, equipment: string | null, unilateral: boolean): number | null {
+  return step !== null && equipment === 'dumbbell' && !unilateral ? step * 2 : step
+}
+
 /** Effective tracking settings and device settings of an exercise (variants inherit from the parent). */
 export function effective(ex: Exercise, byId: Map<string, Exercise>) {
   const parent = ex.parent_id ? byId.get(ex.parent_id) : undefined
@@ -525,7 +534,7 @@ export function effective(ex: Exercise, byId: Map<string, Exercise>) {
     focusMuscles: ex.focus_muscles ?? parent?.focus_muscles ?? [],
     focusCue: ex.focus_cue ?? parent?.focus_cue ?? null,
     restS: ex.default_rest_s ?? parent?.default_rest_s ?? null,
-    weightStep: ex.weight_step ?? parent?.weight_step ?? null,
+    weightStep: pairStep(ex.weight_step ?? parent?.weight_step ?? null, ex.equipment ?? parent?.equipment ?? null, ex.is_unilateral ?? parent?.is_unilateral ?? false),
     ...exerciseTrainingSettings(ex, byId),
   }
 }

@@ -48,3 +48,13 @@ describe('goal (decision 5 November 2026)', () => {
     ])
   })
 })
+
+describe('dumbbell pairs (decision 5 November 2026)', () => {
+  it('doubles the step of one dumbbell when both hands hold one', async () => {
+    const { pairStep } = await import('./workout')
+    expect(pairStep(2, 'dumbbell', false)).toBe(4)
+    expect(pairStep(2, 'dumbbell', true)).toBe(2)
+    expect(pairStep(5, 'plate_loaded', false)).toBe(5)
+    expect(pairStep(null, 'dumbbell', false)).toBeNull()
+  })
+})

@@ -313,13 +313,13 @@ function ProgressionCard({ now, className }: { now: Date; className?: string }) 
   const [open, setOpen] = useState<string | null>(null)
   if (rows === undefined) return null
   return (
-    <Card title="Progression" aside={<><span className="hidden sm:inline">Top set per workout · current plan · since start · </span>tap a row</>} className={className}>
+    <Card title="Progression" aside={<><span className="hidden sm:inline">Top set per workout · current plan · </span>last 4 weeks</>} className={className}>
       {rows.length === 0 ? <Empty>No exercise of the active workouts trained yet.</Empty> : (
         <table className="w-full text-[13px] tabular-nums">
           <thead>
             <tr className="border-b border-zinc-100 text-left text-[11px] text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
               <th className="py-1.5 pr-2 font-medium">Exercise</th>
-              <th className="px-1 py-1.5 font-medium">Start</th>
+              <th className="px-1 py-1.5 font-medium whitespace-nowrap">4 wk ago</th>
               <th className="px-1 py-1.5 font-medium">Today</th>
               <th className="hidden px-1 py-1.5 font-medium sm:table-cell">Trend</th>
               <th className="hidden px-1 py-1.5 text-right font-medium sm:table-cell">Change</th>

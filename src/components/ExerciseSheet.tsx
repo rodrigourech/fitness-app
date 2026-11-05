@@ -49,6 +49,8 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
   const main = parent ?? ex
   const eff = effective(ex, byId)
   const lbStep = poundStep(ex.weight_step ?? parent?.weight_step ?? null)
+  // Dumbbells in pairs: step per dumbbell, weights as the total of both (decision 5 November 2026)
+  const pair = (main.equipment === 'dumbbell') && !eff.isUnilateral
   const focusInherited = ex.parent_id !== null && ex.focus_muscles == null
 
   function toggleRegion(region: string) {
@@ -168,9 +170,11 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
     )
   } else if (page === 'step') {
     body = (
-      <Detail title="Weight step" onBack={back} note="Distance between two plates as labelled, e.g. 4.5 or 10. Empty: recommendations are estimates (≈).">
+      <Detail title="Weight step" onBack={back} note={pair
+        ? 'Step of one dumbbell as labelled, e.g. 2. Weights are entered as the total of both dumbbells, so the next weight is two steps higher (24 → 28).'
+        : 'Distance between two plates as labelled, e.g. 4.5 or 10. Empty: recommendations are estimates (≈).'}>
         <label className="flex items-center justify-between gap-3">
-          <span className="text-sm font-semibold">Step in kg</span>
+          <span className="text-sm font-semibold">{pair ? 'Step per dumbbell in kg' : 'Step in kg'}</span>
           <span className="flex shrink-0 items-center gap-1.5">
             <span className="w-24">
               <Field
@@ -325,7 +329,7 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
             {weightReps && <Row label="Reps" value={`${eff.minReps}–${eff.targetReps}`} onClick={() => setPage('reps')} />}
             {weightReps && <SwitchRow label="Warm-up set" checked={eff.warmUp} onChange={(v) => void updateExercise(ex, { warm_up: v })} />}
             {weightReps && <SwitchRow label="Top set" checked={eff.topSet} onChange={(v) => void updateExercise(ex, { top_set: v })} />}
-            {weightReps && <Row label="Weight step" value={stepKg === null ? 'Not set' : `${stepKg} kg${lbStep !== null ? ` (${lbStep} lb)` : ''}`} muted={stepKg === null} onClick={() => setPage('step')} />}
+            {weightReps && <Row label="Weight step" value={stepKg === null ? 'Not set' : pair ? `${stepKg} kg per dumbbell` : `${stepKg} kg${lbStep !== null ? ` (${lbStep} lb)` : ''}`} muted={stepKg === null} onClick={() => setPage('step')} />}
             <Row label="Rest" value={restS ? formatDuration(restS) : 'Off'} muted={!restS} onClick={() => setPage('rest')} />
             <Row
               label="Alternative"
