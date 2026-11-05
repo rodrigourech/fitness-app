@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import AppBar from '../components/AppBar'
 import CrowdPicker from '../components/CrowdPicker'
 import ExerciseSheet from '../components/ExerciseSheet'
@@ -12,6 +12,8 @@ import SyncBadge from '../components/SyncBadge'
 import InfoPage from './InfoPage'
 import { useNow } from '../hooks/useNow'
 import { useSwipeDown } from '../hooks/useSwipeDown'
+import { useSwipeX } from '../hooks/useSwipeX'
+import { cardOpen, doneSummary, exerciseDone, focusId, todoSummary } from '../lib/focus'
 import { startRest, stopRest } from '../lib/rest'
 import { db, displayName, type Exercise, type ExerciseLink, type Workout, type WorkoutExercise, type WorkoutSet } from '../lib/db'
 import { linkLabel, linksFor } from '../lib/exercise'
@@ -41,6 +43,7 @@ import {
   alternativeOf,
   removeLastSet,
   switchExercise,
+  skipExercise,
   unskipExercise,
   toggleSetDone,
   updateSet,
@@ -132,6 +135,35 @@ export default function WorkoutPage({ workout, onReauth, onMinimize, onFinished 
   const [info, setInfo] = useState(false)
   const [confirm, setConfirm] = useState<null | { kind: 'finish'; open: OpenSet[] } | { kind: 'cancel' }>(null)
   const byId = new Map((exercises ?? []).map((e) => [e.id, e]))
+  // Focus view (decision 5 November 2026, variant B): the next open exercise is expanded, the rest are one line each;
+  // a tap opens or closes any card, and a card closes by itself once its last work set is checked
+  const [overrides, setOverrides] = useState<Record<string, boolean>>({})
+  const cards = (blocks ?? []).map((b) => ({ id: b.we.id, skipped: !!b.we.skipped_at, done: exerciseDone(b.sets) }))
+  const focus = focusId(cards)
+  const doneIds = cards.filter((c) => c.done).map((c) => c.id).join(',')
+  const seenDone = useRef<Set<string> | null>(null)
+  useEffect(() => {
+    const done = new Set(doneIds ? doneIds.split(',') : [])
+    const before = seenDone.current
+    seenDone.current = done
+    if (!before) return
+    const fresh = [...done].filter((id) => !before.has(id))
+    if (fresh.length)
+      setOverrides((o) => {
+        const next = { ...o }
+        for (const id of fresh) delete next[id]
+        return next
+      })
+  }, [doneIds])
+  const setOpen = (id: string, open: boolean | undefined) =>
+    setOverrides((o) => {
+      const next = { ...o }
+      if (open === undefined) delete next[id]
+      else next[id] = open
+      return next
+    })
+  const doneCount = cards.filter((c) => c.done).length
+  const countable = cards.filter((c) => !c.skipped).length
 
   async function askFinish() {
     setConfirm({ kind: 'finish', open: await openSets(workout.id) })
@@ -181,7 +213,10 @@ export default function WorkoutPage({ workout, onReauth, onMinimize, onFinished 
           </button>
           <div>
           <h1 className="text-2xl font-semibold tracking-tight">{workout.template_name_snapshot ?? 'Workout'}</h1>
-          <p className="text-sm text-zinc-500 tabular-nums dark:text-zinc-400">{formatDuration(elapsed)}</p>
+          <p className="text-sm text-zinc-500 tabular-nums dark:text-zinc-400">
+            {formatDuration(elapsed)}
+            {countable > 0 && ` · ${doneCount} of ${countable} done`}
+          </p>
           </div>
         </div>
       </header>
@@ -190,8 +225,18 @@ export default function WorkoutPage({ workout, onReauth, onMinimize, onFinished 
         <p className="text-zinc-500">Loading …</p>
       ) : (
         <div className="flex flex-col gap-4">
-          {blocks.map((b) => (
-            <ExerciseCard key={b.we.id} block={b} byId={byId} shares={shares} onOpen={setSheet} />
+          {blocks.map((b, i) => (
+            <ExerciseCard
+              key={b.we.id}
+              block={b}
+              index={i + 1}
+              byId={byId}
+              shares={shares}
+              onOpen={setSheet}
+              open={cardOpen(b.we.id, focus, overrides[b.we.id])}
+              done={cards[i]!.done}
+              onToggle={(open) => setOpen(b.we.id, open)}
+            />
           ))}
         </div>
       )}
@@ -295,7 +340,19 @@ export default function WorkoutPage({ workout, onReauth, onMinimize, onFinished 
   )
 }
 
-function ExerciseCard({ block, byId, shares, onOpen }: { block: ExerciseBlock; byId: Map<string, Exercise>; shares: TrainingShares; onOpen: (exerciseId: string) => void }) {
+interface CardProps {
+  block: ExerciseBlock
+  index: number
+  byId: Map<string, Exercise>
+  shares: TrainingShares
+  onOpen: (exerciseId: string) => void
+  open: boolean
+  done: boolean
+  /** true or false opens or closes the card; undefined returns it to the focus rule */
+  onToggle: (open: boolean | undefined) => void
+}
+
+function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle }: CardProps) {
   const { we, exercise, name, variant, topSet, weightStep, sets, previous, links, best, advice, targets, switchTo, originalName } = block
   const eff = exercise
     ? effective(exercise, byId)
@@ -303,17 +360,66 @@ function ExerciseCard({ block, byId, shares, onOpen }: { block: ExerciseBlock; b
 
   const [progressOpen, setProgressOpen] = useState(false)
 
-  if (we.skipped_at)
-    return (
-      <section className="card flex items-center justify-between gap-3 p-3 opacity-70">
+  const anyDone = sets.some((s) => s.completed_at !== null)
+  const skipped = !!we.skipped_at
+  // Swipe left skips (only while no set is done), swipe right restores a skipped exercise (decision 5 November 2026)
+  const swipe = useSwipeX(
+    (direction) => {
+      onToggle(undefined)
+      if (direction === 'left') void skipExercise(we).catch(() => undefined)
+      else void unskipExercise(we)
+    },
+    { left: !skipped && !anyDone, right: skipped },
+  )
+  const wrap = (content: ReactNode) => (
+    <SwipeFrame dx={swipe.dx} handlers={swipe.handlers}>
+      {content}
+    </SwipeFrame>
+  )
+
+  if (skipped)
+    return wrap(
+      <section className="card flex items-center justify-between gap-3 bg-zinc-50 p-3 dark:bg-zinc-900/60">
         <span className="min-w-0">
-          <span className="block truncate font-semibold line-through decoration-zinc-400">{name}</span>
-          <span className="block text-xs text-zinc-500 dark:text-zinc-400">Skipped in this workout</span>
+          <span className="block truncate font-semibold text-zinc-400 line-through decoration-zinc-400 dark:text-zinc-500">{name}</span>
+          <span className="block text-xs text-zinc-500 dark:text-zinc-400">Skipped · swipe right to restore</span>
         </span>
-        <button onClick={() => void unskipExercise(we)} className="shrink-0 rounded-md bg-zinc-100 px-3 py-1.5 text-sm font-medium dark:bg-zinc-800">
-          Undo
+        <button
+          onClick={() => void unskipExercise(we)}
+          className="shrink-0 rounded-full border border-zinc-300 px-3 py-1.5 text-sm font-semibold text-zinc-700 dark:border-zinc-600 dark:text-zinc-200"
+        >
+          Restore
         </button>
-      </section>
+      </section>,
+    )
+
+  if (!open)
+    return wrap(
+      <button
+        onClick={() => onToggle(true)}
+        aria-expanded={false}
+        className={`card flex w-full items-center gap-3 p-3 text-left ${
+          done ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/50' : ''
+        }`}
+      >
+        {done ? (
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-sm font-bold text-white" aria-label="Done">✓</span>
+        ) : (
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-zinc-300 text-[11px] font-semibold text-zinc-400 dark:border-zinc-600">{index}</span>
+        )}
+        <span className="min-w-0 flex-1">
+          <span className={`block truncate font-semibold ${done ? 'text-emerald-800 dark:text-emerald-200' : ''}`}>
+            {name}
+            {variant && <span className="font-normal text-zinc-500 dark:text-zinc-400"> · {variant}</span>}
+          </span>
+          <span className={`block truncate text-sm tabular-nums ${done ? 'text-emerald-700 dark:text-emerald-300' : 'text-zinc-500 dark:text-zinc-400'}`}>
+            {done
+              ? doneSummary(sets)
+              : [todoSummary(sets), eff.trackingType === 'weight_reps' ? `${targets.minimum}–${targets.target} reps` : null].filter(Boolean).join(' · ')}
+          </span>
+        </span>
+        <span className="shrink-0 text-zinc-400" aria-hidden="true">⌄</span>
+      </button>,
     )
 
   const prevWorking = previous.filter((s) => s.set_type === 'working')
@@ -346,9 +452,10 @@ function ExerciseCard({ block, byId, shares, onOpen }: { block: ExerciseBlock; b
           ? showRec ? 'grid-cols-[1.75rem_1fr_3rem_3.25rem_2.75rem_2.75rem_2.5rem]' : 'grid-cols-[1.75rem_1fr_3.75rem_3.25rem_3.25rem_2.75rem]'
           : showRec ? 'grid-cols-[1.75rem_1fr_3rem_4rem_3.25rem_2.5rem]' : 'grid-cols-[1.75rem_1fr_4.5rem_3.75rem_2.75rem]'
 
-  return (
+  return wrap(
     <section className="card p-3">
       <div className="flex items-start justify-between gap-2">
+        <div className="flex min-w-0 items-start gap-1">
         <button onClick={() => onOpen(we.exercise_id)} className="min-w-0 text-left">
           <h2 className="font-semibold underline-offset-2 hover:underline">
             {name} <span className="text-zinc-400">›</span>
@@ -360,6 +467,18 @@ function ExerciseCard({ block, byId, shares, onOpen }: { block: ExerciseBlock; b
           )}
           {originalName && <p className="text-xs text-zinc-500 dark:text-zinc-400">Alternative for {originalName}</p>}
         </button>
+        <button
+          onClick={() => onToggle(false)}
+          aria-label="Collapse"
+          aria-expanded={true}
+          title="Collapse"
+          className="-mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M6 15l6-6 6 6" />
+          </svg>
+        </button>
+        </div>
         <span className="flex shrink-0 items-center gap-1.5">
           {/* Switch to the alternative and back while no set is done (decision 22 October 2026) */}
           {switchTo && !sets.some((s) => s.completed_at !== null) && (
@@ -454,7 +573,28 @@ function ExerciseCard({ block, byId, shares, onOpen }: { block: ExerciseBlock; b
           onClose={() => setProgressOpen(false)}
         />
       )}
-    </section>
+    </section>,
+  )
+}
+
+/** Card that follows a horizontal swipe; behind it «Skip» (left) or «Restore» (right) appears. */
+function SwipeFrame({ dx, handlers, children }: { dx: number; handlers: ReturnType<typeof useSwipeX>['handlers']; children: ReactNode }) {
+  return (
+    <div className="relative touch-pan-y" {...handlers}>
+      {dx !== 0 && (
+        <div
+          aria-hidden="true"
+          className={`absolute inset-0 flex items-center rounded-2xl px-5 text-sm font-semibold text-white ${
+            dx < 0 ? 'justify-end bg-zinc-500 dark:bg-zinc-600' : 'justify-start bg-emerald-500 dark:bg-emerald-600'
+          }`}
+        >
+          {dx < 0 ? 'Skip' : 'Restore'}
+        </div>
+      )}
+      <div className="relative" style={dx ? { transform: `translateX(${dx}px)` } : { transition: 'transform 150ms ease-out' }}>
+        {children}
+      </div>
+    </div>
   )
 }
 
