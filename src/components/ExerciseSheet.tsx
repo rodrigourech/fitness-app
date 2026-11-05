@@ -132,12 +132,20 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
             </button>
           </form>
         </div>
+        {/* Setup in one line, shown under the name in the workout; execution behind «i» (decision 5 November 2026) */}
         <TextField
-          label="Notes"
+          label="Setup"
           value={ex.setup_note ?? ''}
-          placeholder={parent?.setup_note ? `Inherited: ${parent.setup_note}` : 'Floor, seat, grip, …'}
+          placeholder={parent?.setup_note ? `Inherited: ${parent.setup_note}` : 'Sitz 3 · Füsse 4'}
           multiline
           onSave={(v) => updateExercise(ex, { setup_note: v })}
+        />
+        <TextField
+          label="Execution"
+          value={ex.focus_cue ?? ''}
+          placeholder={parent?.focus_cue ? `Inherited: ${parent.focus_cue}` : 'One short cue'}
+          multiline
+          onSave={(v) => updateExercise(ex, { focus_cue: v })}
         />
       </Detail>
     )

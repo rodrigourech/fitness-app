@@ -7,7 +7,7 @@ import { effective, formatNumber, recentTrainingSessions } from '../lib/workout'
 import Sheet from './Sheet'
 
 // Progression sheet (decision 5 November 2026, mockup «Progression_Blatt_v2»): one statement, the reps of the deciding
-// set on a bar from Min to Max reps, and the last workouts. Opened from the goal line in the workout and from
+// set on a bar from Min to Max reps, and the last workouts. Opened from the progress button in the workout and from
 // Stats › Progression.
 
 export interface TodayGoal {
@@ -21,6 +21,8 @@ interface Props {
   /** Stats: the main exercise with all variants; workout: the exact exercise */
   includeVariants?: boolean
   today?: TodayGoal | null
+  /** Workout advice: raise the weight today, or the top set fell below Min reps twice */
+  advice?: 'increase' | 'reduce' | null
   onClose: () => void
 }
 
@@ -47,7 +49,7 @@ async function load(exerciseId: string, includeVariants: boolean) {
   }
 }
 
-export default function ProgressionSheet({ exerciseId, includeVariants = false, today = null, onClose }: Props) {
+export default function ProgressionSheet({ exerciseId, includeVariants = false, today = null, advice = null, onClose }: Props) {
   const data = useLiveQuery(() => load(exerciseId, includeVariants), [exerciseId, includeVariants])
   if (data === undefined) return null
   if (data === null) return <Sheet title="Progression" onClose={onClose}><p className="text-zinc-500">Exercise not found.</p></Sheet>
@@ -62,6 +64,8 @@ export default function ProgressionSheet({ exerciseId, includeVariants = false, 
   const nextText = next !== null ? `${formatNumber(next)} kg` : 'heavier'
   const reps = ref && ref.weight === weight ? ref.reps : null
   const reached = reps !== null && reps >= targets.target
+  // Raise today: the last workout reached Max reps, the sheet opens before today's top set is done
+  const raiseToday = advice === 'increase' && reached && !todayPoint
   const kind = eff.topSet ? 'Top set' : 'All sets'
 
   return (
@@ -71,6 +75,8 @@ export default function ProgressionSheet({ exerciseId, includeVariants = false, 
       </p>
       {weight === null ? (
         <p className="mb-4 text-lg font-semibold">No weight yet</p>
+      ) : raiseToday ? (
+        <p className="mb-3 text-2xl font-bold text-emerald-700 dark:text-emerald-400">↑ Today {nextText}</p>
       ) : reached ? (
         <p className="mb-3 text-2xl font-bold text-emerald-700 dark:text-emerald-400">✓ Next workout {nextText}</p>
       ) : reps === null ? (
@@ -78,6 +84,11 @@ export default function ProgressionSheet({ exerciseId, includeVariants = false, 
       ) : (
         <p className="mb-3 text-2xl font-bold tabular-nums">
           {targets.target - reps} {targets.target - reps === 1 ? 'rep' : 'reps'} to <span className="text-emerald-700 dark:text-emerald-400">↑ {nextText}</span>
+        </p>
+      )}
+      {advice === 'reduce' && (
+        <p className="mb-3 rounded-lg bg-indigo-50 px-3 py-2 text-sm text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
+          <span className="font-semibold">Check the weight.</span> Top set below Min reps twice at the same weight. Check rest, recovery and form before choosing a lighter weight.
         </p>
       )}
       {weight !== null && <RepsBar min={targets.minimum} max={targets.target} reps={reps} label={todayPoint ? 'today' : 'last'} nextText={nextText} />}

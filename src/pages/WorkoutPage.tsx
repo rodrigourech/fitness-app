@@ -124,8 +124,6 @@ async function loadBlocks(workoutId: string, templateId: string | null): Promise
 export default function WorkoutPage({ workout, onReauth, onMinimize, onFinished }: Props) {
   const blocks = useLiveQuery(() => loadBlocks(workout.id, workout.template_id), [workout.id, workout.template_id])
   const shares = useLiveQuery(getTrainingShares, []) ?? DEFAULT_TRAINING_SHARES
-  // One legend for the whole workout when any exercise shows recommendations (decision 19 October 2026)
-  const legend = blocks?.some((b) => b.trackingType === 'weight_reps' && (b.topSet || b.sets.some((s) => s.set_type === 'warmup')))
   const exercises = useLiveQuery(() => db.exercise.toArray(), [])
   const now = useNow(1000)
   const [sheet, setSheet] = useState<string | null>(null)
@@ -190,7 +188,6 @@ export default function WorkoutPage({ workout, onReauth, onMinimize, onFinished 
         <p className="text-zinc-500">Loading …</p>
       ) : (
         <div className="flex flex-col gap-4">
-          {legend && <Legend shares={shares} />}
           {blocks.map((b) => (
             <ExerciseCard key={b.we.id} block={b} byId={byId} shares={shares} onOpen={setSheet} />
           ))}
@@ -327,8 +324,10 @@ function ExerciseCard({ block, byId, shares, onOpen }: { block: ExerciseBlock; b
   const working = sets.filter((s) => s.set_type === 'working')
   const current = working.map((s) => s.weight)
   const before = prevWorking.map((s) => s.weight)
-  // Goal line (decision 5 November 2026): what the deciding sets need for the next weight step
-  const goal = tt === 'weight_reps' && advice !== 'increase' && advice !== 'reduce' ? goalState(working, topSet, eff.isUnilateral, targets, weightStep) : null
+  // Progress button (decision 5 November 2026, card variant A): green ↑ when the weight goes up today or next time,
+  // indigo ↓ when the top set fell below Min reps twice; the sheet explains the rest
+  const goal = tt === 'weight_reps' ? goalState(working, topSet, eff.isUnilateral, targets, weightStep) : null
+  const progress: ProgressState = advice === 'increase' || goal?.reached ? 'up' : advice === 'reduce' ? 'down' : 'none'
   const decidingNow = new Set(tt === 'weight_reps' ? decidingIndexes(working, topSet) : [])
   const marks = tt === 'weight_reps' && advice === 'increase' ? increaseMarks(current, before, working.map((s) => s.completed_at !== null), topSet) : []
   const recs = tt === 'weight_reps' ? recommendations(current, topSet, shares.backOff / 100, weightStep, marks.some(Boolean)) : []
@@ -348,56 +347,35 @@ function ExerciseCard({ block, byId, shares, onOpen }: { block: ExerciseBlock; b
   return (
     <section className="card p-3">
       <div className="flex items-start justify-between gap-2">
-        <button onClick={() => onOpen(we.exercise_id)} className="text-left">
+        <button onClick={() => onOpen(we.exercise_id)} className="min-w-0 text-left">
           <h2 className="font-semibold underline-offset-2 hover:underline">
             {name} <span className="text-zinc-400">›</span>
           </h2>
-          {variant && <p className="text-sm text-zinc-700 dark:text-zinc-300">{variant}</p>}
+          {(variant || tt === 'weight_reps') && (
+            <p className="text-sm text-zinc-700 tabular-nums dark:text-zinc-300">
+              {[variant, tt === 'weight_reps' ? `${targets.minimum}–${targets.target} reps` : null].filter(Boolean).join(' · ')}
+            </p>
+          )}
           {originalName && <p className="text-xs text-zinc-500 dark:text-zinc-400">Alternative for {originalName}</p>}
         </button>
-        <span className="flex shrink-0 items-center gap-1">
+        <span className="flex shrink-0 items-center gap-1.5">
           {/* Switch to the alternative and back while no set is done (decision 22 October 2026) */}
           {switchTo && !sets.some((s) => s.completed_at !== null) && (
             <button
               onClick={() => void switchExercise(we)}
               aria-label={`Switch to ${switchTo}`}
               title={`Switch to ${switchTo}`}
-              className="flex h-7 shrink-0 items-center rounded-full border border-zinc-300 px-2.5 text-xs font-medium text-zinc-600 dark:border-zinc-600 dark:text-zinc-300"
+              className="flex h-8 shrink-0 items-center rounded-full border border-zinc-300 px-2.5 text-xs font-medium text-zinc-600 dark:border-zinc-600 dark:text-zinc-300"
             >
               ⇄ {originalName ? 'Original' : 'Alternative'}
             </button>
           )}
-          <VideoButton links={links} />
+          {tt === 'weight_reps' && <ProgressButton state={progress} onClick={() => setProgressOpen(true)} />}
+          <InfoButton setup={eff.setupNote} cue={eff.focusCue} links={links} onEdit={() => onOpen(we.exercise_id)} />
         </span>
       </div>
-      {eff.setupNote && <p className="text-sm whitespace-pre-line text-zinc-500 dark:text-zinc-400">{eff.setupNote}</p>}
-      {tt === 'weight_reps' && (
-        <>
-          {advice === 'increase' && <p className="mt-2 rounded-md bg-emerald-50 px-2 py-1 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
-            <span className="font-semibold">Increase weight</span><span className="text-xs"> · raise the marked weight</span>
-          </p>}
-          {goal && (
-            <button
-              onClick={() => setProgressOpen(true)}
-              className={`mt-1 flex items-center gap-1 text-left text-sm tabular-nums ${goal.reached ? 'font-semibold text-emerald-700 dark:text-emerald-400' : 'text-zinc-700 dark:text-zinc-300'}`}
-            >
-              {goal.reached ? (
-                <span>✓ ↑ {goal.next !== null ? `${formatNumber(goal.next)} kg` : 'heavier'} next time</span>
-              ) : (
-                <span>
-                  {goal.topSet ? 'Top set' : 'All sets'} {formatNumber(goal.weight)} kg × {goal.target} →{' '}
-                  <span className="font-semibold text-emerald-700 dark:text-emerald-400">next time {goal.next !== null ? `${formatNumber(goal.next)} kg` : 'heavier'}</span>
-                </span>
-              )}
-              <span className="text-zinc-400" aria-hidden="true">›</span>
-            </button>
-          )}
-          {advice === 'reduce' && <div className="mt-2 rounded-md bg-indigo-50 px-2 py-1 text-sm text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
-            <p className="font-semibold">Reduce weight</p>
-            <p className="text-xs">Top set below Min Reps twice at the same weight. Check rest, recovery and form before choosing a lighter weight.</p>
-          </div>}
-        </>
-      )}
+      {/* Settings in one line (decision 5 November 2026, card variant A); the full text is behind «i» */}
+      {eff.setupNote && <p className="mt-0.5 truncate text-sm text-zinc-500 dark:text-zinc-400">{eff.setupNote.split('\n').join(' · ')}</p>}
 
 
       <div className={`mt-3 grid ${cols} items-center gap-x-1 gap-y-1.5 text-xs text-zinc-500 dark:text-zinc-400`}>
@@ -421,7 +399,7 @@ function ExerciseCard({ block, byId, shares, onOpen }: { block: ExerciseBlock; b
                 <span className="text-center">R</span>
               </>
             ) : (
-              <span className="text-center whitespace-nowrap">Reps {targets.minimum}–{targets.target}</span>
+              <span className="text-center">Reps</span>
             )}
           </>
         )}
@@ -466,27 +444,79 @@ function ExerciseCard({ block, byId, shares, onOpen }: { block: ExerciseBlock; b
           </button>
         )}
       </div>
-      {progressOpen && goal && (
-        <ProgressionSheet exerciseId={we.exercise_id} today={{ weight: goal.weight, reps: goal.todayReps }} onClose={() => setProgressOpen(false)} />
+      {progressOpen && (
+        <ProgressionSheet
+          exerciseId={we.exercise_id}
+          today={advice === 'increase' || !goal ? null : { weight: goal.weight, reps: goal.todayReps }}
+          advice={advice === 'increase' || advice === 'reduce' ? advice : null}
+          onClose={() => setProgressOpen(false)}
+        />
       )}
     </section>
   )
 }
 
-/** Small info button with the reference videos (decision 19 October 2026: saves room next to the name). */
-function VideoButton({ links }: { links: ExerciseLink[] }) {
-  if (links.length === 0) return null
-  const cls = 'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-zinc-300 text-sm font-semibold text-zinc-500 dark:border-zinc-600 dark:text-zinc-400'
+type ProgressState = 'up' | 'down' | 'none'
+
+const roundButton = 'flex h-8 min-w-8 shrink-0 items-center justify-center gap-0.5 rounded-full border px-2 text-sm font-semibold'
+
+/** Progress button (card variant A): opens the progression sheet; green ↑ or indigo ↓ when the weight should change. */
+function ProgressButton({ state, onClick }: { state: ProgressState; onClick: () => void }) {
+  const tone =
+    state === 'up' ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+      : state === 'down' ? 'border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
+      : 'border-zinc-300 text-zinc-500 dark:border-zinc-600 dark:text-zinc-400'
+  const label = state === 'up' ? 'Progression, increase weight' : state === 'down' ? 'Progression, check weight' : 'Progression'
   return (
-    <Popover label="i" ariaLabel="Exercise videos" triggerClassName={cls} align="right">
+    <button onClick={onClick} aria-label={label} title={label} className={`${roundButton} ${tone}`}>
+      <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M3 15l5-5 3 3 6-7" />
+      </svg>
+      {state === 'up' && <span aria-hidden="true">↑</span>}
+      {state === 'down' && <span aria-hidden="true">↓</span>}
+    </button>
+  )
+}
+
+/** «i»: settings, execution cue and videos of the exercise (card variant A); editing in the exercise sheet. */
+function InfoButton({ setup, cue, links, onEdit }: { setup: string | null; cue: string | null; links: ExerciseLink[]; onEdit: () => void }) {
+  const cls = `${roundButton} w-8 border-zinc-300 text-zinc-500 dark:border-zinc-600 dark:text-zinc-400`
+  const head = 'text-[11px] font-bold tracking-wide text-zinc-500 dark:text-zinc-400'
+  return (
+    <Popover label="i" ariaLabel="Exercise info" triggerClassName={cls} align="right">
       {(close) => (
-        <span className="flex flex-col">
-          <span className="mb-1 text-xs text-zinc-500 dark:text-zinc-400">{links.length === 1 ? 'Video' : 'Videos'}</span>
-          {links.map((l) => (
-            <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" onClick={close} className="truncate rounded-md px-2 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800">
-              ▶ {linkLabel(l)}
-            </a>
-          ))}
+        <span className="flex flex-col gap-1 text-sm">
+          {setup && (
+            <>
+              <span className={head}>SETUP</span>
+              <span className="whitespace-pre-line">{setup}</span>
+            </>
+          )}
+          {cue && (
+            <>
+              <span className={`${head} ${setup ? 'mt-1.5' : ''}`}>EXECUTION</span>
+              <span>{cue}</span>
+            </>
+          )}
+          {links.length > 0 && (
+            <span className={`flex flex-col ${setup || cue ? 'mt-1.5' : ''}`}>
+              {links.map((l) => (
+                <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" onClick={close} className="-mx-2 truncate rounded-md px-2 py-2 font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800">
+                  ▶ {linkLabel(l)}
+                </a>
+              ))}
+            </span>
+          )}
+          {!setup && !cue && links.length === 0 && <span className="text-zinc-500 dark:text-zinc-400">No setup, cue or video yet.</span>}
+          <button
+            onClick={() => {
+              close()
+              onEdit()
+            }}
+            className="-mx-2 mt-1 rounded-md px-2 py-2 text-left text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+          >
+            Edit exercise ›
+          </button>
         </span>
       )}
     </Popover>
@@ -509,7 +539,7 @@ function RecCell({ rec, raise, onUse }: { rec: RecCellValue; raise: boolean; onU
   const solid = 'flex h-10 items-center justify-center rounded-md border border-orange-500 bg-orange-50 text-sm font-extrabold tracking-wide text-orange-700 tabular-nums dark:bg-orange-500/10 dark:text-orange-300'
   if (rec.kind === 'top') {
     if (!raise) return <span className={solid.replace('text-sm', 'text-xs')}>TOP</span>
-    // Raising is good news: green like the «Increase weight» note (decision 3 November 2026)
+    // Raising is good news: green like the progress button (decision 3 November 2026)
     const up = 'flex h-10 items-center justify-center rounded-md border border-emerald-600 bg-emerald-50 text-sm font-extrabold tracking-wide text-emerald-700 tabular-nums dark:bg-emerald-500/10 dark:text-emerald-300'
     const next = rec.next
     return next === null
@@ -522,18 +552,6 @@ function RecCell({ rec, raise, onUse }: { rec: RecCellValue; raise: boolean; onU
     <button onClick={() => onUse(kg)} aria-label={`Use recommended ${kg} kg`} className={`flex h-10 items-center justify-center rounded-md border border-dashed text-sm font-semibold tabular-nums ${tone}`}>
       {rec.estimate ? `≈ ${kg}` : kg}
     </button>
-  )
-}
-
-/** One legend per workout: colours and the shares from Training settings. */
-function Legend({ shares }: { shares: TrainingShares }) {
-  const swatch = 'mr-1 inline-block h-2.5 w-3.5 rounded-sm align-[-1px]'
-  return (
-    <p className="card flex flex-wrap gap-x-3 gap-y-1 px-3 py-2 text-xs text-zinc-500 dark:text-zinc-400">
-      <span><i className={`${swatch} border border-orange-500 bg-orange-100 dark:bg-orange-500/20`} />Top set</span>
-      <span><i className={`${swatch} border border-dashed border-orange-400`} />Back-off {shares.backOff} %</span>
-      <span><i className={`${swatch} border border-dashed border-sky-400`} />Warm-up {shares.warmUp} %</span>
-    </p>
   )
 }
 
