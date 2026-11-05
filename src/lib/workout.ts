@@ -1,4 +1,5 @@
 import { db, type Exercise, type TemplateSet, type Workout, type WorkoutExercise, type WorkoutSet } from './db'
+import { decidingIndexes, repsOf, startReps as goalStartReps } from './goal'
 import { saveRows } from './sync'
 import { exerciseTrainingSettings, repetitionTargets, type RepetitionTargets } from './training'
 
@@ -236,12 +237,16 @@ function prefilledSets(
   // Warm-up as its own set W before the work sets (decision 18 October 2026)
   const warmUp = weightReps && eff.warmUp
   const sets: WorkoutSet[] = warmUp ? [warmUpSet(we, userId, ts)] : []
+  // Deciding sets (top set, or all work sets) start at last time plus one rep, at most Max reps (decision 5 November 2026)
+  const deciding = new Set(decidingIndexes(prevWorking, eff.topSet))
   planned.forEach((p, i) => {
-    const source = prevWorking[i] ?? prevWorking.at(-1)
+    const sourceIndex = prevWorking[i] ? i : prevWorking.length - 1
+    const source = prevWorking[sourceIndex]
+    const reps = source && deciding.has(sourceIndex) ? goalStartReps(repsOf(source, eff.isUnilateral), targets, startReps) : startReps
     const m: Measure = source
       ? {
           ...measureOf(source),
-          ...(weightReps ? (eff.isUnilateral ? { reps_left: startReps, reps_right: startReps } : { reps: startReps }) : {}),
+          ...(weightReps ? (eff.isUnilateral ? { reps_left: reps, reps_right: reps } : { reps }) : {}),
         }
       : {
           weight: p.target_weight,

@@ -118,7 +118,20 @@ function ExerciseRow({ line: l }: { line: ReportLine }) {
 /** Next workout: «next 39 kg»; increase green «↑ 4.5 → 9 kg»; reduce blue «↓ 20 → 15 kg». */
 export function NextPill({ line }: { line: ReportLine }) {
   const base = 'inline-block rounded-md px-1.5 py-0.5 text-xs font-semibold whitespace-nowrap tabular-nums'
-  if (line.advice === 'hold') return <span className="text-xs text-zinc-500 tabular-nums dark:text-zinc-400">next {kg(line.current)} kg</span>
+  if (line.advice === 'hold') {
+    // What is still missing for the next step (decision 5 November 2026): «3 reps to ↑ 52», without a top set «all sets 15 for ↑ 22.5»
+    const g = line.goal
+    if (g && line.repsToGo) {
+      const up = g.up !== null ? kg(g.up) : 'heavier'
+      return (
+        <span className="text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
+          {g.topSet ? `${line.repsToGo} ${line.repsToGo === 1 ? 'rep' : 'reps'} to ` : `all sets ${g.target} for `}
+          <span className="font-semibold text-emerald-700 dark:text-emerald-400">↑ {up}</span>
+        </span>
+      )
+    }
+    return <span className="text-xs text-zinc-500 tabular-nums dark:text-zinc-400">next {kg(line.current)} kg</span>
+  }
   const up = line.advice === 'increase'
   const text = line.next === null ? (up ? 'increase' : 'reduce') : `${kg(line.current)} → ${kg(line.next)} kg`
   return <span className={`${base} ${up ? 'bg-emerald-700 text-white dark:bg-emerald-600' : 'bg-blue-600 text-white'}`}>{up ? '↑' : '↓'} {text}</span>

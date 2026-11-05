@@ -17,6 +17,8 @@ import { linkLabel, linksFor } from '../lib/exercise'
 import { bestBefore, recordsOf, type Best } from '../lib/stats'
 import { belowMinimum, progressionAdvice, type ProgressionAdvice } from '../lib/progression'
 import { repetitionTargets, type RepetitionTargets } from '../lib/training'
+import ProgressionSheet from '../components/ProgressionSheet'
+import { goalState, repsOf, decidingIndexes } from '../lib/goal'
 import { displayWeight, increaseMarks, recommendations, warmUpWeight, type Recommendation } from '../lib/topset'
 import { DEFAULT_TRAINING_SHARES, getTrainingShares, type TrainingShares } from '../lib/settings'
 import {
@@ -301,6 +303,8 @@ function ExerciseCard({ block, byId, shares, onOpen }: { block: ExerciseBlock; b
     ? effective(exercise, byId)
     : { trackingType: 'weight_reps', isUnilateral: false, floor: null, seat: null, footPosition: null, setupNote: null, focusMuscles: [] as string[], focusCue: null, restS: null }
 
+  const [progressOpen, setProgressOpen] = useState(false)
+
   if (we.skipped_at)
     return (
       <section className="card flex items-center justify-between gap-3 p-3 opacity-70">
@@ -324,6 +328,9 @@ function ExerciseCard({ block, byId, shares, onOpen }: { block: ExerciseBlock; b
   const working = sets.filter((s) => s.set_type === 'working')
   const current = working.map((s) => s.weight)
   const before = prevWorking.map((s) => s.weight)
+  // Goal line (decision 5 November 2026): what the deciding sets need for the next weight step
+  const goal = tt === 'weight_reps' && advice !== 'increase' && advice !== 'reduce' ? goalState(working, topSet, eff.isUnilateral, targets, weightStep) : null
+  const decidingNow = new Set(tt === 'weight_reps' ? decidingIndexes(working, topSet) : [])
   const marks = tt === 'weight_reps' && advice === 'increase' ? increaseMarks(current, before, working.map((s) => s.completed_at !== null), topSet) : []
   const recs = tt === 'weight_reps' ? recommendations(current, topSet, shares.backOff / 100, weightStep, marks.some(Boolean)) : []
   const warmKg = tt === 'weight_reps' ? warmUpWeight(current, shares.warmUp / 100, weightStep) : null
@@ -369,6 +376,22 @@ function ExerciseCard({ block, byId, shares, onOpen }: { block: ExerciseBlock; b
           {advice === 'increase' && <p className="mt-2 rounded-md bg-emerald-50 px-2 py-1 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
             <span className="font-semibold">Increase weight</span><span className="text-xs"> · raise the marked weight</span>
           </p>}
+          {goal && (
+            <button
+              onClick={() => setProgressOpen(true)}
+              className={`mt-1 flex items-center gap-1 text-left text-sm tabular-nums ${goal.reached ? 'font-semibold text-emerald-700 dark:text-emerald-400' : 'text-zinc-700 dark:text-zinc-300'}`}
+            >
+              {goal.reached ? (
+                <span>✓ ↑ {goal.next !== null ? `${formatNumber(goal.next)} kg` : 'heavier'} next time</span>
+              ) : (
+                <span>
+                  {goal.topSet ? 'Top set' : 'All sets'} {formatNumber(goal.weight)} kg × {goal.target} →{' '}
+                  <span className="font-semibold text-emerald-700 dark:text-emerald-400">next time {goal.next !== null ? `${formatNumber(goal.next)} kg` : 'heavier'}</span>
+                </span>
+              )}
+              <span className="text-zinc-400" aria-hidden="true">›</span>
+            </button>
+          )}
           {advice === 'reduce' && <div className="mt-2 rounded-md bg-indigo-50 px-2 py-1 text-sm text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
             <p className="font-semibold">Reduce weight</p>
             <p className="text-xs">Top set below Min Reps twice at the same weight. Check rest, recovery and form before choosing a lighter weight.</p>
@@ -398,7 +421,7 @@ function ExerciseCard({ block, byId, shares, onOpen }: { block: ExerciseBlock; b
                 <span className="text-center">R</span>
               </>
             ) : (
-              <span className="text-center">Reps</span>
+              <span className="text-center whitespace-nowrap">Reps {targets.minimum}–{targets.target}</span>
             )}
           </>
         )}
@@ -421,6 +444,7 @@ function ExerciseCard({ block, byId, shares, onOpen }: { block: ExerciseBlock; b
               unilateral={eff.isUnilateral}
               restSeconds={we.rest_s ?? eff.restS}
               minimum={tt === 'weight_reps' && !warm ? targets.minimum : null}
+              good={!warm && decidingNow.has(workingNo - 1) && s.completed_at !== null && (repsOf(s, eff.isUnilateral) ?? 0) >= targets.target}
               records={recordsOf(s, best)}
             />
           )
@@ -441,6 +465,9 @@ function ExerciseCard({ block, byId, shares, onOpen }: { block: ExerciseBlock; b
           </button>
         )}
       </div>
+      {progressOpen && goal && (
+        <ProgressionSheet exerciseId={we.exercise_id} today={{ weight: goal.weight, reps: goal.todayReps }} onClose={() => setProgressOpen(false)} />
+      )}
     </section>
   )
 }
@@ -523,9 +550,11 @@ interface SetRowProps {
   /** Minimum reps; entered reps below it are marked orange */
   minimum: number | null
   records: string[]
+  /** Deciding set that reached Max reps: reps field light green */
+  good?: boolean
 }
 
-function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, restSeconds, minimum, records }: SetRowProps) {
+function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, restSeconds, minimum, records, good }: SetRowProps) {
   const done = set.completed_at !== null
 
   function numberCommit(field: 'weight' | 'reps' | 'reps_left' | 'reps_right' | 'distance_km', integer: boolean) {
@@ -609,11 +638,11 @@ function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, res
           </span>
           {unilateral ? (
             <>
-              <Field label="Reps left" inputMode="numeric" placeholder={warm ? WARM_UP_HINT : undefined} value={formatNumber(set.reps_left)} onCommit={numberCommit('reps_left', true)} warn={belowMinimum(set.reps_left, minimum)} />
-              <Field label="Reps right" inputMode="numeric" placeholder={warm ? WARM_UP_HINT : undefined} value={formatNumber(set.reps_right)} onCommit={numberCommit('reps_right', true)} warn={belowMinimum(set.reps_right, minimum)} />
+              <Field label="Reps left" inputMode="numeric" placeholder={warm ? WARM_UP_HINT : undefined} value={formatNumber(set.reps_left)} onCommit={numberCommit('reps_left', true)} warn={belowMinimum(set.reps_left, minimum)} good={good} />
+              <Field label="Reps right" inputMode="numeric" placeholder={warm ? WARM_UP_HINT : undefined} value={formatNumber(set.reps_right)} onCommit={numberCommit('reps_right', true)} warn={belowMinimum(set.reps_right, minimum)} good={good} />
             </>
           ) : (
-            <Field label="Reps" inputMode="numeric" placeholder={warm ? WARM_UP_HINT : undefined} value={formatNumber(set.reps)} onCommit={numberCommit('reps', true)} warn={belowMinimum(set.reps, minimum)} />
+            <Field label="Reps" inputMode="numeric" placeholder={warm ? WARM_UP_HINT : undefined} value={formatNumber(set.reps)} onCommit={numberCommit('reps', true)} warn={belowMinimum(set.reps, minimum)} good={good} />
           )}
         </>
       )}

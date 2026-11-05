@@ -1,4 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks'
+import ProgressionSheet from '../components/ProgressionSheet'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Heatmap, Sparkline } from '../components/Charts'
 import Popover from '../components/Popover'
@@ -290,7 +291,8 @@ function WeightGoalChart({ series, goal, forecast, today, rangeDays }: {
 const STATUS: Record<ProgressStatus, { label: string; className: string }> = {
   strong: { label: 'Strong', className: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' },
   good: { label: 'Good', className: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300' },
-  stalled: { label: 'Stalled', className: 'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300' },
+  // Plateau, grey (decision 5 November 2026): holding a weight for a while is normal, not a warning
+  stalled: { label: 'Plateau', className: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300' },
   flat: { label: 'Flat', className: 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400' },
   lower: { label: 'Lower', className: 'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300' },
   new: { label: 'New', className: 'bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-300' },
@@ -307,9 +309,11 @@ function changeText(r: PlanProgressRow): string {
 
 function ProgressionCard({ now, className }: { now: Date; className?: string }) {
   const rows = useLiveQuery(() => loadPlanProgress(now), [now])
+  // A row opens the progression sheet of the exercise with all variants (decision 5 November 2026)
+  const [open, setOpen] = useState<string | null>(null)
   if (rows === undefined) return null
   return (
-    <Card title="Progression" aside={<><span className="hidden sm:inline">Top set per workout · current plan · </span>since start</>} className={className}>
+    <Card title="Progression" aside={<><span className="hidden sm:inline">Top set per workout · current plan · since start · </span>tap a row</>} className={className}>
       {rows.length === 0 ? <Empty>No exercise of the active workouts trained yet.</Empty> : (
         <table className="w-full text-[13px] tabular-nums">
           <thead>
@@ -324,21 +328,22 @@ function ProgressionCard({ now, className }: { now: Date; className?: string }) 
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.mainId} className="border-b border-zinc-100 last:border-0 dark:border-zinc-800">
+              <tr key={r.mainId} onClick={() => setOpen(r.mainId)} className="cursor-pointer border-b border-zinc-100 last:border-0 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800/50">
                 <td className="py-2 pr-2">
-                  <span className="block font-semibold">{r.title}</span>
+                  <button onClick={(e) => { e.stopPropagation(); setOpen(r.mainId) }} className="block text-left font-semibold">{r.title}</button>
                   {r.subtitle && <span className="hidden text-xs text-zinc-500 sm:block dark:text-zinc-400">{r.subtitle}</span>}
                 </td>
                 <td className="px-1 py-2 whitespace-nowrap text-zinc-500 dark:text-zinc-400">{r.first && r.series.length > 1 ? formatTopSet(r.first, r.unilateral) : '–'}</td>
                 <td className="px-1 py-2 font-semibold whitespace-nowrap">{r.latest ? formatTopSet(r.latest, r.unilateral) : '–'}</td>
                 <td className="hidden px-1 py-2 sm:table-cell">{r.series.length > 1 ? <Sparkline values={r.series} width={110} height={26} /> : <span className="text-zinc-400">–</span>}</td>
                 <td className="hidden px-1 py-2 text-right whitespace-nowrap text-zinc-500 sm:table-cell dark:text-zinc-400">{changeText(r)}</td>
-                <td className="py-2 pl-2"><span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATUS[r.status].className}`}>{STATUS[r.status].label}</span></td>
+                <td className="py-2 pl-2 whitespace-nowrap"><span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATUS[r.status].className}`}>{STATUS[r.status].label}</span><span className="ml-1.5 text-zinc-400" aria-hidden="true">›</span></td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
+      {open && <ProgressionSheet exerciseId={open} includeVariants onClose={() => setOpen(null)} />}
     </Card>
   )
 }

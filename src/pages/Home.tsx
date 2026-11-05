@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import AppBar from '../components/AppBar'
 import ExerciseSheet from '../components/ExerciseSheet'
 import SyncBadge from '../components/SyncBadge'
@@ -7,6 +7,7 @@ import ThemeToggle from '../components/ThemeToggle'
 import BodyTab, { PassphraseSheet } from './BodyTab'
 import Sheet from '../components/Sheet'
 import AppIcon from '../components/AppIcon'
+import { DragHandle, MoveButtons } from '../components/ReorderParts'
 import { photoKeyState } from '../lib/photos'
 import ExercisesTab from './ExercisesTab'
 import HistoryTab from './HistoryTab'
@@ -14,7 +15,9 @@ import StatsTab from './StatsTab'
 import FoodTab from './FoodTab'
 import { signOut, type LocalUser } from '../lib/auth'
 import { db, displayName, type Exercise } from '../lib/db'
-import { getTemplateOrder, moveTemplate, sortByOrder } from '../lib/settings'
+import { getTemplateOrder, sortByOrder } from '../lib/settings'
+import { saveTemplateOrder } from '../lib/reorderSave'
+import { useLongPressReorder } from '../lib/useLongPressReorder'
 import { createTemplate, deleteTemplate, unarchiveTemplate } from '../lib/template'
 import { offerUndo } from '../lib/undo'
 import { startWorkout } from '../lib/workout'
@@ -94,9 +97,6 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
   const [photos, setPhotos] = useState(false)
   const photoAccess = useLiveQuery(photoKeyState, [])
   const [showArchive, setShowArchive] = useState(false)
-  const [showActive, setShowActive] = useState(true)
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  const [sorting, setSorting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const active = cards?.filter((c) => !c.archivedAt)
   const archived = cards?.filter((c) => c.archivedAt).sort((a, b) => b.archivedAt!.localeCompare(a.archivedAt!))
@@ -172,86 +172,14 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
         <p className="text-zinc-500">Loading …</p>
       ) : (
         <>
-          <div className="flex items-center gap-2">
-            <div className="flex-1">
-              <SectionToggle label="Active" count={active?.length ?? 0} open={showActive} onToggle={() => setShowActive((v) => !v)} />
-            </div>
-            {showActive && (active?.length ?? 0) > 1 && (
-              <button onClick={() => setSorting((v) => !v)} aria-pressed={sorting} className={`mb-2 rounded-md px-2.5 py-1 text-sm font-medium ${sorting ? 'bg-accent text-accent-fg' : 'bg-zinc-100 dark:bg-zinc-800'}`}>
-                {sorting ? 'Done' : 'Reorder'}
-              </button>
-            )}
-          </div>
-          {showActive && (
-            <>
-              {active?.length === 0 && <p className="mb-2 text-zinc-500">No active workouts.</p>}
-              <ul className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:items-start xl:grid-cols-3">
-                {active?.map((c, idx) => {
-                  const open = expanded.has(c.id)
-                  const ids = active.map((x) => x.id)
-                  return (
-                    <li key={c.id} className="card p-3">
-                      <div className="flex items-center gap-2">
-                        {sorting && (
-                          <span className="flex flex-col">
-                            <button aria-label="Move up" disabled={idx === 0} onClick={() => void moveTemplate(user.id, ids, c.id, -1)} className="h-7 w-8 rounded-md bg-zinc-100 text-sm disabled:opacity-30 dark:bg-zinc-800">
-                              ↑
-                            </button>
-                            <button aria-label="Move down" disabled={idx === ids.length - 1} onClick={() => void moveTemplate(user.id, ids, c.id, 1)} className="mt-1 h-7 w-8 rounded-md bg-zinc-100 text-sm disabled:opacity-30 dark:bg-zinc-800">
-                              ↓
-                            </button>
-                          </span>
-                        )}
-                        <button
-                          onClick={() => setExpanded((s) => { const n = new Set(s); if (n.has(c.id)) n.delete(c.id); else n.add(c.id); return n })}
-                          aria-expanded={open}
-                          className="flex min-w-0 flex-1 items-center gap-2 text-left"
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" className={`shrink-0 text-zinc-400 transition-transform ${open ? 'rotate-90' : ''}`}>
-                            <path d="M9 6l6 6-6 6" />
-                          </svg>
-                          <span className="min-w-0">
-                            <span className="block truncate text-base font-semibold">{c.name}</span>
-                            <span className="block text-xs text-zinc-500 dark:text-zinc-400">
-                              {c.exercises.length} {c.exercises.length === 1 ? 'exercise' : 'exercises'} · {c.lastDone ? `last ${dateFormat.format(new Date(c.lastDone))}` : 'never'}
-                            </span>
-                          </span>
-                        </button>
-                        <button
-                          onClick={() => (running ? onResume?.() : void startWorkout(c.id, user.id))}
-                          className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-accent-fg"
-                        >
-                          {running ? 'Open' : 'Start'}
-                        </button>
-                      </div>
-                      {open && (
-                        <div className="mt-2 border-t border-zinc-100 pt-2 dark:border-zinc-800">
-                          <ol className="text-sm leading-7 text-zinc-600 dark:text-zinc-300">
-                            {c.exercises.map((ex, i) => (
-                              <li key={i}>
-                                <button onClick={() => setSheet(ex.id)} className="text-left hover:underline">
-                                  {ex.name}
-                                </button>
-                              </li>
-                            ))}
-                          </ol>
-                          <button onClick={() => setEditing(c.id)} className="mt-2 rounded-md bg-zinc-100 px-3 py-1.5 text-sm font-medium dark:bg-zinc-800">
-                            Edit workout
-                          </button>
-                        </div>
-                      )}
-                    </li>
-                  )
-                })}
-              </ul>
-              <button
-                onClick={() => void createTemplate(user.id, 'New workout').then(setEditing)}
-                className="mt-3 w-full rounded-xl border border-dashed border-zinc-300 py-3 text-sm font-semibold text-zinc-600 lg:w-auto lg:px-8 dark:border-zinc-700 dark:text-zinc-300"
-              >
-                + New workout
-              </button>
-            </>
-          )}
+          <ActiveWorkouts
+            cards={active ?? []}
+            userId={user.id}
+            running={running}
+            onResume={onResume}
+            onEdit={setEditing}
+            onShowExercise={setSheet}
+          />
 
           <div className="mt-6">
             <SectionToggle label="Archive" count={archived?.length ?? 0} open={showArchive} onToggle={() => setShowArchive((v) => !v)} />
@@ -331,6 +259,125 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
       {photos && (isBetaSandbox ? <Sheet title="Photo passphrase" onClose={() => setPhotos(false)}><p className="text-sm">Photo changes are available in the live app.</p><button onClick={() => { setPhotos(false); setTab('body') }} className="home-primary mt-4">Open Body</button></Sheet> : photoAccess === undefined ? <Sheet title="Photo passphrase" onClose={() => setPhotos(false)}>Checking photo access …</Sheet> : <PassphraseSheet mode={photoAccess === 'ready' ? 'change' : photoAccess} userId={user.id} onClose={() => setPhotos(false)} />)}
       {sheet && <ExerciseSheet exerciseId={sheet} onClose={() => setSheet(null)} />}
     </main>
+  )
+}
+
+interface ActiveWorkoutsProps {
+  cards: TemplateCard[]
+  userId: string
+  running: boolean
+  onResume?: () => void
+  onEdit: (id: string) => void
+  onShowExercise: (id: string) => void
+}
+
+/** Active workouts; long press on a card reorders them (decision 5 November 2026, replaces the button Reorder). */
+function ActiveWorkouts({ cards, userId, running, onResume, onEdit, onShowExercise }: ActiveWorkoutsProps) {
+  const [showActive, setShowActive] = useState(true)
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const ids = useMemo(() => cards.map((c) => c.id), [cards])
+  const byId = new Map(cards.map((c) => [c.id, c]))
+  const reorder = useLongPressReorder({
+    ids,
+    enabled: cards.length > 1,
+    label: (id) => byId.get(id)?.name ?? 'Workout',
+    onCommit: (next) => saveTemplateOrder(userId, ids, next),
+  })
+  const sorting = reorder.active && showActive
+
+  return (
+    <>
+      <div className="flex items-center gap-2">
+        <div className="flex-1">
+          <SectionToggle label="Active" count={cards.length} open={showActive} onToggle={() => { reorder.setActive(false); setShowActive((v) => !v) }} />
+        </div>
+        {sorting && (
+          <button onClick={() => reorder.setActive(false)} className="mb-2 rounded-full bg-zinc-900 px-4 py-1.5 text-sm font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900">
+            Done
+          </button>
+        )}
+      </div>
+      {showActive && (
+        <>
+          {sorting && <p className="-mt-1 mb-2 text-sm text-zinc-500 dark:text-zinc-400">Drag to reorder</p>}
+          {cards.length === 0 && <p className="mb-2 text-zinc-500">No active workouts.</p>}
+          <ul
+            {...reorder.listProps}
+            aria-label="Active workouts"
+            className={`${reorder.listProps.className} flex flex-col gap-3 ${sorting ? '' : 'lg:grid lg:grid-cols-2 lg:items-start xl:grid-cols-3'}`}
+          >
+            {reorder.order.map((id, idx) => {
+              const c = byId.get(id)
+              if (!c) return null
+              const open = expanded.has(c.id) && !sorting
+              const subtitle = `${c.exercises.length} ${c.exercises.length === 1 ? 'exercise' : 'exercises'} · ${c.lastDone ? `last ${dateFormat.format(new Date(c.lastDone))}` : 'never'}`
+              return (
+                <li key={c.id} {...reorder.itemProps(c.id, 'card p-3')} aria-label={sorting ? `${c.name}, position ${idx + 1} of ${cards.length}` : undefined}>
+                  {sorting ? (
+                    <div className="flex min-h-11 items-center gap-3">
+                      <DragHandle />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-base font-semibold">{c.name}</span>
+                        <span className="block text-xs text-zinc-500 dark:text-zinc-400">{subtitle}</span>
+                      </span>
+                      <MoveButtons name={c.name} first={idx === 0} last={idx === cards.length - 1} onMove={(d) => reorder.move(c.id, d)} />
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setExpanded((s) => { const n = new Set(s); if (n.has(c.id)) n.delete(c.id); else n.add(c.id); return n })}
+                        aria-expanded={open}
+                        className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" className={`shrink-0 text-zinc-400 transition-transform ${open ? 'rotate-90' : ''}`}>
+                          <path d="M9 6l6 6-6 6" />
+                        </svg>
+                        <span className="min-w-0">
+                          <span className="block truncate text-base font-semibold">{c.name}</span>
+                          <span className="block text-xs text-zinc-500 dark:text-zinc-400">{subtitle}</span>
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => (running ? onResume?.() : void startWorkout(c.id, userId))}
+                        className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-accent-fg"
+                      >
+                        {running ? 'Open' : 'Start'}
+                      </button>
+                    </div>
+                  )}
+                  {open && (
+                    <div className="mt-2 border-t border-zinc-100 pt-2 dark:border-zinc-800">
+                      <ol className="text-sm leading-7 text-zinc-600 dark:text-zinc-300">
+                        {c.exercises.map((ex, i) => (
+                          <li key={i}>
+                            <button onClick={() => onShowExercise(ex.id)} className="text-left hover:underline">
+                              {ex.name}
+                            </button>
+                          </li>
+                        ))}
+                      </ol>
+                      <button onClick={() => onEdit(c.id)} className="mt-2 rounded-md bg-zinc-100 px-3 py-1.5 text-sm font-medium dark:bg-zinc-800">
+                        Edit workout
+                      </button>
+                    </div>
+                  )}
+                </li>
+              )
+            })}
+            {reorder.placeholder && <li aria-hidden="true" className="reorder-placeholder" style={reorder.placeholder} />}
+          </ul>
+          <p className="sr-only" aria-live="polite">{reorder.announcement}</p>
+          {!sorting && (
+            <button
+              onClick={() => void createTemplate(userId, 'New workout').then(onEdit)}
+              className="mt-3 w-full rounded-xl border border-dashed border-zinc-300 py-3 text-sm font-semibold text-zinc-600 lg:w-auto lg:px-8 dark:border-zinc-700 dark:text-zinc-300"
+            >
+              + New workout
+            </button>
+          )}
+        </>
+      )}
+    </>
   )
 }
 

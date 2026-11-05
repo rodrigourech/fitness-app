@@ -1,15 +1,15 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import AppBar from '../components/AppBar'
 import ExercisePicker from '../components/ExercisePicker'
 import ExerciseSheet from '../components/ExerciseSheet'
 import Field from '../components/Field'
-import { db, displayName, type Exercise, type TemplateExercise, type TemplateSet } from '../lib/db'
+import { DragHandle, MoveButtons } from '../components/ReorderParts'
+import { db, displayName, type Exercise, type Floor, type TemplateExercise, type TemplateSet } from '../lib/db'
 import {
   activeSets,
   addTemplateExercise,
   archiveTemplate,
-  moveTemplateExercise,
   removeTemplateExercise,
   renameTemplate,
   setPlannedSetCount,
@@ -19,6 +19,8 @@ import {
 } from '../lib/template'
 import { effective, formatDuration, formatNumber, parseDuration, parseNumber } from '../lib/workout'
 import { validRepetitionTargets } from '../lib/training'
+import { saveTemplateExerciseOrder } from '../lib/reorderSave'
+import { useLongPressReorder } from '../lib/useLongPressReorder'
 
 interface Props {
   templateId: string
@@ -36,6 +38,8 @@ interface Row {
   sets: TemplateSet[]
   /** Main exercise and its variants, to switch the variant used in this template */
   family: { id: string; label: string }[]
+  /** Floor of the machine (variants inherit it), shown in reorder mode */
+  floor: Floor | null
 }
 
 async function load(templateId: string) {
@@ -63,6 +67,7 @@ async function load(templateId: string) {
         minReps: ex ? effective(ex, byId).minReps : 7,
         sets: (await activeSets(te.id)).filter((s) => s.set_type === 'working'),
         family,
+        floor: ex ? effective(ex, byId).floor : null,
       }
     }),
   )
@@ -76,6 +81,14 @@ export default function TemplateEditor({ templateId, onDone }: Props) {
   const [picking, setPicking] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [sheet, setSheet] = useState<string | null>(null)
+  const ids = useMemo(() => data?.rows.map((r) => r.te.id) ?? [], [data])
+  // Long press on an exercise reorders the list (decision 5 November 2026)
+  const reorder = useLongPressReorder({
+    ids,
+    enabled: ids.length > 1,
+    label: (id) => data?.rows.find((r) => r.te.id === id)?.name ?? 'Exercise',
+    onCommit: (next) => saveTemplateExerciseOrder(templateId, next),
+  })
 
   if (data === undefined) return null
   if (data === null) {
@@ -89,16 +102,31 @@ export default function TemplateEditor({ templateId, onDone }: Props) {
       </main>
     )
   }
-  const { template, rows } = data
+  const { template } = data
+  const rowById = new Map(data.rows.map((r) => [r.te.id, r]))
+  const rows = reorder.order.map((id) => rowById.get(id)).filter((r) => r !== undefined)
+  const sorting = reorder.active
 
   return (
     <main className="mx-auto max-w-xl px-4 pb-16">
       <AppBar>
-        <button onClick={onDone} className="rounded-lg bg-accent px-4 py-1.5 text-sm font-semibold text-accent-fg">
-          Done
-        </button>
+        {sorting ? (
+          <button onClick={() => reorder.setActive(false)} className="rounded-full bg-zinc-900 px-4 py-1.5 text-sm font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900">
+            Done
+          </button>
+        ) : (
+          <button onClick={onDone} className="rounded-lg bg-accent px-4 py-1.5 text-sm font-semibold text-accent-fg">
+            Done
+          </button>
+        )}
       </AppBar>
 
+      {sorting ? (
+        <>
+          <h1 className="text-2xl font-semibold tracking-tight">{template.name}</h1>
+          <p className="mt-1 mb-4 text-sm text-zinc-500 dark:text-zinc-400">Drag to reorder · ▼ downstairs · ▲ upstairs</p>
+        </>
+      ) : (
       <label className="mb-4 flex flex-col gap-1">
         <span className="text-sm font-semibold">Workout name</span>
         <input
@@ -108,12 +136,36 @@ export default function TemplateEditor({ templateId, onDone }: Props) {
           className="rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-lg font-semibold outline-none dark:border-zinc-700"
         />
       </label>
+      )}
 
-      <ol className="flex flex-col gap-3">
+      <ol {...reorder.listProps} aria-label="Exercises" className={`${reorder.listProps.className} flex flex-col gap-3`}>
         {rows.map((r, i) => {
           const first = r.sets[0]
+          if (sorting) {
+            const rest = r.te.rest_s ?? r.defaultRest
+            return (
+              <li key={r.te.id} {...reorder.itemProps(r.te.id, 'card px-3 py-2.5')} aria-label={`${r.name}, position ${i + 1} of ${rows.length}`}>
+                <div className="flex min-h-11 items-center gap-3">
+                  <DragHandle />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-semibold">{r.name}</span>
+                    <span className="block text-xs text-zinc-500 dark:text-zinc-400">
+                      {r.sets.length} {r.sets.length === 1 ? 'set' : 'sets'}
+                      {rest ? ` · ${rest} s` : ''}
+                    </span>
+                  </span>
+                  {r.floor && (
+                    <span className="reorder-floor" role="img" aria-label={r.floor === 'unten' ? 'downstairs' : 'upstairs'}>
+                      {r.floor === 'unten' ? '▼' : '▲'}
+                    </span>
+                  )}
+                  <MoveButtons name={r.name} first={i === 0} last={i === rows.length - 1} onMove={(d) => reorder.move(r.te.id, d)} />
+                </div>
+              </li>
+            )
+          }
           return (
-            <li key={r.te.id} className="card p-3">
+            <li key={r.te.id} {...reorder.itemProps(r.te.id, 'card p-3')}>
               <div className="mb-2 flex items-start justify-between gap-2">
                 <button onClick={() => setSheet(r.te.exercise_id)} className="text-left">
                   <h2 className="font-semibold underline-offset-2 hover:underline">
@@ -122,12 +174,6 @@ export default function TemplateEditor({ templateId, onDone }: Props) {
                   </h2>
                 </button>
                 <div className="flex shrink-0 gap-1">
-                  <button aria-label="Move up" disabled={i === 0} onClick={() => void moveTemplateExercise(r.te, -1)} className={iconBtn}>
-                    ↑
-                  </button>
-                  <button aria-label="Move down" disabled={i === rows.length - 1} onClick={() => void moveTemplateExercise(r.te, 1)} className={iconBtn}>
-                    ↓
-                  </button>
                   <button aria-label="Remove exercise" onClick={() => void removeTemplateExercise(r.te)} className={`${iconBtn} text-red-600 dark:text-red-400`}>
                     ✕
                   </button>
@@ -246,8 +292,11 @@ export default function TemplateEditor({ templateId, onDone }: Props) {
             </li>
           )
         })}
+        {reorder.placeholder && <li aria-hidden="true" className="reorder-placeholder" style={reorder.placeholder} />}
       </ol>
+      <p className="sr-only" aria-live="polite">{reorder.announcement}</p>
       {rows.length === 0 && <p className="text-zinc-500">No exercises yet.</p>}
+      {!sorting && (<>
 
       <button
         onClick={() => setPicking(true)}
@@ -276,6 +325,7 @@ export default function TemplateEditor({ templateId, onDone }: Props) {
           Archive workout
         </button>
       )}
+      </>)}
 
       {sheet && <ExerciseSheet exerciseId={sheet} onClose={() => setSheet(null)} />}
       {picking && (

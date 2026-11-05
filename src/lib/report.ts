@@ -4,6 +4,7 @@
 // the next workout. Skipped exercises get a row without today's values. Volume is no longer shown (it mostly follows
 // which exercises were done) but still decides whether a workout is a run.
 import { db, type Workout, type WorkoutExercise, type WorkoutSet } from './db'
+import { decidingReps } from './goal'
 import { progressionAdvice, type ProgressionAdvice } from './progression'
 import { bestBefore, recordsOf } from './stats'
 import { lowerWeight, nextWeight } from './topset'
@@ -46,6 +47,10 @@ export interface ReportLine {
   next: number | null
   advice: Exclude<ProgressionAdvice, null>
   record: boolean
+  /** Hold: reps the deciding sets still need for the next step (decision 5 November 2026); null otherwise */
+  repsToGo?: number | null
+  /** Hold: Max reps and the next weight step (null without a known step) */
+  goal?: { target: number; up: number | null; topSet: boolean } | null
 }
 
 export interface WorkoutReport {
@@ -170,7 +175,10 @@ export async function workoutReport(workoutId: string): Promise<WorkoutReport | 
     const best = await bestBefore(we.exercise_id, w.id, w.started_at)
     const record = work.some((s) => recordsOf(s, best).length > 0)
     if (record) records++
-    lines.push({ exerciseId: ex.id, name: main.name, status: 'done', unilateral: eff.isUnilateral, today: topSetOf(work), last, current, next, advice, record })
+    const todayReps = decidingReps(work, eff.topSet, eff.isUnilateral)
+    const repsToGo = advice === 'hold' && todayReps !== null ? Math.max(0, targets.target - todayReps) : null
+    const goal = advice === 'hold' ? { target: targets.target, up: step ? nextWeight(current, step) : null, topSet: eff.topSet } : null
+    lines.push({ exerciseId: ex.id, name: main.name, status: 'done', unilateral: eff.isUnilateral, today: topSetOf(work), last, current, next, advice, record, repsToGo, goal })
   }
   const kind = totals.volume === 0 && totals.distanceKm > 0 ? 'run' : 'strength'
   return { workout: w, name: w.template_name_snapshot ?? 'Workout', kind, totals, previous, lines, records }
