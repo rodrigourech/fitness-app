@@ -294,3 +294,6 @@ Food-Tab, Entwürfe K bis M mit Rodrigo abgestimmt.
 ## **5. November 2026**
 
 - Stats › Progression zeigt nur Übungen der aktiven Workouts, für die mindestens ein Arbeitssatz erfasst ist (Wunsch Rodrigo); neue Übungen erscheinen ab dem ersten Training
+- Lateral Raise (Machine) steht unten (Rodrigo). Reihenfolge nach Stockwerk mit genau einem Wechsel: Main Day A Lat Pulldown, Leg Press, Lateral Raise, dann oben Incline Chest Press, Chest-Supported Row, Pushdown, Preacher Curl; Main Day B Seated Row, Seated Leg Curl, Lateral Raise, dann oben Chest Press, Seated Dip, Preacher Curl; Bonus Day oben Butterfly, Straight-Arm Pulldown, Face Pull, Cable Curl, Pushdown, dann unten Lateral Raise und Lying Leg Curl (oberer Block zuerst, damit Butterfly das Warm-up behält und Lying Leg Curl als optionale Übung am Ende bleibt). Annahme: Kabelzug-Station oben
+- Datenkorrektur: Chest-Press-Satz 4 (40 × 8) vom 29. Okt war gemacht, aber nicht abgehakt und wurde beim Beenden verworfen; wiederhergestellt
+- Incline Chest Press (Dumbbell) in Main Day A mit 120 s Pause wie die übrigen Grundübungen (vorher leer)

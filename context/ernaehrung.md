@@ -1,6 +1,6 @@
 # **Ernährung**
 
-Stand 1. November 2026.
+Stand 5. November 2026.
 
 ## **Gewohnheiten**
 
@@ -15,10 +15,10 @@ Stand 1. November 2026.
 
 ## **Proteinshake**
 
-- ESN Designer Whey Dark Cookies & Cream, 1.5 Scoops (45 g) pro Shake (Nov 2026)
-- Morgens ein Shake, an Trainingstagen ein zweiter nach dem Training
+- Shake mit 1 Scoop ESN Designer Whey Dark Cookies & Cream und ½ Scoop Coop High Protein Whey Vanilla (total 45 g), weil ESN allein ihm etwas zu süss ist; zählt in der App weiter als «ESN shake, water» (Nov 2026)
+- 1 Shake pro Tag, an Krafttagen (Main Day A und B) ein zweiter, also 9 Shakes pro Woche; etwa CHF 87 im Monat mit ESN (Nov 2026)
 - Standard mit Wasser; mit Milch nur 1 bis 2 Mal pro Woche als Ausnahme
-- Coop Whey Vanille als Reserve
+- Coop High Protein Whey Vanilla mit 371 kcal und 73 g Protein pro 100 g; ersetzt die frühere Reserve Coop Whey Vanille (Nov 2026)
 - Trinkt pro Tag 3 Espressi mit je einem Schuss Milch (max. 2 EL), etwa 55 kcal; an Wochenenden nicht (Nov 2026)
 
 ## **Vereinbarte Richtwerte (Nov 2026)**

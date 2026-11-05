@@ -1,6 +1,6 @@
 # **Training**
 
-Stand 3. November 2026.
+Stand 5. November 2026.
 
 ## **Plan**
 
@@ -21,6 +21,8 @@ Stand 3. November 2026.
 - Mag Overhead Triceps Extension nicht; V-Grip beim Triceps Pushdown fühlt sich komisch an, Straight Bar besser (Okt 2026). Entscheid Nov 2026: Seated Dip (Technogym) in Main Day B, Pushdown mit Straight Bar in Main Day A
 - Triceps Pushdown: Alternative zu Straight Bar ist V-Grip; Progression pro Griff getrennt (Nov 2026)
 - Lat Pulldown ab 2. Nov 2026 mit Top Set 32 kg und voller Bewegung bis Schlüsselbeinhöhe; bisheriger Verlauf mit 39 und 45 kg wegen verkürzter Bewegung als eigene Übung «Lat Pulldown (verkürzt, bis 1. Nov)» archiviert, Volumen unverändert, Back-off etwa 25 kg (Entscheid 2. Nov 2026)
+- Trainiert meist morgens zwischen 9 und 11 Uhr (Nov 2026)
+- Leg Press bisher mit etwa 100 Grad Innenwinkel im Knie im tiefsten Punkt (Nov 2026)
 - Einheiten maximal 60 bis 70 Minuten, 90 s Pause zwischen Sätzen als Ausgangswert (Okt 2026)
 - Wiedereinstieg im September 2026 nach etwa einem Jahr ohne regelmässigen Sport
 - Die Gym-Routine macht ihm Spass (Nov 2026)
@@ -34,5 +36,6 @@ Stand 3. November 2026.
 
 - Vorhanden laut Rodrigo (Nov 2026): Butterfly / Pec Deck, Kabelzug-Station, Lying Leg Curl
 
-- Zwei Stockwerke: Beinmaschinen, Lat Pulldown und Seated Row unten, alles andere oben; Reihenfolge so wählen, dass wenig Stockwerkwechsel nötig sind
+- Zwei Stockwerke: Beinmaschinen, Lat Pulldown, Seated Row und Lateral Raise (Machine) unten, alles andere oben; Reihenfolge nach Stockwerk mit genau einem Wechsel (Nov 2026)
+- Reihenfolge (Nov 2026): Main Day A Lat Pulldown, Leg Press, Lateral Raise (unten), danach oben Incline Chest Press, Chest-Supported Row, Pushdown, Preacher Curl; Main Day B Seated Row, Seated Leg Curl, Lateral Raise (unten), danach oben Chest Press, Seated Dip, Preacher Curl; Lateral Raise (Cable) steht oben und darf ausserhalb der Reihenfolge gemacht werden
 - Geräte und Gewichtsstufen stehen in docs/UEBERGABE.md (Abschnitt Geräte)
