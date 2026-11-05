@@ -58,3 +58,11 @@ describe('dumbbell pairs (decision 5 November 2026)', () => {
     expect(pairStep(null, 'dumbbell', false)).toBeNull()
   })
 })
+
+describe('warm-up of plate-loaded machines (decision 5 November 2026)', () => {
+  it('uses the back-off weight for 4–5 reps on plate-loaded machines, else the warm-up share', async () => {
+    const { warmUpPlan } = await import('./workout')
+    expect(warmUpPlan('plate_loaded', { warmUp: 50, backOff: 85 })).toEqual({ share: 0.85, reps: 4, hint: '4–5' })
+    expect(warmUpPlan('pin_loaded', { warmUp: 50, backOff: 85 })).toEqual({ share: 0.5, reps: 6, hint: '6–7' })
+  })
+})

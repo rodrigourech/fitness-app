@@ -352,7 +352,7 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
             <Row label="Videos" value={String(links.length)} onClick={() => setPage('videos')} />
           </List>
         </Group>
-        <p className="mt-3 px-1 text-xs text-zinc-500 dark:text-zinc-400">Warm-up {shares.warmUp} % and back-off {shares.backOff} % of the top set: More › Training settings.</p>
+        <p className="mt-3 px-1 text-xs text-zinc-500 dark:text-zinc-400">{main.equipment === 'plate_loaded' ? `Warm-up at the back-off weight (${shares.backOff} % of the top set, 4–5 reps): plate-loaded machine.` : `Warm-up ${shares.warmUp} % and back-off ${shares.backOff} % of the top set: More › Training settings.`}</p>
       </>
     )
   }

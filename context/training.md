@@ -17,6 +17,8 @@ Stand 5. November 2026.
 - Stabile Progression: länger beim gleichen Gewicht bleiben, selten zurück, statt schneller Steigerungen
 - Wiederholungen bleiben von Satz zu Satz fast gleich (wenig Abfall)
 - Keine zusätzlichen Aufwärmsätze wegen Zeitaufwand; ein Warm-up-Satz reicht
+- Häufige Scheibenwechsel sind ihm lästig (Nov 2026): an Scheiben-Maschinen Warm-up mit dem Back-off-Gewicht, Seated Dip ohne Warm-up
+- Kurzhanteln trägt er als Summe beider Hanteln ein; Stufe 2 kg pro Hantel, also 24 → 28 (Nov 2026)
 - Mag Lateral Raise am Kabel nicht (Ausführung fühlt sich unsauber an); Lat Pulldown und Seated Row sind keine Lieblingsübungen
 - Mag Overhead Triceps Extension nicht; V-Grip beim Triceps Pushdown fühlt sich komisch an, Straight Bar besser (Okt 2026). Entscheid Nov 2026: Seated Dip (Technogym) in Main Day B, Pushdown mit Straight Bar in Main Day A
 - Triceps Pushdown: Alternative zu Straight Bar ist V-Grip; Progression pro Griff getrennt (Nov 2026)

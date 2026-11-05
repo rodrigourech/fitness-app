@@ -338,6 +338,17 @@ export function midReps(minimum: number, maximum: number): number {
 export const WARM_UP_REPS = 6
 export const WARM_UP_HINT = '6–7'
 
+/**
+ * Warm-up of plate-loaded machines (decision 5 November 2026): at the back-off weight for 4–5 easy reps, so after the
+ * warm-up only one plate goes on for the top set and comes off again for the back-off sets. Pin-loaded machines,
+ * dumbbells and the rest keep the warm-up share (50 %) with 6–7 reps.
+ */
+export function warmUpPlan(equipment: string | null, shares: { warmUp: number; backOff: number }): { share: number; reps: number; hint: string } {
+  return equipment === 'plate_loaded'
+    ? { share: shares.backOff / 100, reps: 4, hint: '4–5' }
+    : { share: shares.warmUp / 100, reps: WARM_UP_REPS, hint: WARM_UP_HINT }
+}
+
 /** Warm-up set W: weight and reps left empty; the app shows the recommended weight and 6–7 reps in grey. */
 function warmUpSet(we: WorkoutExercise, userId: string, ts: string): WorkoutSet {
   return {
@@ -534,6 +545,7 @@ export function effective(ex: Exercise, byId: Map<string, Exercise>) {
     focusMuscles: ex.focus_muscles ?? parent?.focus_muscles ?? [],
     focusCue: ex.focus_cue ?? parent?.focus_cue ?? null,
     restS: ex.default_rest_s ?? parent?.default_rest_s ?? null,
+    equipment: ex.equipment ?? parent?.equipment ?? null,
     weightStep: pairStep(ex.weight_step ?? parent?.weight_step ?? null, ex.equipment ?? parent?.equipment ?? null, ex.is_unilateral ?? parent?.is_unilateral ?? false),
     ...exerciseTrainingSettings(ex, byId),
   }

@@ -44,8 +44,7 @@ import {
   toggleSetDone,
   updateSet,
   updateWorkout,
-  WARM_UP_HINT,
-  WARM_UP_REPS,
+  warmUpPlan,
 } from '../lib/workout'
 
 interface Props {
@@ -301,7 +300,7 @@ function ExerciseCard({ block, byId, shares, onOpen }: { block: ExerciseBlock; b
   const { we, exercise, name, variant, topSet, weightStep, sets, previous, links, best, advice, targets, switchTo, originalName } = block
   const eff = exercise
     ? effective(exercise, byId)
-    : { trackingType: 'weight_reps', isUnilateral: false, floor: null, seat: null, footPosition: null, setupNote: null, focusMuscles: [] as string[], focusCue: null, restS: null }
+    : { trackingType: 'weight_reps', isUnilateral: false, equipment: null as string | null, floor: null, seat: null, footPosition: null, setupNote: null, focusMuscles: [] as string[], focusCue: null, restS: null }
 
   const [progressOpen, setProgressOpen] = useState(false)
 
@@ -333,7 +332,8 @@ function ExerciseCard({ block, byId, shares, onOpen }: { block: ExerciseBlock; b
   const decidingNow = new Set(tt === 'weight_reps' ? decidingIndexes(working, topSet) : [])
   const marks = tt === 'weight_reps' && advice === 'increase' ? increaseMarks(current, before, working.map((s) => s.completed_at !== null), topSet) : []
   const recs = tt === 'weight_reps' ? recommendations(current, topSet, shares.backOff / 100, weightStep, marks.some(Boolean)) : []
-  const warmKg = tt === 'weight_reps' ? warmUpWeight(current, shares.warmUp / 100, weightStep) : null
+  const warmPlan = warmUpPlan(eff.equipment, shares)
+  const warmKg = tt === 'weight_reps' ? warmUpWeight(current, warmPlan.share, weightStep) : null
   // The column only appears when it has something to say (warm-up set or top set)
   const showRec = tt === 'weight_reps' && (sets.some((s) => s.set_type === 'warmup') || recs.some((r) => r !== null))
   const cols =
@@ -444,6 +444,7 @@ function ExerciseCard({ block, byId, shares, onOpen }: { block: ExerciseBlock; b
               unilateral={eff.isUnilateral}
               restSeconds={we.rest_s ?? eff.restS}
               minimum={tt === 'weight_reps' && !warm ? targets.minimum : null}
+              warmUp={warmPlan}
               good={!warm && decidingNow.has(workingNo - 1) && s.completed_at !== null && (repsOf(s, eff.isUnilateral) ?? 0) >= targets.target}
               records={recordsOf(s, best)}
             />
@@ -552,9 +553,11 @@ interface SetRowProps {
   records: string[]
   /** Deciding set that reached Max reps: reps field light green */
   good?: boolean
+  /** Warm-up reps: hint and the value saved when an empty warm-up set is checked */
+  warmUp: { reps: number; hint: string }
 }
 
-function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, restSeconds, minimum, records, good }: SetRowProps) {
+function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, restSeconds, minimum, records, good, warmUp }: SetRowProps) {
   const done = set.completed_at !== null
 
   function numberCommit(field: 'weight' | 'reps' | 'reps_left' | 'reps_right' | 'distance_km', integer: boolean) {
@@ -588,8 +591,8 @@ function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, res
     // Empty warm-up reps take the lower value of the hint 6–7
     if (set.completed_at === null && set.set_type === 'warmup' && trackingType === 'weight_reps') {
       const patch: Partial<WorkoutSet> = unilateral
-        ? { ...(set.reps_left === null ? { reps_left: WARM_UP_REPS } : {}), ...(set.reps_right === null ? { reps_right: WARM_UP_REPS } : {}) }
-        : set.reps === null ? { reps: WARM_UP_REPS } : {}
+        ? { ...(set.reps_left === null ? { reps_left: warmUp.reps } : {}), ...(set.reps_right === null ? { reps_right: warmUp.reps } : {}) }
+        : set.reps === null ? { reps: warmUp.reps } : {}
       if (Object.keys(patch).length) await updateSet(set, patch)
     }
     const nowDone = await toggleSetDone(set)
@@ -638,11 +641,11 @@ function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, res
           </span>
           {unilateral ? (
             <>
-              <Field label="Reps left" inputMode="numeric" placeholder={warm ? WARM_UP_HINT : undefined} value={formatNumber(set.reps_left)} onCommit={numberCommit('reps_left', true)} warn={belowMinimum(set.reps_left, minimum)} good={good} />
-              <Field label="Reps right" inputMode="numeric" placeholder={warm ? WARM_UP_HINT : undefined} value={formatNumber(set.reps_right)} onCommit={numberCommit('reps_right', true)} warn={belowMinimum(set.reps_right, minimum)} good={good} />
+              <Field label="Reps left" inputMode="numeric" placeholder={warm ? warmUp.hint : undefined} value={formatNumber(set.reps_left)} onCommit={numberCommit('reps_left', true)} warn={belowMinimum(set.reps_left, minimum)} good={good} />
+              <Field label="Reps right" inputMode="numeric" placeholder={warm ? warmUp.hint : undefined} value={formatNumber(set.reps_right)} onCommit={numberCommit('reps_right', true)} warn={belowMinimum(set.reps_right, minimum)} good={good} />
             </>
           ) : (
-            <Field label="Reps" inputMode="numeric" placeholder={warm ? WARM_UP_HINT : undefined} value={formatNumber(set.reps)} onCommit={numberCommit('reps', true)} warn={belowMinimum(set.reps, minimum)} good={good} />
+            <Field label="Reps" inputMode="numeric" placeholder={warm ? warmUp.hint : undefined} value={formatNumber(set.reps)} onCommit={numberCommit('reps', true)} warn={belowMinimum(set.reps, minimum)} good={good} />
           )}
         </>
       )}
