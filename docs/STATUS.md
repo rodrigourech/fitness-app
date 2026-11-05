@@ -14,6 +14,7 @@ Letzte Aktualisierung 5. November 2026
 
 ## Stand
 
+- 5. November 18:40: Automatische Updates (Vordergrund, alle 30 min) und «Check for updates» mit Version in More; Safari-Cache löschen und neu installieren ist nicht mehr nötig. Wirkt ab der nächsten Installation dieser Version, also nach dem nächsten Neustart der App
 - 5. November 18:15: Warm-up Scheiben-Maschinen mit Back-off-Gewicht (4–5 Wdh.), Seated Dip ohne Warm-up (0042 auf production), Info-Knopf in Stats › Progression. 194 Tests, Build
 - 5. November 18:00: Stats › Progression über 4 Wochen, Zusammenfassung nach dem Training neu gegliedert (kein Überlauf, «Record», Text statt Chips), Kurzhanteln paarweise (Incline Chest Press 24 → 28). 193 Tests, Build
 - 5. November 17:30: Fortschritt im Training (Zielzeile, Reps-Startwert letztes Mal + 1, grün bei erreichtem Ziel), Progression-Blatt (Training und Stats), Zusammenfassung «N reps to ↑ X», Plateau grau, History nachträglich bearbeiten, Sortieren per langem Drücken und Ziehen (Workouts und Editor). Typprüfung, Lint, 191 Tests, Build; bei 390 px hell und dunkel geprüft; auf echtem iPhone noch nicht getestet

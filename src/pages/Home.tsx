@@ -28,6 +28,7 @@ import TrashPage from './TrashPage'
 import InfoPage from './InfoPage'
 import TrainingSettingsPage from './TrainingSettingsPage'
 import { isBetaSandbox } from '../lib/environment'
+import { BUILD_TIME, checkForUpdate } from '../lib/update'
 import { useWide } from '../lib/useWide'
 
 interface Props {
@@ -255,6 +256,7 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
           <button onClick={() => open('account')}><AppIcon name="body" />Change password</button>
           <button onClick={() => void handleSignOut()}><AppIcon name="arrow" />Sign out · {user.username}</button>
         </div>
+        <UpdateRow />
       </Sheet>}
       {photos && (isBetaSandbox ? <Sheet title="Photo passphrase" onClose={() => setPhotos(false)}><p className="text-sm">Photo changes are available in the live app.</p><button onClick={() => { setPhotos(false); setTab('body') }} className="home-primary mt-4">Open Body</button></Sheet> : photoAccess === undefined ? <Sheet title="Photo passphrase" onClose={() => setPhotos(false)}>Checking photo access …</Sheet> : <PassphraseSheet mode={photoAccess === 'ready' ? 'change' : photoAccess} userId={user.id} onClose={() => setPhotos(false)} />)}
       {sheet && <ExerciseSheet exerciseId={sheet} onClose={() => setSheet(null)} />}
@@ -393,5 +395,29 @@ function SectionToggle({ label, count, open, onToggle }: { label: string; count:
         <path d="M6 9l6 6 6-6" />
       </svg>
     </button>
+  )
+}
+
+const versionFormat = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+
+/** Version and a manual update check (decision 5 November 2026: no more clearing Safari data). */
+function UpdateRow() {
+  const [state, setState] = useState<'idle' | 'checking' | 'updating' | 'current' | 'offline' | 'unsupported'>('idle')
+  const text = { idle: 'Check for updates', checking: 'Checking …', updating: 'Updating, the app reloads …', current: 'Up to date', offline: 'Offline', unsupported: 'Reload' }[state]
+  return (
+    <div className="mt-4 flex items-center justify-between gap-3 px-1 text-xs text-zinc-500 dark:text-zinc-400">
+      <span>Version {versionFormat.format(new Date(BUILD_TIME))}</span>
+      <button
+        disabled={state === 'checking' || state === 'updating'}
+        onClick={() => {
+          if (state === 'unsupported') return window.location.reload()
+          setState('checking')
+          void checkForUpdate().then(setState).catch(() => setState('unsupported'))
+        }}
+        className="rounded-md bg-zinc-100 px-2.5 py-1 font-medium text-zinc-700 disabled:opacity-60 dark:bg-zinc-800 dark:text-zinc-200"
+      >
+        {text}
+      </button>
+    </div>
   )
 }

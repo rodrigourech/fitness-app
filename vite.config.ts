@@ -10,6 +10,8 @@ const beta = process.env.APP_VARIANT === 'beta'
 
 export default defineConfig({
   base,
+  // Build time, shown in More next to «Check for updates»
+  define: { __BUILD_TIME__: JSON.stringify(new Date().toISOString()) },
   plugins: [
     react(),
     tailwindcss(),
