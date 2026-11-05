@@ -2,7 +2,7 @@
 
 Zentrale Übergabe für alle KI-Agenten und Sitzungen. Zuerst CLAUDE.md lesen (Regeln, Stack, Konventionen), dann docs/UEBERGABE.md (Einstieg für neue Chats, offene Punkte fürs nächste Release), dann diese Datei. Am Ende jeder Sitzung hier nachführen: Stand, offene Punkte, neue Hinweise. Entscheidungen gehören zusätzlich nach docs/entscheidungen.md.
 
-Letzte Aktualisierung 3. November 2026
+Letzte Aktualisierung 5. November 2026
 
 ## Orte
 
@@ -14,6 +14,7 @@ Letzte Aktualisierung 3. November 2026
 
 ## Stand
 
+- 5. November: Stats › Progression blendet Übungen ohne Arbeitssatz aus (zum Beispiel die neuen Bonus-Day-Übungen bis zum ersten Training). Typprüfung, Lint, Tests und Build erfolgreich
 - 3. November 14:30: Bonus Day neu (Migration 0039) auf production ausgeführt und geprüft; Rodrigo prüft den Plan später. Gerätestufen der vier neuen Übungen offen
 - 3. November (Nachmittag): «Increase weight» überall grün (Home, Training, Top-Set-Empfehlung, Training guide). Typprüfung, Lint, 167 Tests und Build erfolgreich; Home und Training bei 390 px geprüft
 - 3. November: Laptop-Layout ab 1024 px live (Seitenleiste, Home zweispaltig, Food Tag und Woche nebeneinander, Raster für Workouts, History, Exercises, Body zweispaltig; iPhone unverändert). Code src/index.css, src/lib/useWide.ts, Home.tsx, HomeTab.tsx, FoodTab.tsx, BodyTab.tsx, HistoryTab.tsx, ExercisesTab.tsx. Typprüfung, Lint, 167 Tests und Build erfolgreich; bei 1280 px hell und dunkel sowie 390 px geprüft. Nebenbei behoben: Connector-Test war zeitabhängig (Vorschau-Token 24 h) und schlug ab 2. November fehl

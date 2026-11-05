@@ -93,12 +93,14 @@ export function buildPlanProgress(entries: Pick<TemplateExercise, 'exercise_id'>
     const main = ex.parent_id ? byId.get(ex.parent_id) ?? ex : ex
     if ((ex.tracking_type ?? main.tracking_type) !== 'weight_reps' || seen.has(main.id)) continue
     seen.add(main.id)
+    const points = topSetSeries(sets, main.id)
+    // Only exercises with at least one finished work set (decision 5 November 2026)
+    if (points.length === 0) continue
     const { title, detail } = splitName(main.name)
     const altId = ex.alternative_id ?? main.alternative_id ?? null
     const alt = altId ? byId.get(altId) : undefined
     const altName = alt ? (splitName(alt.name).title === title ? splitName(alt.name).detail ?? alt.name : splitName(alt.name).title) : null
     const subtitle = [ex.parent_id ? ex.name : detail, altName ? `alt. ${altName}` : null].filter(Boolean).join(' · ')
-    const points = topSetSeries(sets, main.id)
     const { status, since, changePct } = progressStatus(points, now)
     rows.push({
       mainId: main.id,

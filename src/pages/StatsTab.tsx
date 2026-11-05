@@ -310,7 +310,7 @@ function ProgressionCard({ now, className }: { now: Date; className?: string }) 
   if (rows === undefined) return null
   return (
     <Card title="Progression" aside={<><span className="hidden sm:inline">Top set per workout · current plan · </span>since start</>} className={className}>
-      {rows.length === 0 ? <Empty>No exercises in the active workouts.</Empty> : (
+      {rows.length === 0 ? <Empty>No exercise of the active workouts trained yet.</Empty> : (
         <table className="w-full text-[13px] tabular-nums">
           <thead>
             <tr className="border-b border-zinc-100 text-left text-[11px] text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">

@@ -46,7 +46,7 @@ describe('planProgress', () => {
     expect(progressStatus([pt('2026-10-01', 40), pt('2026-10-08', 36), pt('2026-10-15', 35)], NOW).status).toBe('lower')
   })
 
-  it('one row per main exercise with variants, alternative and first and latest top set', () => {
+  it('one row per trained main exercise with variants, alternative and first and latest top set', () => {
     const exercises = [
       exercise('tri', 'Triceps Pushdown (Cable)'),
       exercise('tri-v', 'V-Grip', { parent_id: 'tri', tracking_type: null }),
@@ -54,16 +54,26 @@ describe('planProgress', () => {
       exercise('lrm', 'Lateral Raise (Machine)', { alternative_id: 'lrc' }),
       exercise('lrc', 'Lateral Raise (Cable)', { alternative_id: 'lrm' }),
       exercise('bike', 'Bicycle', { tracking_type: 'duration' }),
+      exercise('fly', 'Butterfly (Machine)'),
     ]
     const sets = [
+      info('lrm', 'lrm', '2026-10-30', 25, 12),
+      info('fly', 'fly', '2026-11-04', 20, 8, 'warmup'),
       info('tri', 'tri-s', '2026-09-28', 27, 10), info('tri', 'tri-s', '2026-09-28', 27, 10),
       info('tri', 'tri-v', '2026-10-29', 41, 10), info('tri', 'tri-v', '2026-10-29', 36, 10), info('tri', 'tri-v', '2026-10-29', 20, 6, 'warmup'),
     ]
-    const rows = buildPlanProgress([{ exercise_id: 'bike' }, { exercise_id: 'tri-v' }, { exercise_id: 'lrm' }, { exercise_id: 'tri-s' }], exercises, sets, NOW)
+    // Butterfly has only a warm-up set and is left out until its first work set
+    const rows = buildPlanProgress([{ exercise_id: 'bike' }, { exercise_id: 'tri-v' }, { exercise_id: 'lrm' }, { exercise_id: 'tri-s' }, { exercise_id: 'fly' }], exercises, sets, NOW)
     expect(rows.map((r) => [r.title, r.subtitle])).toEqual([['Triceps Pushdown', 'V-Grip'], ['Lateral Raise', 'Machine · alt. Cable']])
     expect(rows[0]!.first).toMatchObject({ weight: 27, reps: 10 })
     expect(rows[0]!.latest).toMatchObject({ weight: 41, reps: 10 })
     expect(rows[0]!.changePct).toBe(52)
-    expect(rows[1]).toMatchObject({ first: null, latest: null, status: 'new', changePct: null })
+    expect(rows[1]).toMatchObject({ status: 'new', changePct: null })
+    expect(rows[1]!.latest).toMatchObject({ weight: 25, reps: 12 })
+  })
+
+  it('leaves out exercises without any work set', () => {
+    const exercises = [exercise('fly', 'Butterfly (Machine)'), exercise('curl', 'Cable Curl')]
+    expect(buildPlanProgress([{ exercise_id: 'fly' }, { exercise_id: 'curl' }], exercises, [], NOW)).toEqual([])
   })
 })
