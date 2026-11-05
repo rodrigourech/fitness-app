@@ -7,6 +7,8 @@ export interface UndoOffer {
   message: string
   /** Id of the trash item (body weight entry, photo or workout) */
   id: string
+  /** Own undo step instead of restoring a trash item (removed set in a running workout) */
+  action?: () => Promise<void>
 }
 
 const SHOW_MS = 6000
@@ -31,9 +33,9 @@ export function subscribeUndo(listener: () => void): () => void {
 }
 
 /** Shows the notice for a few seconds; a newer offer replaces an older one. */
-export function offerUndo(message: string, id: string): void {
+export function offerUndo(message: string, id: string, action?: () => Promise<void>): void {
   clearTimeout(timer)
-  set({ key: ++seq, message, id })
+  set({ key: ++seq, message, id, action })
   timer = setTimeout(() => set(null), SHOW_MS)
 }
 
@@ -47,6 +49,7 @@ export async function undo(): Promise<void> {
   const offer = current
   dismissUndo()
   if (!offer) return
+  if (offer.action) return offer.action()
   const item = (await trashItems()).find((i) => i.id === offer.id)
   if (item) await restoreItem(item)
 }

@@ -421,6 +421,28 @@ export async function removeLastSet(we: WorkoutExercise): Promise<void> {
   }
 }
 
+/**
+ * Removes one set of a running workout (swipe right on the set, decision 5 November 2026). Without a work set left the
+ * exercise counts as skipped, as with «Remove set» before. Returns the step that undoes it.
+ */
+export async function removeSet(set: WorkoutSet): Promise<() => Promise<void>> {
+  const ts = now()
+  await saveRows('workout_set', [{ ...set, deleted_at: ts }])
+  const left = (await db.workout_set.where('workout_exercise_id').equals(set.workout_exercise_id).toArray())
+    .filter((s) => s.deleted_at === null && s.set_type === 'working')
+  const we = await db.workout_exercise.get(set.workout_exercise_id)
+  const skip = set.set_type === 'working' && left.length === 0 && we && !we.skipped_at
+  if (skip) await saveRows('workout_exercise', [{ ...we, skipped_at: ts }])
+  return async () => {
+    const current = (await db.workout_set.get(set.id)) ?? set
+    await saveRows('workout_set', [{ ...current, deleted_at: null }])
+    if (skip) {
+      const w = (await db.workout_exercise.get(set.workout_exercise_id)) ?? we
+      await saveRows('workout_exercise', [{ ...w, skipped_at: null }])
+    }
+  }
+}
+
 export async function updateWorkout(w: Workout, patch: Partial<Workout>): Promise<void> {
   const current = (await db.workout.get(w.id)) ?? w
   await saveRows('workout', [{ ...current, ...patch }])

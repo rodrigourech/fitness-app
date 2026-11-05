@@ -13,6 +13,7 @@ import {
   parseNumber,
   previousSets,
   removeLastSet,
+  removeSet,
   skipExercise,
   startWorkout,
   toggleSetDone,
@@ -126,6 +127,21 @@ describe('finish and cancel', () => {
     after = (await setsOf(w.id))['Leg Press']!.sets.filter((x) => x.deleted_at === null)
     // Position 1 is the warm-up set W
     expect(after.map((x) => x.position)).toEqual([2, 3, 5])
+  })
+
+  it('swipe removes one set; removing the last work set skips the exercise; undo restores both', async () => {
+    const w = await startWorkout(day1, USER)
+    const leg = (await setsOf(w.id))['Leg Press']!
+    const middle = leg.sets[1]!
+    const restoreMiddle = await removeSet(middle)
+    expect((await db.workout_set.get(middle.id))!.deleted_at).not.toBeNull()
+    await restoreMiddle()
+    expect((await db.workout_set.get(middle.id))!.deleted_at).toBeNull()
+    const undos = []
+    for (const s of leg.sets) undos.push(await removeSet((await db.workout_set.get(s.id))!))
+    expect((await db.workout_exercise.get(leg.we.id))!.skipped_at).not.toBeNull()
+    await undos.at(-1)!()
+    expect((await db.workout_exercise.get(leg.we.id))!.skipped_at).toBeNull()
   })
 
   it('discards an unchecked warm-up set at finish and keeps a checked one', async () => {

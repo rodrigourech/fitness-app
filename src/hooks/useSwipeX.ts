@@ -35,14 +35,18 @@ export function useSwipeX(onSwipe: (direction: 'left' | 'right') => void, allowe
         if (!horizontal.current) {
           if (Math.abs(my) > 12 && Math.abs(my) > Math.abs(mx)) return reset()
           if (Math.abs(mx) < 12 || Math.abs(mx) < 1.5 * Math.abs(my)) return
+          // A direction this element does not use is left to the elements around it (set row inside the card)
+          if (!allowed[mx < 0 ? 'left' : 'right']) return reset()
           horizontal.current = true
           e.currentTarget.setPointerCapture(e.pointerId)
         }
+        e.stopPropagation()
         setDx(clamp(mx))
       },
       onPointerUp: (e: PointerEvent<HTMLElement>) => {
         const s = start.current
         if (s && horizontal.current) {
+          e.stopPropagation()
           swallow.current = true
           const dir = swipeDirection(e.clientX - s.x, e.clientY - s.y)
           if (dir && allowed[dir]) onSwipe(dir)

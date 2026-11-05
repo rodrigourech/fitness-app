@@ -13,6 +13,8 @@ import InfoPage from './InfoPage'
 import { useNow } from '../hooks/useNow'
 import { useSwipeDown } from '../hooks/useSwipeDown'
 import { useSwipeX } from '../hooks/useSwipeX'
+import { offerUndo } from '../lib/undo'
+import UndoToast from '../components/UndoToast'
 import { cardOpen, doneSummary, exerciseDone, focusId, todoSummary } from '../lib/focus'
 import { startRest, stopRest } from '../lib/rest'
 import { db, displayName, type Exercise, type ExerciseLink, type Workout, type WorkoutExercise, type WorkoutSet } from '../lib/db'
@@ -41,7 +43,7 @@ import {
   parseNumber,
   recentTrainingSessions,
   alternativeOf,
-  removeLastSet,
+  removeSet,
   switchExercise,
   skipExercise,
   unskipExercise,
@@ -188,6 +190,7 @@ export default function WorkoutPage({ workout, onReauth, onMinimize, onFinished 
   return (
     <main className="mx-auto max-w-xl px-4 pb-32">
       <RestTimer />
+      <UndoToast />
       {/* Drag handle: swipe down to minimise */}
       <div {...swipe} className="-mx-4 flex touch-none justify-center pt-[max(env(safe-area-inset-top),0.5rem)] pb-1" aria-hidden="true">
         <span className="h-1.5 w-10 rounded-full bg-zinc-300 dark:bg-zinc-700" />
@@ -551,20 +554,11 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
         })}
       </div>
 
-      <div className="mt-2 flex gap-2">
-        <button onClick={() => void addSet(we)} className="flex-1 rounded-lg bg-zinc-100 py-2 text-sm font-medium dark:bg-zinc-800">
-          + Add set
-        </button>
-        {/* No skip button: an exercise without a checked set counts as skipped when the workout is finished */}
-        {working.length > 1 && (
-          <button
-            onClick={() => void removeLastSet(we)}
-            className="rounded-lg px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400"
-          >
-            Remove set
-          </button>
-        )}
-      </div>
+      {/* Sets are planned with Claude, so adding one is a small link; a set is removed by swiping it right
+          (decision 5 November 2026, variant A) */}
+      <button onClick={() => void addSet(we)} className="mt-1.5 rounded-md px-1 py-1 text-sm text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100">
+        + Set
+      </button>
       {progressOpen && (
         <ProgressionSheet
           exerciseId={we.exercise_id}
@@ -759,12 +753,29 @@ function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, res
     if (nowDone && restSeconds) await startRest(restSeconds)
   }
 
+  // Swipe right removes the set, with «Undo» (decision 5 November 2026)
+  const swipe = useSwipeX(
+    () => {
+      void removeSet(set).then((restore) => offerUndo('Set removed', set.id, restore))
+    },
+    { left: false, right: true },
+  )
+
   const warm = set.set_type === 'warmup'
   const top = rec?.kind === 'top'
   const rowTone = done ? 'bg-emerald-50 dark:bg-emerald-950/40' : warm ? 'bg-sky-50 text-sky-700 dark:bg-sky-950 dark:text-sky-300' : top ? 'bg-orange-50 dark:bg-orange-500/10' : ''
 
   return (
-    <>
+    <div className="relative col-span-full grid touch-pan-y grid-cols-subgrid select-none" {...swipe.handlers}>
+      {swipe.dx > 0 && (
+        <div aria-hidden="true" className="absolute inset-0 flex items-center rounded-md bg-red-500 px-3 text-sm font-semibold text-white">
+          Remove
+        </div>
+      )}
+      <div
+        className="relative col-span-full grid grid-cols-subgrid items-center bg-[var(--card)]"
+        style={swipe.dx ? { transform: `translateX(${swipe.dx}px)` } : { transition: 'transform 150ms ease-out' }}
+      >
       <span
         title={records.length ? `Personal record: ${records.join(', ')}` : undefined}
         className={`flex h-10 flex-col items-center justify-center rounded-md text-sm leading-none font-medium text-zinc-700 dark:text-zinc-200 ${rowTone}`}
@@ -819,7 +830,8 @@ function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, res
       >
         ✓
       </button>
-    </>
+      </div>
+    </div>
   )
 }
 

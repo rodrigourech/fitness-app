@@ -14,6 +14,7 @@ Letzte Aktualisierung 5. November 2026
 
 ## Stand
 
+- 5. November 23:40: Sätze dezenter (kleiner Link «+ Set», Satz nach rechts wischen entfernt ihn, mit Undo). Typprüfung, Lint, 203 Tests, Build; Wischen in beide Richtungen mit Maus geprüft, auf dem iPhone noch nicht
 - 5. November 23:30: Fokus-Ansicht im Training (nächste Übung offen, Erledigte grün zugeklappt) und Überspringen per Wischen live. Migration 0044 (Butterfly in A, Cable Curl in B, Bonus Day archiviert) um 23:05 auf production ausgeführt und geprüft. Gewichtsstufen Butterfly und Cable Curl offen. Typprüfung, Lint, 202 Tests, Build; bei 390 px geprüft, Wischen mit Maus simuliert, auf dem iPhone noch nicht getestet
 - 5. November 22:30: Update-Hinweis «New version available · Reload» statt automatischem Neuladen (registerType prompt); Leiste über der Navigation bzw. im Kopf des laufenden Trainings; More mit Version, Commit und Vergleich mit build-info.json. Einmalig App ganz schliessen und wieder öffnen, danach erscheint bei jeder neuen Version die Leiste. Typprüfung, Lint, 198 Tests, Build; bei 390 px hell und dunkel geprüft
 - 5. November 19:30: Übungskarte Variante A (Progress-Knopf grau/grün/indigo, «i» mit Einstellung, Ausführung und Videos, Einstellung als eine Zeile, Legende weg, Zielzeile und Boxen weg); Übungsblatt mit Feldern Setup und Execution. Migration 0043 (Notizen vereinheitlicht) am 5. November 22:15 auf production ausgeführt und geprüft (UPDATE 11). Typprüfung, Lint, 194 Tests, Build; bei 390 px geprüft
