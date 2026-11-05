@@ -307,13 +307,33 @@ function changeText(r: PlanProgressRow): string {
   return r.changePct === 0 ? '±0 %' : `${r.changePct > 0 ? '+' : '−'}${Math.abs(r.changePct)} %`
 }
 
+/** Compact rules behind the table (decision 5 November 2026: info on tap instead of a guide page). */
+function ProgressionInfo() {
+  return (
+    <Popover ariaLabel="How progression works" align="right" label={<span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-current text-[10px]">i</span>}>
+      {() => (
+        <span className="block w-64 text-left text-xs leading-snug text-zinc-700 dark:text-zinc-200">
+          <span className="mb-1 block font-semibold">Next weight</span>
+          <span className="block">Top set reaches Max reps → next workout one step heavier. Back-off sets don’t count.</span>
+          <span className="block">No top set: every set must reach Max reps.</span>
+          <span className="block">Twice below Min reps at the same weight → one step lighter.</span>
+          <span className="mt-2 mb-1 block font-semibold">Table</span>
+          <span className="block">Change: estimated max (weight and reps) against 4 weeks ago.</span>
+          <span className="block">Strong ≥ +10 % · Good up · Flat within ±2.5 % · Lower down</span>
+          <span className="block">Plateau: no new best in the last 4 workouts · New: fewer than 3 workouts</span>
+        </span>
+      )}
+    </Popover>
+  )
+}
+
 function ProgressionCard({ now, className }: { now: Date; className?: string }) {
   const rows = useLiveQuery(() => loadPlanProgress(now), [now])
   // A row opens the progression sheet of the exercise with all variants (decision 5 November 2026)
   const [open, setOpen] = useState<string | null>(null)
   if (rows === undefined) return null
   return (
-    <Card title="Progression" aside={<><span className="hidden sm:inline">Top set per workout · current plan · </span>last 4 weeks</>} className={className}>
+    <Card title="Progression" aside={<span className="flex items-center gap-1.5"><span className="hidden sm:inline">Top set per workout · current plan · </span>last 4 weeks<ProgressionInfo /></span>} className={className}>
       {rows.length === 0 ? <Empty>No exercise of the active workouts trained yet.</Empty> : (
         <table className="w-full text-[13px] tabular-nums">
           <thead>
