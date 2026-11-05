@@ -4,12 +4,14 @@ Stand 5. November 2026.
 
 ## **Plan**
 
-- Seit 9. Okt 2026: Main Day A (Montag) und Main Day B (Donnerstag oder Freitag), Ganzkörper an Maschinen und Kurzhanteln, optional Bonus Day
+- Seit 9. Okt 2026: Main Day A (Montag) und Main Day B (Donnerstag oder Freitag), Ganzkörper an Maschinen und Kurzhanteln
 - Dazu 7 km Laufen an einem freien Tag, Pace etwa 5:00 bis 5:20 min/km
 - 1 bis 2 Wiederholungen in Reserve, kein Muskelversagen
 - Fokus Oberkörper, Beinvolumen bewusst tief (etwa 3 Sätze pro Woche und Muskel)
-- Seit 1. Nov 2026 Lateral Raise (Machine) statt Cable in Main Day A, Main Day B und Bonus Day; Cable bleibt als Alternative
-- Bonus Day ab 3. Nov 2026 als Lückenfüller (Butterfly, Straight-Arm Pulldown, Face Pull, Lateral Raise, Cable Curl im Wechsel mit Pushdown, Lying Leg Curl optional), höchstens 60 Minuten, Tag unregelmässig; von Rodrigo zum Prüfen vorgemerkt
+- Seit 1. Nov 2026 Lateral Raise (Machine) statt Cable in Main Day A und Main Day B; Cable bleibt als Alternative
+- Mehr Volumen für Brust und Arme (Nov 2026): Butterfly in Main Day A und Cable Curl in Main Day B je 3 × 8–12, 90 s; Brust und Bizeps damit 9 Sätze pro Woche. Bei Zeitmangel im Training überspringen statt eigener Workouts
+- Reihenfolge nach Stockwerk mit genau einem Wechsel (Nov 2026): A Lat Pulldown, Leg Press, Lateral Raise, Butterfly (unten), dann Incline Chest Press, Chest-Supported Row, Triceps Pushdown Straight Bar, Preacher Curl (oben); B Seated Row, Seated Leg Curl, Lateral Raise (unten), dann Chest Press, Seated Dip, Preacher Curl, Cable Curl (oben). Lateral Raise (Machine) und Butterfly stehen unten
+- Bonus Day vorerst gestrichen und archiviert (Nov 2026), wiederherstellbar
 
 ## **Vorlieben**
 
