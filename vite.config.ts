@@ -10,13 +10,14 @@ const beta = process.env.APP_VARIANT === 'beta'
 
 export default defineConfig({
   base,
-  // Build time, shown in More next to «Check for updates»
-  define: { __BUILD_TIME__: JSON.stringify(new Date().toISOString()) },
+  // Build time and commit, shown in More next to «Check for updates» and compared with build-info.json
+  define: { __BUILD_TIME__: JSON.stringify(new Date().toISOString()), __BUILD_COMMIT__: JSON.stringify(process.env.GITHUB_SHA ?? '') },
   plugins: [
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // prompt: a new version waits for «Reload» and never interrupts a workout (decision 5 November 2026)
+      registerType: 'prompt',
       includeAssets: ['icon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: beta ? 'Fitness App Beta' : 'Fitness App',

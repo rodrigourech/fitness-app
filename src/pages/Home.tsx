@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useMemo, useState } from 'react'
 import AppBar from '../components/AppBar'
+import UpdateBar from '../components/UpdateBar'
 import ExerciseSheet from '../components/ExerciseSheet'
 import SyncBadge from '../components/SyncBadge'
 import ThemeToggle from '../components/ThemeToggle'
@@ -28,7 +29,7 @@ import TrashPage from './TrashPage'
 import InfoPage from './InfoPage'
 import TrainingSettingsPage from './TrainingSettingsPage'
 import { isBetaSandbox } from '../lib/environment'
-import { BUILD_TIME, checkForUpdate } from '../lib/update'
+import { BUILD_COMMIT, BUILD_TIME, checkForUpdate, type CheckResult } from '../lib/update'
 import { useWide } from '../lib/useWide'
 
 interface Props {
@@ -133,6 +134,7 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
         <ThemeToggle />
       </AppBar>
 
+      <UpdateBar placement="nav" />
       <nav className="home-navigation" aria-label="Main navigation">
         <span className="home-nav-brand"><span aria-hidden="true" className="inline-block h-2.5 w-2.5 rounded-full bg-accent" />Fitness App</span>
         {[...TABS, ...DESKTOP_TABS].map((t) => (
@@ -400,21 +402,32 @@ function SectionToggle({ label, count, open, onToggle }: { label: string; count:
 
 const versionFormat = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 
-/** Version and a manual update check (decision 5 November 2026: no more clearing Safari data). */
+/** Version and a manual update check; a found version shows the bar «New version available» (decision 5 November 2026). */
 function UpdateRow() {
-  const [state, setState] = useState<'idle' | 'checking' | 'updating' | 'current' | 'offline' | 'unsupported'>('idle')
-  const text = { idle: 'Check for updates', checking: 'Checking …', updating: 'Updating, the app reloads …', current: 'Up to date', offline: 'Offline', unsupported: 'Reload' }[state]
+  const [state, setState] = useState<'idle' | 'checking' | CheckResult>('idle')
+  const text = {
+    idle: 'Check for updates',
+    checking: 'Checking …',
+    available: 'New version found',
+    pending: 'Server has a new version, try again shortly',
+    current: 'Up to date',
+    offline: 'Offline',
+    unsupported: 'Reload',
+  }[state]
   return (
     <div className="mt-4 flex items-center justify-between gap-3 px-1 text-xs text-zinc-500 dark:text-zinc-400">
-      <span>Version {versionFormat.format(new Date(BUILD_TIME))}</span>
+      <span className="tabular-nums">
+        Version {versionFormat.format(new Date(BUILD_TIME))}
+        {BUILD_COMMIT && ` · ${BUILD_COMMIT.slice(0, 7)}`}
+      </span>
       <button
-        disabled={state === 'checking' || state === 'updating'}
+        disabled={state === 'checking'}
         onClick={() => {
           if (state === 'unsupported') return window.location.reload()
           setState('checking')
           void checkForUpdate().then(setState).catch(() => setState('unsupported'))
         }}
-        className="rounded-md bg-zinc-100 px-2.5 py-1 font-medium text-zinc-700 disabled:opacity-60 dark:bg-zinc-800 dark:text-zinc-200"
+        className="rounded-md bg-zinc-100 px-2.5 py-1 text-right font-medium text-zinc-700 disabled:opacity-60 dark:bg-zinc-800 dark:text-zinc-200"
       >
         {text}
       </button>

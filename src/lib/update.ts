@@ -1,38 +1,45 @@
+import { useSyncExternalStore } from 'react'
 import { registerSW } from 'virtual:pwa-register'
+// App updates (decision 5 November 2026, revised the same evening, variant A): the service worker looks for a new
+// version on start, every time the app comes back to the foreground and every 30 minutes. A new version waits until
+// Rodrigo taps «Reload» in the bar «New version available»; the app never reloads by itself, so a running workout is
+// never interrupted. vite-plugin-pwa runs with registerType 'prompt' (no skipWaiting in the service worker).
 
-// App updates without clearing Safari data (decision 5 November 2026). An iPhone home-screen app resumes from the
-// background without a page load, so the service worker never looked for a new version. Now it looks on start, every
-// time the app comes back to the foreground and every 30 minutes. With registerType autoUpdate the new version takes
-// over and the page reloads by itself; every entry is already saved locally, so nothing is lost.
+import { createUpdateController, type CheckResult } from './updateController'
 
-const INTERVAL_MS = 30 * 60 * 1000
-let registration: ServiceWorkerRegistration | undefined
+/** Commit and build time of the running version, set at build time (vite.config.ts). */
+export const BUILD_TIME: string = __BUILD_TIME__
+export const BUILD_COMMIT: string | null = __BUILD_COMMIT__ || null
+
+async function fetchServerRevision(): Promise<string | null> {
+  const res = await fetch(`${import.meta.env.BASE_URL}build-info.json`, { cache: 'no-store' })
+  if (!res.ok) return null
+  const info = (await res.json()) as { revision?: string | null }
+  return info.revision ?? null
+}
+
+const controller = createUpdateController({
+  register: (options) => registerSW({ immediate: true, ...options }),
+  onVisible: (callback) =>
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') callback()
+    }),
+  every: (ms, callback) => void setInterval(callback, ms),
+  online: () => navigator.onLine,
+  reload: () => window.location.reload(),
+  serverRevision: fetchServerRevision,
+  revision: BUILD_COMMIT,
+})
 
 export function startUpdates(): void {
-  if (!('serviceWorker' in navigator)) return
-  registerSW({
-    immediate: true,
-    onRegisteredSW(_url, r) {
-      registration = r
-      if (!r) return
-      const check = () => {
-        if (navigator.onLine) void r.update().catch(() => undefined)
-      }
-      setInterval(check, INTERVAL_MS)
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') check()
-      })
-    },
-  })
+  if ('serviceWorker' in navigator) controller.start()
 }
 
-/** Manual check from More: «updating» reloads by itself once the new version is ready. */
-export async function checkForUpdate(): Promise<'updating' | 'current' | 'offline' | 'unsupported'> {
-  if (!registration) return 'unsupported'
-  if (!navigator.onLine) return 'offline'
-  await registration.update()
-  return registration.installing || registration.waiting ? 'updating' : 'current'
-}
+export type { CheckResult }
+export const checkForUpdate = (): Promise<CheckResult> => controller.check()
+export const applyUpdate = (): Promise<void> => controller.apply()
 
-/** Build time of the running version, shown in More. */
-export const BUILD_TIME: string = __BUILD_TIME__
+/** True once a new version waits for «Reload». */
+export function useUpdateAvailable(): boolean {
+  return useSyncExternalStore(controller.subscribe, controller.available)
+}

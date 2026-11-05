@@ -7,6 +7,7 @@ import ExercisePicker from '../components/ExercisePicker'
 import Field from '../components/Field'
 import Popover from '../components/Popover'
 import RestTimer from '../components/RestTimer'
+import UpdateBar from '../components/UpdateBar'
 import SyncBadge from '../components/SyncBadge'
 import InfoPage from './InfoPage'
 import { useNow } from '../hooks/useNow'
@@ -165,6 +166,7 @@ export default function WorkoutPage({ workout, onReauth, onMinimize, onFinished 
         </button>
         <SyncBadge onReauth={onReauth} />
       </AppBar>
+      <UpdateBar placement="inline" />
       <header {...swipe} className="mb-4 flex touch-none items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <button

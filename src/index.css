@@ -175,6 +175,8 @@ body {
 .home-more-links .app-icon { color: var(--viz-muted); }
 body:has(.home-navigation) .mini-workout-bar { bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
 body:has(.home-navigation) .undo-toast { bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
+.update-bar { left: 12px; right: 12px; bottom: calc(4.5rem + 8px + env(safe-area-inset-bottom)); max-width: calc(36rem - 24px); margin: 0 auto; }
+body:has(.mini-workout-bar) .update-bar { bottom: calc(4.5rem + 5rem + env(safe-area-inset-bottom)); }
 body:has(.home-navigation) .undo-toast.undo-raised { bottom: calc(10.5rem + env(safe-area-inset-bottom)); }
 /* Laptop (from 1024 px, decision 3 November 2026): navigation as a fixed sidebar on the left, all areas including
    Exercises and History directly; content uses the width next to it. The iPhone layout stays unchanged. */
@@ -198,6 +200,8 @@ body:has(.home-navigation) .undo-toast.undo-raised { bottom: calc(10.5rem + env(
   .home-nav-gap { height: 14px; }
   body:has(.home-navigation) .mini-workout-bar, body:has(.home-navigation) .undo-toast { left: 232px; bottom: 0; }
   body:has(.home-navigation) .undo-toast.undo-raised { bottom: 5.5rem; }
+  .update-bar { left: calc(232px + 16px); right: 16px; bottom: 16px; }
+  body:has(.mini-workout-bar) .update-bar { bottom: 5.5rem; }
 
   /* Home: start and progress on the left, week, weight and shortcuts on the right */
   .home-dashboard { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px 22px; align-items: start;
