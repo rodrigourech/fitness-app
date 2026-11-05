@@ -7,6 +7,11 @@ import { formatNumber } from './workout'
 
 type Set = Pick<WorkoutSet, 'set_type' | 'weight' | 'reps' | 'reps_left' | 'reps_right' | 'duration_s' | 'distance_km' | 'completed_at'>
 
+/** Extra exercise (slot comment «Extra …», decision 5 November 2026): may be skipped when time is short. */
+export function isExtra(comment: string | null | undefined): boolean {
+  return /^extra\b/i.test(comment?.trim() ?? '')
+}
+
 /** All work sets are checked (at least one). Warm-up sets do not count. */
 export function exerciseDone(sets: Set[]): boolean {
   const working = sets.filter((s) => s.set_type === 'working')

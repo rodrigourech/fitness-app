@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cardOpen, doneSummary, exerciseDone, focusId, swipeDirection, todoSummary } from './focus'
+import { cardOpen, doneSummary, exerciseDone, focusId, isExtra, swipeDirection, todoSummary } from './focus'
 
 const s = (weight: number | null, reps: number | null, done: boolean, type: 'working' | 'warmup' = 'working') => ({
   set_type: type, weight, reps, reps_left: null, reps_right: null, duration_s: null, distance_km: null,
@@ -35,5 +35,13 @@ describe('focus view (decision 5 November 2026, variant B)', () => {
     expect(swipeDirection(120, -20)).toBe('right')
     expect(swipeDirection(-60, 0)).toBeNull()
     expect(swipeDirection(-100, 90)).toBeNull()
+  })
+
+  it('extra exercises are marked by the slot comment «Extra»', () => {
+    expect(isExtra('Extra')).toBe(true)
+    expect(isExtra(' extra, skip if short on time')).toBe(true)
+    expect(isExtra('Darf entfallen')).toBe(false)
+    expect(isExtra(null)).toBe(false)
+    expect(isExtra('Extraordinary')).toBe(false)
   })
 })

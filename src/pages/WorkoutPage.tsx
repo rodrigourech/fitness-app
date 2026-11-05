@@ -15,7 +15,7 @@ import { useSwipeDown } from '../hooks/useSwipeDown'
 import { useSwipeX } from '../hooks/useSwipeX'
 import { offerUndo } from '../lib/undo'
 import UndoToast from '../components/UndoToast'
-import { cardOpen, doneSummary, exerciseDone, focusId, todoSummary } from '../lib/focus'
+import { cardOpen, doneSummary, exerciseDone, focusId, isExtra, todoSummary } from '../lib/focus'
 import { startRest, stopRest } from '../lib/rest'
 import { db, displayName, type Exercise, type ExerciseLink, type Workout, type WorkoutExercise, type WorkoutSet } from '../lib/db'
 import { linkLabel, linksFor } from '../lib/exercise'
@@ -364,6 +364,14 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
   const [progressOpen, setProgressOpen] = useState(false)
 
   const anyDone = sets.some((s) => s.completed_at !== null)
+  // Extra exercise (decision 5 November 2026): lightly tinted beige with the tag «Extra», may be skipped
+  const extra = isExtra(we.comment)
+  const extraTone = 'border-amber-200 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-950/15'
+  const extraTag = extra ? (
+    <span className="ml-1.5 rounded-md bg-amber-100 px-1.5 py-0.5 align-[2px] text-[10px] font-bold tracking-wide text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">
+      EXTRA
+    </span>
+  ) : null
   const skipped = !!we.skipped_at
   // Swipe left skips (only while no set is done), swipe right restores a skipped exercise (decision 5 November 2026)
   const swipe = useSwipeX(
@@ -402,7 +410,7 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
         onClick={() => onToggle(true)}
         aria-expanded={false}
         className={`card flex w-full items-center gap-3 p-3 text-left ${
-          done ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/50' : ''
+          done ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/50' : extra ? extraTone : ''
         }`}
       >
         {done ? (
@@ -414,6 +422,7 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
           <span className={`block truncate font-semibold ${done ? 'text-emerald-800 dark:text-emerald-200' : ''}`}>
             {name}
             {variant && <span className="font-normal text-zinc-500 dark:text-zinc-400"> · {variant}</span>}
+            {!done && extraTag}
           </span>
           <span className={`block truncate text-sm tabular-nums ${done ? 'text-emerald-700 dark:text-emerald-300' : 'text-zinc-500 dark:text-zinc-400'}`}>
             {done
@@ -456,12 +465,13 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
           : showRec ? 'grid-cols-[1.75rem_1fr_3rem_4rem_3.25rem_2.5rem]' : 'grid-cols-[1.75rem_1fr_4.5rem_3.75rem_2.75rem]'
 
   return wrap(
-    <section className="card p-3">
+    <section className={`card p-3 ${extra ? extraTone : ''}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-start gap-1">
         <button onClick={() => onOpen(we.exercise_id)} className="min-w-0 text-left">
           <h2 className="font-semibold underline-offset-2 hover:underline">
             {name} <span className="text-zinc-400">›</span>
+            {extraTag}
           </h2>
           {(variant || tt === 'weight_reps') && (
             <p className="text-sm text-zinc-700 tabular-nums dark:text-zinc-300">
@@ -779,7 +789,7 @@ function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, res
         </div>
       )}
       <div
-        className="relative col-span-full grid grid-cols-subgrid items-center bg-[var(--card)]"
+        className={`relative col-span-full grid grid-cols-subgrid items-center ${swipe.dx ? 'bg-[var(--card)]' : ''}`}
         style={swipe.dx ? { transform: `translateX(${swipe.dx}px)` } : { transition: 'transform 150ms ease-out' }}
       >
       <span
