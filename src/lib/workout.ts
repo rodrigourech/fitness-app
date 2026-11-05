@@ -420,17 +420,55 @@ async function workoutParts(workoutId: string) {
   return { wes, sets }
 }
 
-/** Number of sets that would be discarded when finishing (sets of skipped exercises do not count). */
-export async function openSetCount(workoutId: string): Promise<number> {
-  const { wes, sets } = await workoutParts(workoutId)
-  const skipped = new Set(wes.filter((we) => we.skipped_at).map((we) => we.id))
-  return sets.filter((s) => s.set_type === 'working' && s.completed_at === null && !skipped.has(s.workout_exercise_id)).length
+/** An unchecked work set as listed when finishing (exercise, number among the work sets, entered values). */
+export interface OpenSet {
+  id: string
+  exercise: string
+  number: number
+  weight: number | null
+  reps: string | null
+  /** Has values that can be saved as done */
+  filled: boolean
 }
 
-/** Finishes a workout: open sets and exercises without completed sets are discarded. */
-export async function finishWorkout(w: Workout): Promise<void> {
+/** Unchecked work sets that would be discarded when finishing, in workout order (sets of skipped exercises do not count). */
+export async function openSets(workoutId: string): Promise<OpenSet[]> {
+  const { wes, sets } = await workoutParts(workoutId)
+  const exercises = new Map((await db.exercise.bulkGet([...new Set(wes.map((we) => we.exercise_id))])).filter(Boolean).map((e) => [e!.id, e!]))
+  const parents = await db.exercise.bulkGet([...new Set([...exercises.values()].map((e) => e.parent_id).filter((id): id is string => !!id))])
+  const parentById = new Map(parents.filter(Boolean).map((e) => [e!.id, e!]))
+  const result: OpenSet[] = []
+  for (const we of [...wes].filter((we) => !we.skipped_at).sort((a, b) => a.position - b.position)) {
+    const ex = exercises.get(we.exercise_id)
+    const parent = ex?.parent_id ? parentById.get(ex.parent_id) : undefined
+    const name = ex ? (parent ? `${parent.name} · ${ex.name}` : ex.name) : 'Exercise'
+    const working = sets.filter((s) => s.workout_exercise_id === we.id && s.set_type === 'working').sort((a, b) => a.position - b.position)
+    working.forEach((s, i) => {
+      if (s.completed_at !== null) return
+      const reps = s.reps !== null ? String(s.reps) : s.reps_left !== null || s.reps_right !== null ? `${s.reps_left ?? '–'}/${s.reps_right ?? '–'}` : null
+      const filled = reps !== null || s.duration_s !== null || s.distance_km !== null
+      result.push({ id: s.id, exercise: name, number: i + 1, weight: s.weight, reps, filled })
+    })
+  }
+  return result
+}
+
+/** Number of sets that would be discarded when finishing (sets of skipped exercises do not count). */
+export async function openSetCount(workoutId: string): Promise<number> {
+  return (await openSets(workoutId)).length
+}
+
+/**
+ * Finishes a workout: open sets and exercises without completed sets are discarded. Sets listed in markDone are saved
+ * as done first, for sets that were done but not ticked (decision 5 November 2026).
+ */
+export async function finishWorkout(w: Workout, markDone: string[] = []): Promise<void> {
   const ts = now()
-  const { wes, sets } = await workoutParts(w.id)
+  const { wes, sets: all } = await workoutParts(w.id)
+  const done = new Set(markDone)
+  const ticked = all.filter((s) => s.completed_at === null && done.has(s.id)).map((s) => ({ ...s, completed_at: ts }))
+  if (ticked.length) await saveRows('workout_set', ticked)
+  const sets = all.map((s) => ticked.find((t) => t.id === s.id) ?? s)
   const open = sets.filter((s) => s.completed_at === null)
   const doneByExercise = new Set(sets.filter((s) => s.completed_at !== null).map((s) => s.workout_exercise_id))
   // Exercises without a checked set count as skipped and stay in the history as «Skipped»

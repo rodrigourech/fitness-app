@@ -8,6 +8,7 @@ import {
   finishWorkout,
   getActiveWorkout,
   openSetCount,
+  openSets,
   parseDuration,
   parseNumber,
   previousSets,
@@ -139,6 +140,22 @@ describe('finish and cancel', () => {
     const after = await db.workout_set.bulkGet(warm.map((x) => x.id))
     expect(after[0]!.deleted_at).toBeNull()
     expect(after.slice(1).every((x) => x!.deleted_at !== null)).toBe(true)
+  })
+
+  it('lists open work sets by exercise and number and saves marked ones as done when finishing', async () => {
+    const w = await startWorkout(day2, USER)
+    const s = await setsOf(w.id)
+    const curl = s['Lying Leg Curl (Machine)']!
+    const work = curl.sets.filter((x) => x.set_type === 'working')
+    await toggleSetDone(work[0]!)
+    const open = (await openSets(w.id)).filter((o) => o.exercise === 'Lying Leg Curl (Machine)')
+    expect(open.map((o) => o.number)).toEqual(work.slice(1).map((_, i) => i + 2))
+    expect(open[0]).toMatchObject({ id: work[1]!.id, weight: work[1]!.weight, filled: true })
+    await finishWorkout(w, [work[1]!.id])
+    const after = await db.workout_set.bulkGet(work.map((x) => x.id))
+    expect(after[1]!.deleted_at).toBeNull()
+    expect(after[1]!.completed_at).not.toBeNull()
+    expect(after.slice(2).every((x) => x!.deleted_at !== null)).toBe(true)
   })
 
   it('queues every change for sync', async () => {

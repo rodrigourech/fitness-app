@@ -14,7 +14,7 @@ Letzte Aktualisierung 5. November 2026
 
 ## Stand
 
-- 5. November 14:52: Sammelpaket aus dem Coaching umgesetzt (Migration 0040 auf production, geprüft): Lateral Raise (Machine) im unteren Block, Chest-Press-Satz vom 29. Okt wiederhergestellt, Incline Chest Press 120 s. context/training.md und ernaehrung.md nachgeführt. Offen: Vorschlag Hinweis beim Beenden mit Übung und Satz der offenen Sätze und «Mark as done» (wartet auf Bestätigung)
+- 5. November 14:52: Sammelpaket aus dem Coaching umgesetzt (Migration 0040 auf production, geprüft): Lateral Raise (Machine) im unteren Block, Chest-Press-Satz vom 29. Okt wiederhergestellt, Incline Chest Press 120 s. context/training.md und ernaehrung.md nachgeführt. Hinweis beim Beenden mit Liste der offenen Sätze und «Mark as done and finish» live (Typprüfung, Lint, 169 Tests, Build)
 - 5. November: Stats › Progression blendet Übungen ohne Arbeitssatz aus (zum Beispiel die neuen Bonus-Day-Übungen bis zum ersten Training). Typprüfung, Lint, Tests und Build erfolgreich
 - 3. November 14:30: Bonus Day neu (Migration 0039) auf production ausgeführt und geprüft; Rodrigo prüft den Plan später. Gerätestufen der vier neuen Übungen offen
 - 3. November (Nachmittag): «Increase weight» überall grün (Home, Training, Top-Set-Empfehlung, Training guide). Typprüfung, Lint, 167 Tests und Build erfolgreich; Home und Training bei 390 px geprüft

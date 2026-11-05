@@ -17,7 +17,7 @@ import { linkLabel, linksFor } from '../lib/exercise'
 import { bestBefore, recordsOf, type Best } from '../lib/stats'
 import { belowMinimum, progressionAdvice, type ProgressionAdvice } from '../lib/progression'
 import { repetitionTargets, type RepetitionTargets } from '../lib/training'
-import { increaseMarks, recommendations, warmUpWeight, type Recommendation } from '../lib/topset'
+import { displayWeight, increaseMarks, recommendations, warmUpWeight, type Recommendation } from '../lib/topset'
 import { DEFAULT_TRAINING_SHARES, getTrainingShares, type TrainingShares } from '../lib/settings'
 import {
   addExerciseToWorkout,
@@ -27,9 +27,10 @@ import {
   describeSet,
   effective,
   finishWorkout,
+  openSets,
+  type OpenSet,
   formatDuration,
   formatNumber,
-  openSetCount,
   paceSeconds,
   parseDuration,
   parseNumber,
@@ -129,16 +130,16 @@ export default function WorkoutPage({ workout, onReauth, onMinimize, onFinished 
   const [sheet, setSheet] = useState<string | null>(null)
   const [picking, setPicking] = useState(false)
   const [info, setInfo] = useState(false)
-  const [confirm, setConfirm] = useState<null | { kind: 'finish'; open: number } | { kind: 'cancel' }>(null)
+  const [confirm, setConfirm] = useState<null | { kind: 'finish'; open: OpenSet[] } | { kind: 'cancel' }>(null)
   const byId = new Map((exercises ?? []).map((e) => [e.id, e]))
 
   async function askFinish() {
-    setConfirm({ kind: 'finish', open: await openSetCount(workout.id) })
+    setConfirm({ kind: 'finish', open: await openSets(workout.id) })
   }
 
-  async function doFinish() {
+  async function doFinish(markDone: string[] = []) {
     await stopRest()
-    await finishWorkout(workout)
+    await finishWorkout(workout, markDone)
     onFinished?.(workout.id)
   }
 
@@ -226,13 +227,41 @@ export default function WorkoutPage({ workout, onReauth, onMinimize, onFinished 
             {confirm.kind === 'finish' ? (
               <>
                 <h2 className="mb-2 text-lg font-semibold">Finish workout?</h2>
-                <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-300">
-                  {confirm.open === 0
-                    ? 'All sets are checked.'
-                    : `${confirm.open} unchecked ${confirm.open === 1 ? 'set' : 'sets'} will be discarded.`}
-                </p>
-                <button onClick={() => void doFinish()} className="w-full rounded-lg bg-accent px-4 py-3 font-semibold text-accent-fg">
-                  Finish
+                {confirm.open.length === 0 ? (
+                  <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-300">All sets are checked.</p>
+                ) : (
+                  // Open sets by exercise and number, so a set done but not ticked can still be saved (decision 5 November 2026)
+                  <>
+                    <p className="mb-2 text-sm text-zinc-600 dark:text-zinc-300">
+                      {confirm.open.length} unchecked {confirm.open.length === 1 ? 'set' : 'sets'}:
+                    </p>
+                    <ul className="mb-4 max-h-48 divide-y divide-zinc-100 overflow-y-auto rounded-lg border border-zinc-200 text-sm dark:divide-zinc-800 dark:border-zinc-800">
+                      {confirm.open.map((s) => (
+                        <li key={s.id} className="flex items-baseline justify-between gap-3 px-3 py-2">
+                          <span className="min-w-0 truncate">{s.exercise} <span className="text-zinc-500 dark:text-zinc-400">· Set {s.number}</span></span>
+                          <span className="shrink-0 font-semibold tabular-nums">
+                            {s.filled ? `${s.weight !== null ? `${displayWeight(s.weight)} × ` : ''}${s.reps ?? ''}` : <span className="font-normal text-zinc-400">empty</span>}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+                {confirm.open.some((s) => s.filled) && (
+                  <button
+                    onClick={() => void doFinish(confirm.open.filter((s) => s.filled).map((s) => s.id))}
+                    className="mb-2 w-full rounded-lg bg-accent px-4 py-3 font-semibold text-accent-fg"
+                  >
+                    Mark as done and finish
+                  </button>
+                )}
+                <button
+                  onClick={() => void doFinish()}
+                  className={confirm.open.some((s) => s.filled)
+                    ? 'w-full rounded-lg border border-zinc-300 px-4 py-3 font-semibold text-zinc-700 dark:border-zinc-700 dark:text-zinc-200'
+                    : 'w-full rounded-lg bg-accent px-4 py-3 font-semibold text-accent-fg'}
+                >
+                  {confirm.open.length === 0 ? 'Finish' : 'Finish without them'}
                 </button>
               </>
             ) : (
