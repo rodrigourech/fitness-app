@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState, type FormEvent } from 'react'
-import { db, displayName, type Exercise } from '../lib/db'
+import { db, displayName, type Exercise, type Floor } from '../lib/db'
 import { addLink, createVariant, linkLabel, linksFor, normalizeUrl, removeLink, updateExercise } from '../lib/exercise'
 import { alternativeOf, effective, parseNumber } from '../lib/workout'
 import { regionName } from '../lib/muscles'
@@ -83,6 +83,8 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
   const stepKg = ex.weight_step ?? parent?.weight_step ?? null
   const restS = ex.default_rest_s ?? parent?.default_rest_s ?? null
   const equipment = EQUIPMENT.find(([value]) => value === main.equipment)?.[1] ?? 'Not set'
+  // Floor in the gym, shared by all variants (decision 5 November 2026)
+  const location = LOCATIONS.find(([value]) => value === main.floor)?.[1] ?? 'Not set'
   const inheritsSwitch = parent && (ex.warm_up != null || ex.top_set != null)
   const back = () => setPage(null)
   const alternative = all ? alternativeOf(ex, all) : null
@@ -240,6 +242,18 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
         </List>
       </Detail>
     )
+  } else if (page === 'location') {
+    body = (
+      <Detail title="Location" onBack={back} note={`Floor in the gym, for the order of the exercises.${parent ? ' Shared by all variants.' : ''}`}>
+        <List>
+          {LOCATIONS.map(([value, text]) => (
+            <Row key={text} label={text} onClick={() => void updateExercise(main, { floor: value })}>
+              {main.floor === value && <span className="font-semibold text-accent-ink">✓</span>}
+            </Row>
+          ))}
+        </List>
+      </Detail>
+    )
   } else if (page === 'muscles') {
     body = (
       <Detail title="Muscles to feel" onBack={back} note={`Tap a muscle to add or remove it.${focusInherited ? ' Currently inherited from the main exercise.' : ''}`}>
@@ -328,6 +342,7 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
         </Group>
         <Group title="Setup">
           <List>
+            <Row label="Location" value={location} muted={!main.floor} onClick={() => setPage('location')} />
             {weightReps && <Row label="Equipment" value={equipment} muted={!main.equipment} onClick={() => setPage('equipment')} />}
             <Row label="Muscles to feel" value={eff.focusMuscles.length ? eff.focusMuscles.map(regionName).join(', ') : 'None'} muted={!eff.focusMuscles.length} onClick={() => setPage('muscles')} />
             <Row label="Videos" value={String(links.length)} onClick={() => setPage('videos')} />
@@ -352,7 +367,9 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
   )
 }
 
-type Page = 'details' | 'reps' | 'step' | 'rest' | 'alternative' | 'equipment' | 'muscles' | 'videos'
+const LOCATIONS: [Floor | null, string][] = [['oben', 'Upstairs'], ['unten', 'Downstairs'], [null, 'Not set']]
+
+type Page = 'details' | 'reps' | 'step' | 'rest' | 'alternative' | 'equipment' | 'location' | 'muscles' | 'videos'
 
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (

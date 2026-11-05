@@ -34,7 +34,8 @@ Stand 5. November 2026.
 
 ## **Gym**
 
-- Vorhanden laut Rodrigo (Nov 2026): Butterfly / Pec Deck, Kabelzug-Station, Lying Leg Curl
+- Vorhanden laut Rodrigo (Nov 2026): Butterfly / Pec Deck, Kabelturm (oben, für Pushdown und die übrigen Kabelübungen), Lying Leg Curl
+- Standort jeder Übung steht in der App unter Exercise › Setup › Location (Nov 2026)
 
 - Zwei Stockwerke: Beinmaschinen, Lat Pulldown, Seated Row und Lateral Raise (Machine) unten, alles andere oben; Reihenfolge nach Stockwerk mit genau einem Wechsel (Nov 2026)
 - Reihenfolge (Nov 2026): Main Day A Lat Pulldown, Leg Press, Lateral Raise (unten), danach oben Incline Chest Press, Chest-Supported Row, Pushdown, Preacher Curl; Main Day B Seated Row, Seated Leg Curl, Lateral Raise (unten), danach oben Chest Press, Seated Dip, Preacher Curl; Lateral Raise (Cable) steht oben und darf ausserhalb der Reihenfolge gemacht werden

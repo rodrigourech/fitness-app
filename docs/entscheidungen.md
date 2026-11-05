@@ -298,3 +298,4 @@ Food-Tab, Entwürfe K bis M mit Rodrigo abgestimmt.
 - Datenkorrektur: Chest-Press-Satz 4 (40 × 8) vom 29. Okt war gemacht, aber nicht abgehakt und wurde beim Beenden verworfen; wiederhergestellt
 - Incline Chest Press (Dumbbell) in Main Day A mit 120 s Pause wie die übrigen Grundübungen (vorher leer)
 - Beenden eines Trainings (Vorschlag Coaching, von Rodrigo ohne Mockup freigegeben): Der Hinweis listet die offenen Arbeitssätze mit Übung, Satznummer und Werten. «Mark as done and finish» speichert alle offenen Sätze mit Werten als erledigt, «Finish without them» verwirft sie wie bisher. Leere Sätze werden immer verworfen
+- Standort als Attribut der Übung (Wunsch Rodrigo): Exercise › Setup › Location mit Upstairs, Downstairs oder Not set, gilt für alle Varianten; nutzt die bestehende Spalte exercise.floor. Kabelturm (Pushdown und übrige Kabelübungen) ist oben (Rodrigo, 5. Nov)
