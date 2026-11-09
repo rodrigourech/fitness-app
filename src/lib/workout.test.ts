@@ -53,11 +53,12 @@ describe('startWorkout', () => {
     const s = await setsOf(w.id)
     // DAY2 history 2 Oct: Lying Leg Curl 35/35/30 kg x 10
     expect(s['Lying Leg Curl (Machine)']!.sets.map((x) => x.weight)).toEqual([35, 35, 30])
-    // Reps start in the middle of the range (seed template 10–10), not at the last performance (decisions 15 and 19 October 2026)
+    // Reps 1:1 from the last performance (decision 9 November 2026); a deciding set at Max reps (10, seed 10–10)
+    // starts in the middle of the range because the weight goes up
     expect(s['Lateral Raise (Cable)']!.sets.map((x) => [x.reps_left, x.reps_right])).toEqual([
       [10, 10],
-      [10, 10],
-      [10, 10],
+      [10, 8],
+      [7, 8],
     ])
     expect(s['Lateral Raise (Cable)']!.sets.map((x) => x.weight)).toEqual([4.5, 4.5, 4.5])
     // Bicycle: duration 7 min

@@ -533,13 +533,14 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
         {tt === 'weight_reps' && (
           <>
             <span className="text-center">kg</span>
+            {/* Max reps for the next weight in the column head (decision 9 November 2026, design E2) */}
             {eff.isUnilateral ? (
               <>
-                <span className="text-center">L</span>
-                <span className="text-center">R</span>
+                <span className="text-center">L{tt === 'weight_reps' && <MaxReps n={targets.target} />}</span>
+                <span className="text-center">R{tt === 'weight_reps' && <MaxReps n={targets.target} />}</span>
               </>
             ) : (
-              <span className="text-center">Reps</span>
+              <span className="text-center whitespace-nowrap">Reps{tt === 'weight_reps' && <MaxReps n={targets.target} />}</span>
             )}
           </>
         )}
@@ -605,6 +606,14 @@ function SwipeFrame({ dx, handlers, children }: { dx: number; handlers: ReturnTy
         {children}
       </div>
     </div>
+  )
+}
+
+function MaxReps({ n }: { n: number }) {
+  return (
+    <span className="ml-1 font-bold text-emerald-700 dark:text-emerald-400" title={`Max reps ${n}: reached, the weight goes up`}>
+      ↑{n}
+    </span>
   )
 }
 

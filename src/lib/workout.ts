@@ -1,5 +1,5 @@
 import { db, type Exercise, type TemplateSet, type Workout, type WorkoutExercise, type WorkoutSet } from './db'
-import { decidingIndexes, repsOf, startReps as goalStartReps } from './goal'
+import { decidingIndexes, repsOf } from './goal'
 import { saveRows } from './sync'
 import { exerciseTrainingSettings, repetitionTargets, type RepetitionTargets } from './training'
 
@@ -219,7 +219,7 @@ type Planned = Pick<TemplateSet, 'target_weight' | 'target_duration_s' | 'target
 
 /**
  * Sets of a workout exercise at the start: warm-up set W if enabled, then one work set per planned set.
- * Weight from the last performance, reps from the middle of the range (decisions 15 and 19 October 2026);
+ * Weight and reps 1:1 from the last performance (reps: decision 9 November 2026);
  * without a last performance the planned targets.
  */
 function prefilledSets(
@@ -237,16 +237,26 @@ function prefilledSets(
   // Warm-up as its own set W before the work sets (decision 18 October 2026)
   const warmUp = weightReps && eff.warmUp
   const sets: WorkoutSet[] = warmUp ? [warmUpSet(we, userId, ts)] : []
-  // Deciding sets (top set, or all work sets) start at last time plus one rep, at most Max reps (decision 5 November 2026)
+  // Reps start 1:1 from the last performance of the same set (decision Rodrigo, 9 November 2026). Exception: a
+  // deciding set (top set, or all work sets) that reached Max reps means the weight goes up, so it starts in the
+  // middle of the range instead of Max reps at the heavier weight
   const deciding = new Set(decidingIndexes(prevWorking, eff.topSet))
   planned.forEach((p, i) => {
     const sourceIndex = prevWorking[i] ? i : prevWorking.length - 1
     const source = prevWorking[sourceIndex]
-    const reps = source && deciding.has(sourceIndex) ? goalStartReps(repsOf(source, eff.isUnilateral), targets, startReps) : startReps
+    const lastReps = source ? repsOf(source, eff.isUnilateral) : null
+    const raised = source !== undefined && deciding.has(sourceIndex) && lastReps !== null && lastReps >= targets.target
+    const repsPatch = !weightReps || !source
+      ? {}
+      : raised
+        ? eff.isUnilateral ? { reps_left: startReps, reps_right: startReps } : { reps: startReps }
+        : eff.isUnilateral
+          ? { reps_left: source.reps_left ?? startReps, reps_right: source.reps_right ?? startReps }
+          : { reps: source.reps ?? startReps }
     const m: Measure = source
       ? {
           ...measureOf(source),
-          ...(weightReps ? (eff.isUnilateral ? { reps_left: reps, reps_right: reps } : { reps }) : {}),
+          ...repsPatch,
         }
       : {
           weight: p.target_weight,
