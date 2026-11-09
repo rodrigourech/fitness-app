@@ -1,5 +1,6 @@
 import { db, type Exercise, type TemplateSet, type Workout, type WorkoutExercise, type WorkoutSet } from './db'
 import { decidingIndexes, repsOf } from './goal'
+import { isExtra } from './extra'
 import { saveRows } from './sync'
 import { exerciseTrainingSettings, repetitionTargets, type RepetitionTargets } from './training'
 
@@ -154,6 +155,8 @@ export async function startWorkout(templateId: string, userId: string): Promise<
       target_reps: eff.trackingType === 'weight_reps' ? targets.target : null,
       min_reps: eff.trackingType === 'weight_reps' ? targets.minimum : null,
       warm_up: eff.trackingType === 'weight_reps' && eff.warmUp,
+      // Extra exercises start skipped and are added by hand (decision 9 November 2026)
+      skipped_at: isExtra(te.comment) ? ts : null,
       ...base(userId, ts),
     }
     wes.push(we)

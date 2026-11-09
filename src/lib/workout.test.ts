@@ -66,6 +66,18 @@ describe('startWorkout', () => {
     expect(Object.values(s).flatMap((x) => x.sets).every((x) => x.completed_at === null)).toBe(true)
   })
 
+  it('starts an extra exercise (slot comment «Extra») as skipped; adding it brings the sets back', async () => {
+    const te = (await db.template_exercise.where('template_id').equals(day2).toArray()).find((x) => x.deleted_at === null)!
+    await db.template_exercise.put({ ...te, comment: 'Extra' })
+    const w = await startWorkout(day2, USER)
+    const wes = await db.workout_exercise.where('workout_id').equals(w.id).toArray()
+    const extra = wes.find((x) => x.exercise_id === te.exercise_id)!
+    expect(extra.skipped_at).not.toBeNull()
+    expect(wes.filter((x) => x.id !== extra.id).every((x) => !x.skipped_at)).toBe(true)
+    await unskipExercise(extra)
+    expect((await db.workout_exercise.get(extra.id))!.skipped_at).toBeNull()
+  })
+
   it('falls back to template targets without history', async () => {
     const run = (await db.template.toArray()).find((t) => t.name === 'Lauf')!
     const w = await startWorkout(run.id, USER)

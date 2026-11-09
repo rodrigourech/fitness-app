@@ -14,6 +14,7 @@ Letzte Aktualisierung 5. November 2026
 
 ## Stand
 
+- 9. November 11:55: Extra-Übungen (Butterfly A, Cable Curl B) starten im Training als nicht gewählt (grau, «+ Add»). 205 Tests, Build
 - 9. November 11:40: Reps-Vorbelegung 1:1 vom letzten Mal, Spaltenkopf «Reps ↑12» live. Migrationen 0045 (Butterfly und Cable Curl «Extra») und 0046 (Pushdown V-Grip in A) auf production ausgeführt und geprüft. Vorschlag klareres Progression-Blatt (Progression_Blatt_klarer.png) von Rodrigo vorerst zurückgestellt
 - 5. November 23:30: Extra-Übungen im Training beige mit Etikett «EXTRA» (Slot-Kommentar «Extra»), Wechsel zur Alternative als runder Symbolknopf. Migration 0045 (Kommentar für Butterfly und Cable Curl) am 9. November ausgeführt. 204 Tests, Build, hell und dunkel bei 390 px geprüft
 - 5. November 23:40: Sätze dezenter (kleiner Link «+ Set», Satz nach rechts wischen entfernt ihn, mit Undo). Typprüfung, Lint, 203 Tests, Build; Wischen in beide Richtungen mit Maus geprüft, auf dem iPhone noch nicht

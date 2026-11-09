@@ -1,16 +1,12 @@
 import type { WorkoutSet } from './db'
 import { formatNumber } from './workout'
+export { isExtra } from './extra'
 
 // Focus view of a running workout (decision 5 November 2026, variant B): only the next open exercise is expanded,
 // finished exercises collapse to a green line, the others are one line each. Swiping left skips an exercise, swiping
 // right (or «Restore») brings it back.
 
 type Set = Pick<WorkoutSet, 'set_type' | 'weight' | 'reps' | 'reps_left' | 'reps_right' | 'duration_s' | 'distance_km' | 'completed_at'>
-
-/** Extra exercise (slot comment «Extra …», decision 5 November 2026): may be skipped when time is short. */
-export function isExtra(comment: string | null | undefined): boolean {
-  return /^extra\b/i.test(comment?.trim() ?? '')
-}
 
 /** All work sets are checked (at least one). Warm-up sets do not count. */
 export function exerciseDone(sets: Set[]): boolean {

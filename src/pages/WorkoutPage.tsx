@@ -388,6 +388,32 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
     </SwipeFrame>
   )
 
+  // Extra exercise not added yet (decision 9 November 2026): grey and dashed, only done with enough time and energy
+  if (skipped && extra)
+    return wrap(
+      <section className="flex items-center justify-between gap-3 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900/40">
+        <span className="min-w-0">
+          <span className="block truncate font-semibold text-zinc-500 dark:text-zinc-400">
+            {name}
+            {variant && <span className="font-normal"> · {variant}</span>}
+          </span>
+          <span className="block truncate text-xs text-zinc-500 dark:text-zinc-400">
+            <span className="mr-1.5 rounded-md bg-zinc-200 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">EXTRA</span>
+            Only if time and energy · {todoSummary(sets)}
+          </span>
+        </span>
+        <button
+          onClick={() => {
+            onToggle(true)
+            void unskipExercise(we)
+          }}
+          className="shrink-0 rounded-full border border-zinc-300 px-3 py-1.5 text-sm font-semibold text-zinc-700 dark:border-zinc-600 dark:text-zinc-200"
+        >
+          + Add
+        </button>
+      </section>,
+    )
+
   if (skipped)
     return wrap(
       <section className="card flex items-center justify-between gap-3 bg-zinc-50 p-3 dark:bg-zinc-900/60">
