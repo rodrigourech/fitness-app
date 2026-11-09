@@ -93,6 +93,8 @@ export default function ProgressionSheet({ exerciseId, includeVariants = false, 
       )}
       {weight !== null && <RepsBar min={targets.minimum} max={targets.target} reps={reps} label={todayPoint ? 'today' : 'last'} nextText={nextText} />}
 
+      <Rules topSet={eff.topSet} />
+
       <h3 className="mt-5 mb-2 text-xs font-bold tracking-wide text-zinc-500 dark:text-zinc-400">LAST WORKOUTS · {kind.toUpperCase()}</h3>
       {points.length === 0 && !todayPoint ? (
         <p className="text-sm text-zinc-500">No earlier workout with this exercise.</p>
@@ -111,6 +113,26 @@ export default function ProgressionSheet({ exerciseId, includeVariants = false, 
         </ul>
       )}
     </Sheet>
+  )
+}
+
+/** The progression rule in short (decision 9 November 2026); without a top set every set decides. */
+function Rules({ topSet }: { topSet: boolean }) {
+  const rows: [string, string][] = [
+    ['bg-emerald-600', topSet ? 'Top set reaches max reps' : 'All sets reach max reps'],
+    ...(topSet ? [['bg-zinc-400', "Back-off sets don't count"] as [string, string]] : []),
+    ['bg-orange-500', 'Twice below the range: go lighter'],
+  ]
+  return (
+    <div className="mt-4 flex flex-col gap-1.5 rounded-xl bg-zinc-100 p-3 text-sm dark:bg-zinc-800/70">
+      <span className="font-semibold">How to go up</span>
+      {rows.map(([dot, text]) => (
+        <span key={text} className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
+          <span className={`h-2 w-2 shrink-0 rounded-full ${dot}`} aria-hidden="true" />
+          {text}
+        </span>
+      ))}
+    </div>
   )
 }
 

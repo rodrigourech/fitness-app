@@ -14,6 +14,7 @@ Letzte Aktualisierung 5. November 2026
 
 ## Stand
 
+- 9. November 14:00: Progression-Blatt mit Regelbox «How to go up», kleines «!» am Reps-Feld entscheidender Sätze unter Min Reps (Tipp zeigt Hinweis). 205 Tests, Build, bei 390 px geprüft
 - 9. November 13:15: Automatische Espressi 2 statt 3 (37 kcal, 2 g), weiter nur Mo–Fr; bestehende Einträge unverändert. Offen: Espresso mit Anzahl und Art (Milch, Kaffeerahm 12 g, schwarz), Mockup folgt nach Rodrigos Präzisierung
 - 9. November 11:55: Extra-Übungen (Butterfly A, Cable Curl B) starten im Training als nicht gewählt (grau, «+ Add»). 205 Tests, Build
 - 9. November 11:40: Reps-Vorbelegung 1:1 vom letzten Mal, Spaltenkopf «Reps ↑12» live. Migrationen 0045 (Butterfly und Cable Curl «Extra») und 0046 (Pushdown V-Grip in A) auf production ausgeführt und geprüft. Vorschlag klareres Progression-Blatt (Progression_Blatt_klarer.png) von Rodrigo vorerst zurückgestellt

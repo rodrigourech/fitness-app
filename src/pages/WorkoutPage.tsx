@@ -591,6 +591,7 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
               minimum={tt === 'weight_reps' && !warm ? targets.minimum : null}
               warmUp={warmPlan}
               good={!warm && decidingNow.has(workingNo - 1) && s.completed_at !== null && (repsOf(s, eff.isUnilateral) ?? 0) >= targets.target}
+              deciding={!warm && decidingNow.has(workingNo - 1)}
               records={recordsOf(s, best)}
             />
           )
@@ -632,6 +633,29 @@ function SwipeFrame({ dx, handlers, children }: { dx: number; handlers: ReturnTy
         {children}
       </div>
     </div>
+  )
+}
+
+/**
+ * Small orange «!» on the reps field of a deciding set below Min reps (decision 9 November 2026); a tap shows the hint.
+ * Back-off sets do not count, so they never get it.
+ */
+function BelowHint({ show, children }: { show: boolean; children: ReactNode }) {
+  if (!show) return <>{children}</>
+  return (
+    <span className="relative min-w-0">
+      {children}
+      <span className="absolute -top-2 -right-2">
+        <Popover
+          label="!"
+          ariaLabel="Below the rep range"
+          align="right"
+          triggerClassName="flex h-[18px] w-[18px] items-center justify-center rounded-full border-2 border-[var(--card)] bg-orange-500 text-[11px] leading-none font-extrabold text-white"
+        >
+          <span className="block w-48 text-sm">Below the range. Twice in a row at this weight: go lighter.</span>
+        </Popover>
+      </span>
+    </span>
   )
 }
 
@@ -760,9 +784,11 @@ interface SetRowProps {
   good?: boolean
   /** Warm-up reps: hint and the value saved when an empty warm-up set is checked */
   warmUp: { reps: number; hint: string }
+  /** Deciding set (top set, or every work set without one): reps below Min get the «!» hint */
+  deciding?: boolean
 }
 
-function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, restSeconds, minimum, records, good, warmUp }: SetRowProps) {
+function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, restSeconds, minimum, records, good, warmUp, deciding = false }: SetRowProps) {
   const done = set.completed_at !== null
 
   function numberCommit(field: 'weight' | 'reps' | 'reps_left' | 'reps_right' | 'distance_km', integer: boolean) {
@@ -863,11 +889,17 @@ function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, res
           </span>
           {unilateral ? (
             <>
-              <Field label="Reps left" inputMode="numeric" placeholder={warm ? warmUp.hint : undefined} value={formatNumber(set.reps_left)} onCommit={numberCommit('reps_left', true)} warn={belowMinimum(set.reps_left, minimum)} good={good} />
-              <Field label="Reps right" inputMode="numeric" placeholder={warm ? warmUp.hint : undefined} value={formatNumber(set.reps_right)} onCommit={numberCommit('reps_right', true)} warn={belowMinimum(set.reps_right, minimum)} good={good} />
+              <BelowHint show={deciding && belowMinimum(set.reps_left, minimum)}>
+                <Field label="Reps left" inputMode="numeric" placeholder={warm ? warmUp.hint : undefined} value={formatNumber(set.reps_left)} onCommit={numberCommit('reps_left', true)} warn={belowMinimum(set.reps_left, minimum)} good={good} />
+              </BelowHint>
+              <BelowHint show={deciding && belowMinimum(set.reps_right, minimum)}>
+                <Field label="Reps right" inputMode="numeric" placeholder={warm ? warmUp.hint : undefined} value={formatNumber(set.reps_right)} onCommit={numberCommit('reps_right', true)} warn={belowMinimum(set.reps_right, minimum)} good={good} />
+              </BelowHint>
             </>
           ) : (
-            <Field label="Reps" inputMode="numeric" placeholder={warm ? warmUp.hint : undefined} value={formatNumber(set.reps)} onCommit={numberCommit('reps', true)} warn={belowMinimum(set.reps, minimum)} good={good} />
+            <BelowHint show={deciding && belowMinimum(set.reps, minimum)}>
+              <Field label="Reps" inputMode="numeric" placeholder={warm ? warmUp.hint : undefined} value={formatNumber(set.reps)} onCommit={numberCommit('reps', true)} warn={belowMinimum(set.reps, minimum)} good={good} />
+            </BelowHint>
           )}
         </>
       )}
