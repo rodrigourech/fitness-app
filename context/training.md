@@ -10,7 +10,7 @@ Stand 5. November 2026.
 - Fokus Oberkörper, Beinvolumen bewusst tief (etwa 3 Sätze pro Woche und Muskel)
 - Seit 1. Nov 2026 Lateral Raise (Machine) statt Cable in Main Day A und Main Day B; Cable bleibt als Alternative
 - Mehr Volumen für Brust und Arme (Nov 2026): Butterfly in Main Day A und Cable Curl in Main Day B je 3 × 8–12, 90 s; Brust und Bizeps damit 9 Sätze pro Woche. Bei Zeitmangel im Training überspringen statt eigener Workouts
-- Reihenfolge nach Stockwerk mit genau einem Wechsel (Nov 2026): A Lat Pulldown, Leg Press, Lateral Raise, Butterfly (unten), dann Incline Chest Press, Chest-Supported Row, Triceps Pushdown Straight Bar, Preacher Curl (oben); B Seated Row, Seated Leg Curl, Lateral Raise (unten), dann Chest Press, Seated Dip, Preacher Curl, Cable Curl (oben). Lateral Raise (Machine) und Butterfly stehen unten
+- Reihenfolge nach Stockwerk mit genau einem Wechsel (Nov 2026): A Lat Pulldown, Leg Press, Lateral Raise, Butterfly (unten), dann Incline Chest Press, Chest-Supported Row, Triceps Pushdown V-Grip (seit 9. Nov 2026 wieder Standard, Straight Bar als Alternative), Preacher Curl (oben); B Seated Row, Seated Leg Curl, Lateral Raise (unten), dann Chest Press, Seated Dip, Preacher Curl, Cable Curl (oben). Lateral Raise (Machine) und Butterfly stehen unten
 - Bonus Day vorerst gestrichen und archiviert (Nov 2026), wiederherstellbar
 
 ## **Vorlieben**
