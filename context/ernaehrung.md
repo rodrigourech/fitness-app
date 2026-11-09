@@ -19,7 +19,7 @@ Stand 5. November 2026.
 - 1 Shake pro Tag, an Krafttagen (Main Day A und B) ein zweiter, also 9 Shakes pro Woche; etwa CHF 87 im Monat mit ESN (Nov 2026)
 - Standard mit Wasser; mit Milch nur 1 bis 2 Mal pro Woche als Ausnahme
 - Coop High Protein Whey Vanilla mit 371 kcal und 73 g Protein pro 100 g; ersetzt die frühere Reserve Coop Whey Vanille (Nov 2026)
-- Trinkt pro Tag 3 Espressi mit je einem Schuss Milch (max. 2 EL), etwa 55 kcal; an Wochenenden nicht (Nov 2026)
+- Trinkt 2 Espressi pro Tag, nur Montag bis Freitag, mit je einem Schuss Milch (max. 2 EL), etwa 37 kcal und 2 g Protein (Nov 2026; bis 9. Nov 3 Espressi)
 
 ## **Vereinbarte Richtwerte (Nov 2026)**
 

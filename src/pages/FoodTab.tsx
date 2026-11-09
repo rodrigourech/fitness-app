@@ -330,7 +330,7 @@ function TargetsSheet({ userId, targets, today, onClose }: { userId: string; tar
             {toggle(draft.shake, (v) => save({ ...draft, shake: v }), 'ESN shake every day')}
           </div>
           <div className={row}>
-            <span><span className="block text-sm font-semibold">3 espressos with milk</span><span className="block text-xs text-zinc-500">Mon–Fri · 09:30 · 55 kcal · 3 g</span></span>
+            <span><span className="block text-sm font-semibold">2 espressos with milk</span><span className="block text-xs text-zinc-500">Mon–Fri · 09:30 · 37 kcal · 2 g</span></span>
             {toggle(draft.espresso, (v) => save({ ...draft, espresso: v }), 'Espressos Monday to Friday')}
           </div>
           <p className="pb-2.5 text-xs text-zinc-500 dark:text-zinc-400">Change or delete them on a day that differs. A day with only these entries counts as not filled in.</p>

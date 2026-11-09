@@ -149,7 +149,7 @@ export interface NutritionTargets {
   proteinG: number
   /** ESN shake with water every day at 08:00 */
   shake: boolean
-  /** 3 espressos with milk Monday to Friday at 09:30 */
+  /** 2 espressos with milk Monday to Friday at 09:30 */
   espresso: boolean
 }
 

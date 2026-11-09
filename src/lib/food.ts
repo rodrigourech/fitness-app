@@ -191,12 +191,12 @@ function entryRow(userId: string, draft: EntryDraft, existing?: FoodEntry): Food
 }
 
 // --- automatic daily entries (decision 2 November 2026) -----------------------------------------
-// The ESN shake (every day, 08:00) and 3 espressos with milk (Monday to Friday, 09:30) are entered automatically for the
+// The ESN shake (every day, 08:00) and 2 espressos with milk (Monday to Friday, 09:30; 3 until 9 November 2026) are entered automatically for the
 // current day once a sync has run, so both devices know the server state first. The id is derived from user, day and
 // kind, so two devices create the same row and a deleted row is never created again.
 
 export const SHAKE_STAPLE_ID = 'c5a0f6d1-0001-4f00-8000-00000000000a'
-const ESPRESSO = { kcal: 55, protein: 3 } // 3 × (espresso 2 kcal + 2 tbsp milk 2.5 % about 16 kcal, 1 g protein)
+const ESPRESSO = { kcal: 37, protein: 2 } // 2 × (espresso 2 kcal + 2 tbsp milk 2.5 % about 16 kcal, 1 g protein)
 
 /** Name-based UUID (version 5 layout) from SHA-1. */
 export async function stableUuid(name: string): Promise<string> {
@@ -218,8 +218,8 @@ export function dailyDrafts(day: string, targets: Pick<NutritionTargets, 'shake'
       items: [{ name: shake?.name ?? 'ESN shake, water', food_item_id: SHAKE_STAPLE_ID, amount: '1 serving', kcal, protein_g: protein, source: 'staple' }], kcal, protein })
   }
   if (targets.espresso && weekday >= 1 && weekday <= 5) {
-    out.push({ kind: 'espresso', eatenAt: new Date(`${day}T09:30:00`).toISOString(), category: 'snack', title: '3 espressos with milk', detail: '2 tbsp milk each',
-      items: [{ name: 'Espresso with milk', food_item_id: null, amount: '3 ×', kcal: ESPRESSO.kcal, protein_g: ESPRESSO.protein, source: 'staple' }], kcal: ESPRESSO.kcal, protein: ESPRESSO.protein })
+    out.push({ kind: 'espresso', eatenAt: new Date(`${day}T09:30:00`).toISOString(), category: 'snack', title: '2 espressos with milk', detail: '2 tbsp milk each',
+      items: [{ name: 'Espresso with milk', food_item_id: null, amount: '2 ×', kcal: ESPRESSO.kcal, protein_g: ESPRESSO.protein, source: 'staple' }], kcal: ESPRESSO.kcal, protein: ESPRESSO.protein })
   }
   return out
 }
