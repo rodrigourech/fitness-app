@@ -126,10 +126,11 @@ export default function FoodTab({ userId }: { userId: string }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight">Food</h1>
-          {/* Goals under the title, one per line (decision 15 November 2026) */}
-          <div className="mt-0.5 text-sm leading-5 text-zinc-500 tabular-nums dark:text-zinc-400">
-            <div>Goal <b className="font-semibold text-blue-700 dark:text-blue-300">{num(targets.needKcal - targets.deficitKcal)} kcal</b></div>
-            <div>Goal <b className="font-semibold text-emerald-700 dark:text-emerald-300">≥ {targets.proteinG} g</b> protein</div>
+          {/* Daily goals under the title, one per line (decision 15 November 2026, design D) */}
+          <div className="mt-1 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500">Daily goals</div>
+          <div className="flex flex-col text-[15px] leading-[21px] font-semibold tabular-nums">
+            <span className="text-blue-700 dark:text-blue-300">{num(targets.needKcal - targets.deficitKcal)} <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">kcal</span></span>
+            <span className="text-emerald-700 dark:text-emerald-300">≥ {targets.proteinG} <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">g protein</span></span>
           </div>
         </div>
         <span className="flex items-center gap-2 pt-0.5">
