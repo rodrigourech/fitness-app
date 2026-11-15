@@ -160,8 +160,8 @@ export default function FoodTab({ userId }: { userId: string }) {
 }
 
 /**
- * kcal of a day (decision 15 November 2026, design «A», replaces the tiles of the same day): Eaten, Goal and Need side
- * by side, a bar up to the need with blue = eaten, light blue = eaten over the goal but still below the need (soft, not
+ * kcal of a day (decision 15 November 2026, design «A», replaces the tiles of the same day): Eaten and Need side by
+ * side (the goal value stands only under the title), a bar up to the need with blue = eaten, light blue = eaten over the goal but still below the need (soft, not
  * an alarm), red = eaten over the need (surplus), orange = current deficit up to the need (same colour as the deficit
  * below) and a dashed line at the goal (need minus deficit goal). Separated by a line the deficit against the deficit
  * goal. The goals themselves stand under the title, so the card has no status sentence.
@@ -184,9 +184,8 @@ function KcalCard({ label, eaten, targets, counted }: { label: string; eaten: nu
   return (
     <section className="card p-4">
       <div className="text-sm font-semibold text-zinc-600 dark:text-zinc-300">{label}</div>
-      <div className="mt-2 grid grid-cols-3 gap-2">
+      <div className="mt-2 grid grid-cols-2 gap-2">
         {stat('Eaten', num(eaten), overNeed ? 'text-red-700 dark:text-red-400' : 'text-blue-700 dark:text-blue-300', 'text-left')}
-        {stat('Goal', num(goal), 'text-zinc-900 dark:text-zinc-100', 'text-center')}
         {stat('Need', num(need), 'text-zinc-500 dark:text-zinc-400', 'text-right')}
       </div>
       <div className="relative mt-3 h-3" role="img" aria-label={`${num(eaten)} kcal eaten, goal ${num(goal)}, need ${num(need)}`}>
