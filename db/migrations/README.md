@@ -58,3 +58,4 @@ Ohne diesen Schritt liefert die Data API neue Spalten nicht aus und lehnt sie be
 | 0044_chest_biceps_volume_2026_11_05.sql | Nur Daten: Butterfly in Main Day A, Cable Curl in Main Day B (je 3 × 8–12, 90 s, Start 30 bzw. 18 kg), Reihenfolge nach Stockwerk, Butterfly unten und ohne Warm-up, Bonus Day archiviert, Kopien «(until 5 Nov)» | 5. Nov 2026 23:05 auf production, geprüft (15 Slots, Bonus Day archiviert) |
 | 0045_extra_slots_2026_11_05.sql | Nur Daten: Butterfly (A) und Cable Curl (B) mit Slot-Kommentar «Extra» | 9. Nov 2026 11:40 auf production, geprüft |
 | 0046_pushdown_v_grip_default.sql | Nur Daten: Triceps Pushdown in Main Day A wieder mit V-Grip statt Straight Bar (Straight Bar bleibt Alternative) | 9. Nov 2026 11:40 auf production, geprüft |
+| 0047_food_connector_reads_targets.sql | food_connector darf nutrition_targets in user_setting lesen (Proteinminimum im Connector) | offen; danach neon deploy für foodmcp |

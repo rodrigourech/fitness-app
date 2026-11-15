@@ -154,7 +154,7 @@ export interface NutritionTargets {
 }
 
 /** Rodrigo's values of 2 November 2026: need 2 400 (Mifflin-St Jeor estimate 2 440, rounded), deficit 400, target 2 000 */
-export const DEFAULT_NUTRITION: NutritionTargets = { needKcal: 2400, deficitKcal: 400, proteinG: 140, shake: true, espresso: true }
+export const DEFAULT_NUTRITION: NutritionTargets = { needKcal: 2400, deficitKcal: 400, proteinG: 160, shake: true, espresso: true }
 
 export function parseNutrition(value: unknown): NutritionTargets {
   const v = (value ?? {}) as Partial<Record<keyof NutritionTargets, unknown>>

@@ -13,7 +13,7 @@ Stand 1. November 2026.
 
 - Bedarf 2 400 kcal (Schätzung Mifflin-St Jeor 2 440), Defizitziel 400 kcal, Tagesziel 2 000 kcal pro Tag (Entscheid 2. Nov 2026); von Hand änderbar unter Food › Zahnrad
 - Ernährung ist bewusst abgekapselt, weil unklar ist, ob er täglich erfasst: keine automatische Nachkalibrierung, die Gewichtsprognose rechnet nur mit dem Körpergewicht (Nov 2026)
-- Protein mindestens 140 g pro Tag
+- Protein mindestens 160 g pro Tag, etwa 1.9 g/kg bei 84.8 kg; 1.6 g/kg (Morton 2018) als Untergrenze, mehr als Absicherung im Defizit (Entscheid 15. Nov 2026; bis dahin 140 g)
 - Erfasst werden nur kcal und Protein
 
 ## **Training**

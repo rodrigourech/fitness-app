@@ -19,7 +19,8 @@ export interface FoodEnv {
 export type Sql = (query: string, params?: unknown[]) => Promise<Record<string, unknown>[]>
 
 const TZ = 'Europe/Zurich'
-const PROTEIN_TARGET_G = 140
+/** Protein minimum when the app setting cannot be read (decision 15 November 2026: 160 g, about 1.9 g/kg) */
+const PROTEIN_TARGET_G = 160
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const CATEGORIES = ['breakfast', 'lunch', 'dinner', 'snack', 'dessert', 'drinks', 'cheat'] as const
 type Category = (typeof CATEGORIES)[number]
@@ -142,6 +143,19 @@ async function dayTotals(sql: Sql, user: string, day: string): Promise<{ kcal: n
     [user, from, to],
   )
   return { kcal: entries.reduce((s, e) => s + Number(e.kcal), 0), protein: entries.reduce((s, e) => s + Number(e.protein_g), 0), entries }
+}
+
+/** Protein minimum from the app's nutrition targets (user_setting nutrition_targets), else the default. */
+async function proteinTarget(sql: Sql, user: string): Promise<number> {
+  try {
+    const rows = await sql("select value from public.user_setting where user_id = $1 and key = 'nutrition_targets' and deleted_at is null", [user])
+    const raw = rows[0]?.value
+    const v = (typeof raw === 'string' ? JSON.parse(raw) : raw) as { proteinG?: unknown } | undefined
+    const n = Number(v?.proteinG)
+    return Number.isFinite(n) && n >= 40 && n <= 300 ? Math.round(n) : PROTEIN_TARGET_G
+  } catch {
+    return PROTEIN_TARGET_G
+  }
 }
 
 // --- meal computation ----------------------------------------------------------------------------------
@@ -380,13 +394,13 @@ export async function callTool(name: string, args: Args, ctx: { sql: Sql; user: 
       const head = p.schedule
         ? `Eingetragen: ${p.schedule.length} Portionen à ${num(p.kcal)} kcal · ${Math.round(p.protein)} g Protein (${p.schedule.map((s) => `${CATEGORY_DE[s.category]} ${zurichLabel(new Date(s.eatenAt)).split(' · ')[0]}`).join(', ')}).`
         : `Eingetragen als ${CATEGORY_DE[p.category]}: ${num(p.kcal)} kcal · ${Math.round(p.protein)} g Protein.`
-      return { text: `${head}\nHeute total ${num(t.kcal)} kcal · ${Math.round(t.protein)} g Protein (Ziel ≥ ${PROTEIN_TARGET_G} g).` }
+      return { text: `${head}\nHeute total ${num(t.kcal)} kcal · ${Math.round(t.protein)} g Protein (Ziel ≥ ${await proteinTarget(sql, user)} g).` }
     }
     case 'get_day': {
       const day = typeof args.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(args.date) ? args.date : zurichDay(now)
       const t = await dayTotals(sql, user, day)
       const lines = t.entries.map((e) => `${zurichLabel(new Date(String(e.eaten_at))).split(' · ')[1] ?? ''} ${CATEGORY_DE[e.category as Category]}: ${e.title} · ${num(Number(e.kcal))} kcal · ${Math.round(Number(e.protein_g))} g (${e.id})`)
-      return { text: `${day}: ${t.entries.length} Einträge, ${num(t.kcal)} kcal, ${Math.round(t.protein)} g Protein (Ziel ≥ ${PROTEIN_TARGET_G} g)\n${lines.join('\n')}`, data: t }
+      return { text: `${day}: ${t.entries.length} Einträge, ${num(t.kcal)} kcal, ${Math.round(t.protein)} g Protein (Ziel ≥ ${await proteinTarget(sql, user)} g)\n${lines.join('\n')}`, data: t }
     }
     case 'delete_entry': {
       const id = String(args.id ?? '')

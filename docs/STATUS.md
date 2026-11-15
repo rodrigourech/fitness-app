@@ -14,6 +14,7 @@ Letzte Aktualisierung 5. November 2026
 
 ## Stand
 
+- 15. November: Food-Tag mit kcal-Karte Eaten · Deficit · Need und Ziel-Strich, Protein als Minimum («minimum 160 g»); Standard Protein 160 g, Feld «Protein minimum» in den Targets. Food-Connector liest das Minimum aus nutrition_targets (Fallback 160 g). Offen: Rodrigo setzt 160 g in den Targets; Migration 0047 auf production; neon deploy für foodmcp (Rodrigo). 206 Tests, Build, 390 px hell und dunkel geprüft
 - 9. November 14:00: Progression-Blatt mit Regelbox «How to go up», kleines «!» am Reps-Feld entscheidender Sätze unter Min Reps (Tipp zeigt Hinweis). 205 Tests, Build, bei 390 px geprüft
 - 9. November 13:15: Automatische Espressi 2 statt 3 (37 kcal, 2 g), weiter nur Mo–Fr; bestehende Einträge unverändert. Offen: Espresso mit Anzahl und Art (Milch, Kaffeerahm 12 g, schwarz), Mockup folgt nach Rodrigos Präzisierung
 - 9. November 11:55: Extra-Übungen (Butterfly A, Cable Curl B) starten im Training als nicht gewählt (grau, «+ Add»). 205 Tests, Build

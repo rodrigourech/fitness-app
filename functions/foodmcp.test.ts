@@ -12,7 +12,9 @@ const NOW = new Date('2026-11-01T18:20:00Z')
 function fakeSql() {
   const items = [MINCE, RICE, OIL].map((s) => ({ ...s, user_id: 'u1', deleted_at: null }))
   const entries: Record<string, unknown>[] = []
+  const settings: { value: unknown }[] = []
   const sql: Sql = async (q, p = []) => {
+    if (q.startsWith('select value from public.user_setting')) return settings
     if (q.startsWith('select id, name, store, basis')) return items.filter((i) => i.user_id === p[0])
     if (q.startsWith('select id, eaten_at')) return entries.filter((e) => e.deleted_at === null && String(e.eaten_at) >= String(p[1]) && String(e.eaten_at) < String(p[2]))
     if (q.startsWith('select id from public.food_entry')) return entries.filter((e) => e.eaten_at === p[1] && e.title === p[2] && e.kcal === p[3])
@@ -22,7 +24,7 @@ function fakeSql() {
     }
     throw new Error(`unexpected ${q}`)
   }
-  return { sql, entries }
+  return { sql, entries, settings }
 }
 
 async function call(body: unknown, sql: Sql, path = `/mcp/${KEY}`) {
@@ -116,5 +118,15 @@ describe('food connector', () => {
     expect(entries).toHaveLength(3)
     const bad = await call({ jsonrpc: '2.0', id: 6, method: 'tools/call', params: { name: 'confirm_meal', arguments: { preview_token: 'x.y' } } }, sql)
     expect(bad.json.result.isError).toBe(true)
+  })
+
+  it('reads the protein minimum from the app targets, else 160 g (decision 15 November 2026)', async () => {
+    const { sql, settings } = fakeSql()
+    const day = async () => (await call({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'get_day', arguments: {} } }, sql)).json.result.content[0].text as string
+    expect(await day()).toContain('Ziel ≥ 160 g')
+    settings.push({ value: { needKcal: 2400, deficitKcal: 400, proteinG: 170 } })
+    expect(await day()).toContain('Ziel ≥ 170 g')
+    settings[0] = { value: '{"proteinG":155}' }
+    expect(await day()).toContain('Ziel ≥ 155 g')
   })
 })
