@@ -164,8 +164,8 @@ export default function FoodTab({ userId }: { userId: string }) {
 /**
  * Food tiles (decision 15 November 2026, design «Mischform R4 + R2»): two tiles side by side. The big number is the
  * total of the day, below a bar with a dark line for the goal (labelled only «goal», the values stand under the title)
- * and labelled rows: kcal «Left» to the goal (or «Over goal») and «Deficit» to the need (or «Surplus»), protein «Left»
- * to the minimum (or «Goal reached»).
+ * and labelled rows: kcal «To goal» (or «Over goal»), «Deficit» to the need (or «Surplus») and «Need» in grey, protein
+ * «To goal» to the minimum (or «Goal reached»).
  */
 /** Label under a bar at a mark; near the right end it is aligned to the right edge so it stays inside the tile. */
 function MarkLabel({ at, children }: { at: number; children: ReactNode }) {
@@ -183,7 +183,7 @@ function Rows({ rows }: { rows: [label: string, value: ReactNode, tone: string][
       {rows.map(([label, value, tone]) => (
         <div key={label} className="contents">
           <dt className="text-zinc-500 dark:text-zinc-400">{label}</dt>
-          <dd className={`text-right font-semibold ${tone}`}>{value}</dd>
+          <dd className={`text-right ${tone.includes('font-normal') ? '' : 'font-semibold'} ${tone}`}>{value}</dd>
         </div>
       ))}
     </dl>
@@ -213,10 +213,11 @@ function KcalTile({ label, eaten, targets, counted }: { label: string; eaten: nu
       <MarkLabel at={at(goal)}>goal</MarkLabel>
       {counted ? (
         <Rows rows={[
-          left >= 0 ? ['Left', num(left), 'text-blue-700 dark:text-blue-300'] : ['Over goal', num(-left), 'text-red-700 dark:text-red-400'],
+          left >= 0 ? ['To goal', num(left), 'text-blue-700 dark:text-blue-300'] : ['Over goal', num(-left), 'text-red-700 dark:text-red-400'],
           deficit >= 0 ? ['Deficit', num(deficit), 'text-amber-700 dark:text-amber-400'] : ['Surplus', num(-deficit), 'text-red-700 dark:text-red-400'],
+          ['Need', num(need), 'font-normal text-zinc-500 dark:text-zinc-400'],
         ]} />
-      ) : <p className="mt-2 text-[13px] leading-5 text-zinc-500 dark:text-zinc-400">Not counted</p>}
+      ) : <Rows rows={[['Not counted', '', ''], ['Need', num(need), 'font-normal text-zinc-500 dark:text-zinc-400']]} />}
     </div>
   )
 }
@@ -237,7 +238,7 @@ function ProteinTile({ eaten, minimum }: { eaten: number; minimum: number }) {
         <span className="absolute -inset-y-1 -ml-px w-0.5 rounded-full bg-zinc-900 dark:bg-zinc-100" style={{ left: `${at(minimum)}%` }} />
       </div>
       <MarkLabel at={at(minimum)}>goal</MarkLabel>
-      <Rows rows={[left > 0 ? ['Left', `${left} g`, 'text-emerald-700 dark:text-emerald-300'] : ['Goal reached', '✓', 'text-emerald-700 dark:text-emerald-300']]} />
+      <Rows rows={[left > 0 ? ['To goal', `${left} g`, 'text-emerald-700 dark:text-emerald-300'] : ['Goal reached', '✓', 'text-emerald-700 dark:text-emerald-300']]} />
     </div>
   )
 }
