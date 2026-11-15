@@ -123,16 +123,16 @@ export default function FoodTab({ userId }: { userId: string }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Food</h1>
-        <span className="flex items-center gap-2">
-          <span aria-label={`Goals: ${num(targets.needKcal - targets.deficitKcal)} kcal, at least ${targets.proteinG} g protein a day`}
-            className="flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[13px] font-semibold whitespace-nowrap shadow-sm tabular-nums dark:border-zinc-700 dark:bg-zinc-900">
-            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.5" /></svg>
-            <span className="text-blue-700 dark:text-blue-300">{num(targets.needKcal - targets.deficitKcal)} kcal</span>
-            <span className="text-zinc-300 dark:text-zinc-600">·</span>
-            <span className="text-emerald-700 dark:text-emerald-300">≥ {targets.proteinG} g</span>
-          </span>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold tracking-tight">Food</h1>
+          {/* Goals under the title, one per line (decision 15 November 2026) */}
+          <div className="mt-0.5 text-sm leading-5 text-zinc-500 tabular-nums dark:text-zinc-400">
+            <div>Goal <b className="font-semibold text-blue-700 dark:text-blue-300">{num(targets.needKcal - targets.deficitKcal)} kcal</b></div>
+            <div>Goal <b className="font-semibold text-emerald-700 dark:text-emerald-300">≥ {targets.proteinG} g</b> protein</div>
+          </div>
+        </div>
+        <span className="flex items-center gap-2 pt-0.5">
           <button onClick={() => setSheet({ kind: 'targets' })} aria-label="Edit nutrition targets"
             className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
             <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -164,7 +164,7 @@ export default function FoodTab({ userId }: { userId: string }) {
  * Food tiles (decision 15 November 2026, design «Idee 1 C» with the line mark): two tiles side by side as before F1.
  * The state sits as a pill top right (deficit or surplus, protein left to the minimum), the big number against the need
  * or the minimum below, and a bar with a dark line for the goal, labelled only «goal» under the bar. The goal values
- * (kcal goal, protein minimum) stand in the head of the Food tab instead of the daily deficit goal.
+ * (kcal goal, protein minimum) stand under the title of the Food tab, one per line, instead of the daily deficit goal.
  */
 const PILL = 'shrink-0 rounded-full px-2 py-0.5 text-[11px] leading-4 font-semibold tabular-nums'
 
