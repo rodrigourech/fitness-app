@@ -79,10 +79,8 @@ export default function FoodTab({ userId }: { userId: string }) {
 
   const dayColumn = (
     <>
-      <div className="grid grid-cols-2 gap-3">
-        <KcalTile label={`kcal ${day === today ? 'today' : day === addDaysKey(today, -1) ? 'yesterday' : dayTitle(day, today)}`} eaten={totals.kcal} targets={targets} counted={counted} />
-        <ProteinTile eaten={totals.protein} minimum={targets.proteinG} />
-      </div>
+      <KcalCard label={`kcal ${day === today ? 'today' : day === addDaysKey(today, -1) ? 'yesterday' : dayTitle(day, today)}`} eaten={totals.kcal} targets={targets} counted={counted} />
+      <ProteinRow eaten={totals.protein} minimum={targets.proteinG} />
 
       <div role="tablist" aria-label="Food" className={`grid ${wide ? 'grid-cols-2' : 'grid-cols-3'} gap-1 rounded-xl bg-zinc-200/70 p-1 dark:bg-zinc-900`}>
         {(wide ? (['today', 'staples'] as const) : (['today', 'week', 'staples'] as const)).map((v) => (
@@ -123,17 +121,9 @@ export default function FoodTab({ userId }: { userId: string }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight">Food</h1>
-          {/* Daily goals under the title, one per line (decision 15 November 2026, design D) */}
-          <div className="mt-1 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500">Daily goals</div>
-          <div className="flex flex-col text-[15px] leading-[21px] font-semibold tabular-nums">
-            <span className="text-blue-700 dark:text-blue-300">{num(targets.needKcal - targets.deficitKcal)} <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">kcal</span></span>
-            <span className="text-emerald-700 dark:text-emerald-300">≥ {targets.proteinG} <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">g protein</span></span>
-          </div>
-        </div>
-        <span className="flex items-center gap-2 pt-0.5">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold tracking-tight">Food</h1>
+        <span className="flex items-center gap-2">
           <button onClick={() => setSheet({ kind: 'targets' })} aria-label="Edit nutrition targets"
             className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
             <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -162,84 +152,85 @@ export default function FoodTab({ userId }: { userId: string }) {
 }
 
 /**
- * Food tiles (decision 15 November 2026, design «Mischform R4 + R2»): two tiles side by side. The big number is the
- * total of the day, below a bar with a dark line for the goal (labelled only «goal», the values stand under the title)
- * and labelled rows: kcal «To goal» (or «Over goal»), «Deficit» to the need (or «Surplus») and «Need» in grey, protein
- * «To goal» to the minimum (or «Goal reached»).
+ * kcal of a day (decision 15 November 2026, design «A», replaces the tiles of the same day): Eaten, Goal and Need side
+ * by side, a bar up to the need with blue = eaten, red = eaten over the goal, orange = current deficit up to the need
+ * (same colour as the deficit below) and a dashed line at the goal (need minus deficit goal). Below the state against
+ * the goal and, separated by a line, the deficit against the deficit goal.
  */
-/** Label under a bar at a mark; near the right end it is aligned to the right edge so it stays inside the tile. */
-function MarkLabel({ at, children }: { at: number; children: ReactNode }) {
-  return (
-    <div className="relative mt-1 h-4 text-[11px] text-zinc-500 tabular-nums dark:text-zinc-400" aria-hidden="true">
-      <span className={`absolute whitespace-nowrap ${at > 85 ? 'right-0' : '-translate-x-1/2'}`} style={at > 85 ? undefined : { left: `${at}%` }}>{children}</span>
-    </div>
-  )
-}
-
-/** Labelled rows under a bar: label left in grey, value right-aligned in its colour. */
-function Rows({ rows }: { rows: [label: string, value: ReactNode, tone: string][] }) {
-  return (
-    <dl className="mt-2 grid grid-cols-[1fr_auto] gap-y-0.5 text-[13px] leading-5 tabular-nums">
-      {rows.map(([label, value, tone]) => (
-        <div key={label} className="contents">
-          <dt className="text-zinc-500 dark:text-zinc-400">{label}</dt>
-          <dd className={`text-right ${tone.includes('font-normal') ? '' : 'font-semibold'} ${tone}`}>{value}</dd>
-        </div>
-      ))}
-    </dl>
-  )
-}
-
-/** kcal of a day: blue = eaten, amber = deficit up to the need, dark line = goal (need minus deficit goal). */
-function KcalTile({ label, eaten, targets, counted }: { label: string; eaten: number; targets: NutritionTargets; counted: boolean }) {
+function KcalCard({ label, eaten, targets, counted }: { label: string; eaten: number; targets: NutritionTargets; counted: boolean }) {
   const need = targets.needKcal
-  const goal = need - targets.deficitKcal
+  const deficitGoal = targets.deficitKcal
+  const goal = need - deficitGoal
   const deficit = need - eaten
-  const left = goal - eaten
-  const at = (n: number) => Math.max(0, Math.min(100, (n / need) * 100))
-  return (
-    <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4 dark:border-blue-950 dark:bg-blue-950/50">
-      <div className="truncate text-xs text-zinc-500 dark:text-zinc-400">{label}</div>
-      <div className="mt-1 text-[28px] leading-9 font-semibold tracking-tight whitespace-nowrap text-blue-700 tabular-nums dark:text-blue-300">
-        {num(eaten)}<span className="ml-1 text-xs font-normal tracking-normal text-zinc-500">kcal</span>
-      </div>
-      <div className="relative mt-2.5 h-2 rounded-full bg-blue-700/10" role="img" aria-label={`${num(eaten)} of ${num(need)} kcal eaten, goal ${num(goal)}`}>
-        {counted && <>
-          <span className={`absolute inset-y-0 left-0 bg-[var(--viz-s1)] ${deficit > 0 ? 'rounded-l-full' : 'rounded-full'}`} style={{ width: `${at(eaten)}%` }} />
-          {deficit > 0 && <span className="absolute inset-y-0 right-0 rounded-r-full bg-amber-400" style={{ left: `${at(eaten)}%` }} />}
-        </>}
-        <span className="absolute -inset-y-1 -ml-px w-0.5 rounded-full bg-zinc-900 dark:bg-zinc-100" style={{ left: `${at(goal)}%` }} />
-      </div>
-      <MarkLabel at={at(goal)}>goal</MarkLabel>
-      {counted ? (
-        <Rows rows={[
-          left >= 0 ? ['To goal', num(left), 'text-blue-700 dark:text-blue-300'] : ['Over goal', num(-left), 'text-red-700 dark:text-red-400'],
-          deficit >= 0 ? ['Deficit', num(deficit), 'text-amber-700 dark:text-amber-400'] : ['Surplus', num(-deficit), 'text-red-700 dark:text-red-400'],
-          ['Need', num(need), 'font-normal text-zinc-500 dark:text-zinc-400'],
-        ]} />
-      ) : <Rows rows={[['Not counted', '', ''], ['Need', num(need), 'font-normal text-zinc-500 dark:text-zinc-400']]} />}
+  const over = counted && eaten > goal
+  const scale = Math.max(need, eaten)
+  const at = (n: number) => Math.max(0, Math.min(100, (n / scale) * 100))
+  const stat = (title: string, value: string, tone: string, align: string) => (
+    <div className={`min-w-0 ${align}`}>
+      <div className="text-[11px] font-semibold tracking-wide text-zinc-500 uppercase dark:text-zinc-400">{title}</div>
+      <div className={`text-2xl leading-8 font-bold tracking-tight whitespace-nowrap tabular-nums ${tone}`}>{value}</div>
     </div>
+  )
+  return (
+    <section className="card p-4">
+      <div className="text-sm font-semibold text-zinc-600 dark:text-zinc-300">{label}</div>
+      <div className="mt-2 grid grid-cols-3 gap-2">
+        {stat('Eaten', num(eaten), over ? 'text-red-700 dark:text-red-400' : 'text-blue-700 dark:text-blue-300', 'text-left')}
+        {stat('Goal', num(goal), 'text-zinc-900 dark:text-zinc-100', 'text-center')}
+        {stat('Need', num(need), 'text-zinc-500 dark:text-zinc-400', 'text-right')}
+      </div>
+      <div className="relative mt-3 h-3" role="img" aria-label={`${num(eaten)} kcal eaten, goal ${num(goal)}, need ${num(need)}`}>
+        <div className="absolute inset-0 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+          {counted && <>
+            <span className="absolute inset-y-0 left-0 bg-blue-600 dark:bg-blue-500" style={{ width: `${at(Math.min(eaten, goal))}%` }} />
+            {over && <span className="absolute inset-y-0 bg-red-600 dark:bg-red-500" style={{ left: `${at(goal)}%`, width: `${at(eaten) - at(goal)}%` }} />}
+            {deficit > 0 && <span className="absolute inset-y-0 right-0 bg-amber-500 dark:bg-amber-400" style={{ left: `${at(eaten)}%` }} />}
+          </>}
+        </div>
+        <span className="absolute -inset-y-1.5 -ml-px border-l-2 border-dashed border-zinc-900 dark:border-zinc-100" style={{ left: `${at(goal)}%` }} aria-hidden="true" />
+      </div>
+      <div className="relative mt-1.5 h-4 text-[11px] text-zinc-500 dark:text-zinc-400" aria-hidden="true">
+        <span className="absolute -translate-x-1/2 whitespace-nowrap" style={{ left: `${at(goal)}%` }}>goal</span>
+        {at(goal) < 85 && <span className="absolute right-0">need</span>}
+      </div>
+      <div className="mt-1.5 text-sm tabular-nums">
+        {!counted ? <span className="text-zinc-500">Not counted, the day is not filled in</span>
+          : !over ? <span className="text-zinc-600 dark:text-zinc-300"><b>{num(goal - eaten)}</b> kcal left to the goal</span>
+          : <span className="text-red-700 dark:text-red-400"><b>{num(eaten - goal)}</b> kcal over the goal</span>}
+      </div>
+      {counted && (
+        <div className="mt-3 flex items-baseline justify-between gap-2 border-t border-zinc-200 pt-2.5 tabular-nums dark:border-zinc-800">
+          {deficit >= 0
+            ? <span className="text-sm text-zinc-500 dark:text-zinc-400">Deficit <b className="text-base font-bold text-amber-600 dark:text-amber-400">{num(deficit)}</b> kcal</span>
+            : <span className="text-sm text-zinc-500 dark:text-zinc-400">Surplus <b className="text-base font-bold text-red-700 dark:text-red-400">{num(-deficit)}</b> kcal</span>}
+          {deficit >= deficitGoal
+            ? <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">✓ ≥ {num(deficitGoal)}</span>
+            : <span className="text-xs font-semibold text-red-700 dark:text-red-400">{num(deficitGoal - deficit)} below {num(deficitGoal)}</span>}
+        </div>
+      )}
+    </section>
   )
 }
 
-/** Protein of a day as a minimum to reach (decision 15 November 2026): dark line = minimum. */
-function ProteinTile({ eaten, minimum }: { eaten: number; minimum: number }) {
+/** Protein of a day as a minimum to reach (decision 15 November 2026). */
+function ProteinRow({ eaten, minimum }: { eaten: number; minimum: number }) {
   const left = minimum - eaten
-  const scale = Math.max(minimum * 1.15, eaten * 1.05)
-  const at = (n: number) => Math.max(0, Math.min(100, (n / scale) * 100))
   return (
-    <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 dark:border-emerald-950 dark:bg-emerald-950/50">
-      <div className="text-xs text-zinc-500 dark:text-zinc-400">Protein today</div>
-      <div className="mt-1 text-[28px] leading-9 font-semibold tracking-tight whitespace-nowrap text-emerald-700 tabular-nums dark:text-emerald-300">
-        {eaten}<span className="ml-1 text-xs font-normal tracking-normal text-zinc-500">g</span>
+    <section className="card flex items-center gap-4 px-4 py-3">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="text-sm font-semibold text-zinc-600 dark:text-zinc-300">Protein</span>
+          <span className="text-xs text-zinc-500 tabular-nums dark:text-zinc-400">goal ≥ {minimum} g</span>
+        </div>
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-emerald-700/15">
+          <div className="h-full rounded-full bg-emerald-600 dark:bg-emerald-400" style={{ width: `${Math.min(100, (eaten / minimum) * 100)}%` }} />
+        </div>
+        <div className="mt-1 text-xs text-zinc-500 tabular-nums dark:text-zinc-400">{left <= 0 ? '✓ goal reached' : `${left} g to go`}</div>
       </div>
-      <div className="relative mt-2.5 h-2 rounded-full bg-emerald-700/15" role="img" aria-label={`${eaten} g protein, minimum ${minimum} g`}>
-        <span className="absolute inset-y-0 left-0 rounded-full bg-emerald-600 dark:bg-emerald-400" style={{ width: `${at(eaten)}%` }} />
-        <span className="absolute -inset-y-1 -ml-px w-0.5 rounded-full bg-zinc-900 dark:bg-zinc-100" style={{ left: `${at(minimum)}%` }} />
+      <div className="shrink-0 text-2xl font-bold text-emerald-700 tabular-nums dark:text-emerald-300">
+        {eaten}<span className="ml-0.5 text-xs font-normal text-zinc-500"> g</span>
       </div>
-      <MarkLabel at={at(minimum)}>goal</MarkLabel>
-      <Rows rows={[left > 0 ? ['To goal', `${left} g`, 'text-emerald-700 dark:text-emerald-300'] : ['Goal reached', '✓', 'text-emerald-700 dark:text-emerald-300']]} />
-    </div>
+    </section>
   )
 }
 
