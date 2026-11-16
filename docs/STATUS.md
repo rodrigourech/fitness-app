@@ -14,6 +14,7 @@ Letzte Aktualisierung 5. November 2026
 
 ## Stand
 
+- 16. November: Food-Tagesziele als drei Kacheln (Calories, Deficit, Protein), Defizit-Status als Pille «Goal kept» / «N short» / «Over need»
 - 15. November (Mittag, gilt): Food-Tag mit «Daily goals» unter dem Titel, kcal-Karte Eaten · Need (Ziel nur oben), Balken blau, hellblau über dem Ziel, rot erst über dem Bedarf, orange Defizit, gestrichelte Ziellinie, Fusszeile Deficit mit Status zum Zieldefizit; Protein-Zeile ohne Text, Balken voll beim Minimum. Die Kachel-Varianten vom Vormittag sind ersetzt. 390 px hell und dunkel, auch über dem Ziel, geprüft
 - 15. November (später): Food-Kacheln wieder nebeneinander wie vor F1, grosse Zahl Tagessumme, Ziel als schwarzer Strich mit «goal», darunter Zeilen To goal/Over goal, Deficit und Need, Zielwerte unter dem Titel als «Daily goals» untereinander (2 000 kcal, ≥ 160 g protein). 390 px hell und dunkel geprüft
 - 15. November: Food-Tag mit kcal-Karte Eaten · Deficit · Need und Ziel-Strich, Protein als Minimum («minimum 160 g»); Standard Protein 160 g, Feld «Protein minimum» in den Targets. Food-Connector liest das Minimum aus nutrition_targets (Fallback 160 g). Offen: Rodrigo setzt 160 g in den Targets; Migration 0047 auf production; neon deploy für foodmcp (Rodrigo). 206 Tests, Build, 390 px hell und dunkel geprüft

@@ -121,17 +121,9 @@ export default function FoodTab({ userId }: { userId: string }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight">Food</h1>
-          {/* Daily goals under the title, one per line (decision 15 November 2026) */}
-          <div className="mt-1 text-[11px] font-semibold text-zinc-400 dark:text-zinc-500">Daily goals</div>
-          <div className="flex flex-col text-[15px] leading-[21px] font-semibold tabular-nums">
-            <span className="text-blue-700 dark:text-blue-300">{num(targets.needKcal - targets.deficitKcal)} <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">kcal</span></span>
-            <span className="text-emerald-700 dark:text-emerald-300">≥ {targets.proteinG} <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">g protein</span></span>
-          </div>
-        </div>
-        <span className="flex items-center gap-2 pt-0.5">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold tracking-tight">Food</h1>
+        <span className="flex items-center gap-2">
           <button onClick={() => setSheet({ kind: 'targets' })} aria-label="Edit nutrition targets"
             className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
             <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -141,6 +133,7 @@ export default function FoodTab({ userId }: { userId: string }) {
           </button>
         </span>
       </div>
+      <DailyGoals targets={targets} />
       {wide ? (
         // Laptop: day on the left, the week always visible on the right (decision 3 November 2026)
         <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start gap-6">
@@ -156,6 +149,34 @@ export default function FoodTab({ userId }: { userId: string }) {
       {sheet?.kind === 'item' && <ItemSheet userId={userId} item={sheet.item} onClose={() => setSheet(null)} />}
       {sheet?.kind === 'targets' && <TargetsSheet userId={userId} targets={targets} today={today} onClose={() => setSheet(null)} />}
     </div>
+  )
+}
+
+/** Status pill in the deficit footer: goal kept, short of the deficit goal, or over the need. */
+const PILL = 'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold tabular-nums'
+
+/**
+ * Daily goals under the title as three tinted tiles (decision 16 November 2026, design «A»): kcal goal (need minus
+ * deficit goal), deficit goal and protein minimum, each in the colour it has in the cards below.
+ */
+function DailyGoals({ targets }: { targets: NutritionTargets }) {
+  const tile = (label: string, value: string, unit: string, tone: string) => (
+    <div className={`min-w-0 rounded-2xl border px-3 py-2 ${tone}`}>
+      <div className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">{label}</div>
+      <div className="text-[22px] leading-7 font-bold tracking-tight whitespace-nowrap tabular-nums">
+        {value}<span className="ml-1 text-xs font-normal tracking-normal text-zinc-500 dark:text-zinc-400">{unit}</span>
+      </div>
+    </div>
+  )
+  return (
+    <section aria-label="Daily goals">
+      <div className="mb-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400">Daily goals</div>
+      <div className="grid grid-cols-3 gap-2">
+        {tile('Calories', num(targets.needKcal - targets.deficitKcal), 'kcal', 'border-blue-100 bg-blue-50 text-blue-700 dark:border-blue-950 dark:bg-blue-950/50 dark:text-blue-300')}
+        {tile('Deficit', `≥ ${num(targets.deficitKcal)}`, 'kcal', 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-400')}
+        {tile('Protein', `≥ ${targets.proteinG}`, 'g', 'border-emerald-100 bg-emerald-50 text-emerald-700 dark:border-emerald-950 dark:bg-emerald-950/50 dark:text-emerald-300')}
+      </div>
+    </section>
   )
 }
 
@@ -205,14 +226,14 @@ function KcalCard({ label, eaten, targets, counted }: { label: string; eaten: nu
       </div>
       {!counted && <div className="mt-1.5 text-sm text-zinc-500">Not counted, the day is not filled in</div>}
       {counted && (
-        <div className="mt-2.5 flex items-baseline justify-between gap-2 border-t border-zinc-200 pt-2.5 tabular-nums dark:border-zinc-800">
+        <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-zinc-200 pt-2.5 tabular-nums dark:border-zinc-800">
           {deficit >= 0
             ? <span className="text-sm text-zinc-500 dark:text-zinc-400">Deficit <b className="text-base font-bold text-amber-600 dark:text-amber-400">{num(deficit)}</b> kcal</span>
             : <span className="text-sm text-zinc-500 dark:text-zinc-400">Surplus <b className="text-base font-bold text-red-700 dark:text-red-400">{num(-deficit)}</b> kcal</span>}
           {deficit >= deficitGoal
-            ? <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">✓ ≥ {num(deficitGoal)}</span>
-            : deficit < 0 ? <span className="text-xs font-semibold text-red-700 dark:text-red-400">over the need</span>
-            : <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">{num(deficitGoal - deficit)} below {num(deficitGoal)}</span>}
+            ? <span className={`${PILL} bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300`}>Goal kept</span>
+            : deficit < 0 ? <span className={`${PILL} bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300`}>Over need</span>
+            : <span className={`${PILL} bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300`}>{num(deficitGoal - deficit)} short</span>}
         </div>
       )}
     </section>
