@@ -59,3 +59,4 @@ Ohne diesen Schritt liefert die Data API neue Spalten nicht aus und lehnt sie be
 | 0045_extra_slots_2026_11_05.sql | Nur Daten: Butterfly (A) und Cable Curl (B) mit Slot-Kommentar «Extra» | 9. Nov 2026 11:40 auf production, geprüft |
 | 0046_pushdown_v_grip_default.sql | Nur Daten: Triceps Pushdown in Main Day A wieder mit V-Grip statt Straight Bar (Straight Bar bleibt Alternative) | 9. Nov 2026 11:40 auf production, geprüft |
 | 0047_food_connector_reads_targets.sql | food_connector darf nutrition_targets in user_setting lesen (Proteinminimum im Connector) | offen; danach neon deploy für foodmcp |
+| 0048_pushdown_alternative_seated_dip.sql | Nur Daten: Pushdown V-Grip und Straight Bar bieten wieder Seated Dip als Alternative an (Kabelzug besetzt), hebt 0037 auf; V-Grip per Name gesucht | offen; lokal zweimal getestet |
