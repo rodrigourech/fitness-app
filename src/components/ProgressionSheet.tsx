@@ -6,14 +6,17 @@ import { repetitionTargets } from '../lib/training'
 import { effective, formatNumber, recentTrainingSessions } from '../lib/workout'
 import Sheet from './Sheet'
 
-// Progression sheet (decision 5 November 2026, mockup «Progression_Blatt_v2»): one statement, the reps of the deciding
-// set on a bar from Min to Max reps, and the last workouts. Opened from the progress button in the workout and from
-// Stats › Progression.
+// Progression sheet (decision 16 November 2026, design «A», replaces «Progression_Blatt_v2»): three labelled parts.
+// Goal: a dashed card with the rule for the next weight and the progress from Min to Max reps; once reached it turns
+// solid green with the next weight. Today: the reps of today's checked work sets (only in the workout). History: the
+// last workouts without today. Opened from the progress button in the workout and from Stats › Progression.
 
 export interface TodayGoal {
   weight: number
   /** Lowest reps of the checked deciding sets today, null before the first one */
   reps: number | null
+  /** Reps of today's checked work sets in order */
+  sets?: (number | null)[]
 }
 
 interface Props {
@@ -68,43 +71,70 @@ export default function ProgressionSheet({ exerciseId, includeVariants = false, 
   const raiseToday = advice === 'increase' && reached && !todayPoint
   const kind = eff.topSet ? 'Top set' : 'All sets'
 
+  const toGo = reps !== null ? Math.max(0, targets.target - reps) : null
+  const history = points
+  const label = (text: string) => <h3 className="mt-5 mb-2 text-xs font-bold tracking-wide text-zinc-500 uppercase dark:text-zinc-400">{text}</h3>
+
   return (
     <Sheet title={title} onClose={onClose}>
-      <p className="-mt-2 mb-4 text-sm text-zinc-500 tabular-nums dark:text-zinc-400">
-        {kind}{weight !== null && ` · ${formatNumber(weight)} kg`} · reps {targets.minimum}–{targets.target}
+      <p className="-mt-2 text-sm text-zinc-500 tabular-nums dark:text-zinc-400">
+        {kind} · reps {targets.minimum}–{targets.target}
       </p>
-      {weight === null ? (
-        <p className="mb-4 text-lg font-semibold">No weight yet</p>
-      ) : raiseToday ? (
-        <p className="mb-3 text-2xl font-bold text-emerald-700 dark:text-emerald-400">↑ Today {nextText}</p>
-      ) : reached ? (
-        <p className="mb-3 text-2xl font-bold text-emerald-700 dark:text-emerald-400">✓ Next workout {nextText}</p>
-      ) : reps === null ? (
-        <p className="mb-3 text-2xl font-bold">{targets.target} reps for <span className="text-emerald-700 dark:text-emerald-400">↑ {nextText}</span></p>
-      ) : (
-        <p className="mb-3 text-2xl font-bold tabular-nums">
-          {targets.target - reps} {targets.target - reps === 1 ? 'rep' : 'reps'} to <span className="text-emerald-700 dark:text-emerald-400">↑ {nextText}</span>
-        </p>
-      )}
       {advice === 'reduce' && (
-        <p className="mb-3 rounded-lg bg-indigo-50 px-3 py-2 text-sm text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
+        <p className="mt-3 rounded-lg bg-indigo-50 px-3 py-2 text-sm text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
           <span className="font-semibold">Check the weight.</span> Top set below Min reps twice at the same weight. Check rest, recovery and form before choosing a lighter weight.
         </p>
       )}
-      {weight !== null && <RepsBar min={targets.minimum} max={targets.target} reps={reps} label={todayPoint ? 'today' : 'last'} nextText={nextText} />}
 
-      <Rules topSet={eff.topSet} />
+      {label('Goal')}
+      {weight === null ? (
+        <p className="text-lg font-semibold">No weight yet</p>
+      ) : reached ? (
+        <div className="rounded-2xl border border-emerald-600 bg-emerald-600/10 px-4 py-3 dark:border-emerald-500 dark:bg-emerald-900/50">
+          <div className="text-xs font-bold tracking-wide text-emerald-700 uppercase dark:text-emerald-300">Goal reached</div>
+          <div className="mt-0.5 text-2xl font-extrabold tracking-tight">{raiseToday ? `↑ Today ${nextText}` : `✓ Next workout ${nextText}`}</div>
+          <div className="mt-0.5 text-sm text-emerald-800 tabular-nums dark:text-emerald-200">
+            {eff.topSet ? 'Top set' : 'All sets'} {targets.target} reps at {formatNumber(weight)} kg
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-2xl border-[1.5px] border-dashed border-emerald-600 px-4 py-3 dark:border-emerald-400">
+          <div className="text-xs font-bold tracking-wide text-emerald-700 uppercase dark:text-emerald-400">Goal for {nextText}</div>
+          <div className="mt-0.5 text-xl font-extrabold tracking-tight tabular-nums">{targets.target} reps on {eff.topSet ? 'the top set' : 'all sets'}</div>
+          <div className="mt-0.5 text-sm text-zinc-500 tabular-nums dark:text-zinc-400">
+            at {formatNumber(weight)} kg{toGo !== null && <> · <b className="font-semibold text-zinc-900 dark:text-zinc-100">{toGo} {toGo === 1 ? 'rep' : 'reps'} to go</b></>}
+          </div>
+          <Progress min={targets.minimum} max={targets.target} reps={reps} />
+        </div>
+      )}
 
-      <h3 className="mt-5 mb-2 text-xs font-bold tracking-wide text-zinc-500 dark:text-zinc-400">LAST WORKOUTS · {kind.toUpperCase()}</h3>
-      {points.length === 0 && !todayPoint ? (
+      {todayPoint && (
+        <>
+          {label('Today')}
+          <div className="flex items-center justify-between gap-3 rounded-2xl bg-zinc-100 px-4 py-3 dark:bg-zinc-800/70">
+            <div className="min-w-0">
+              <div className="text-2xl font-extrabold tracking-tight tabular-nums">{formatNumber(todayPoint.weight)} kg × {todayPoint.reps}</div>
+              <div className="mt-0.5 truncate text-sm text-zinc-500 tabular-nums dark:text-zinc-400">
+                {eff.topSet ? 'top set' : 'lowest set'}
+                {today?.sets && today.sets.length > 0 && <> · {today.sets.length} {today.sets.length === 1 ? 'set' : 'sets'} · {today.sets.map((r) => r ?? '–').join(' · ')}</>}
+              </div>
+            </div>
+            {(todayPoint.reps ?? 0) >= targets.target
+              ? <span className="shrink-0 rounded-full bg-emerald-600/15 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300">✓ max</span>
+              : <span className="shrink-0 rounded-full bg-zinc-200 px-2.5 py-0.5 text-xs font-bold text-zinc-700 tabular-nums dark:bg-zinc-700 dark:text-zinc-200">{todayPoint.reps} / {targets.target}</span>}
+          </div>
+        </>
+      )}
+
+      {label('History')}
+      {history.length === 0 ? (
         <p className="text-sm text-zinc-500">No earlier workout with this exercise.</p>
       ) : (
         <ul className="divide-y divide-zinc-100 rounded-xl border border-zinc-200 text-sm dark:divide-zinc-800 dark:border-zinc-800">
-          {[...(todayPoint ? [todayPoint] : []), ...points].map((p, i) => (
-            <li key={i} className="grid grid-cols-[6.5rem_1fr_auto] items-center gap-2 px-3 py-2.5 tabular-nums">
-              <span className="text-zinc-500 dark:text-zinc-400">{p.date === 'today' ? 'Today' : dayFormat.format(new Date(p.date))}</span>
-              <Dots min={targets.minimum} max={targets.target} reps={p.reps} />
-              <span className="text-right">
+          {history.map((p, i) => (
+            <li key={i} className="flex items-center justify-between gap-2 px-3 py-2.5 tabular-nums">
+              <span className="text-zinc-500 dark:text-zinc-400">{dayFormat.format(new Date(p.date))}</span>
+              <span className={(p.reps ?? 0) >= targets.target ? 'font-semibold text-emerald-700 dark:text-emerald-400' : ''}>
                 {formatNumber(p.weight)} × {p.reps ?? '–'}
                 {p.up && <span className="ml-1 font-bold text-emerald-700 dark:text-emerald-400" aria-label="weight up">↑</span>}
               </span>
@@ -112,67 +142,25 @@ export default function ProgressionSheet({ exerciseId, includeVariants = false, 
           ))}
         </ul>
       )}
+      <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">
+        {eff.topSet && "Back-off sets don't count. "}Twice below {targets.minimum} reps at the same weight: go lighter.
+      </p>
     </Sheet>
   )
 }
 
-/** The progression rule in short (decision 9 November 2026); without a top set every set decides. */
-function Rules({ topSet }: { topSet: boolean }) {
-  const rows: [string, string][] = [
-    ['bg-emerald-600', topSet ? 'Top set reaches max reps' : 'All sets reach max reps'],
-    ...(topSet ? [['bg-zinc-400', "Back-off sets don't count"] as [string, string]] : []),
-    ['bg-orange-500', 'Twice below the range: go lighter'],
-  ]
-  return (
-    <div className="mt-4 flex flex-col gap-1.5 rounded-xl bg-zinc-100 p-3 text-sm dark:bg-zinc-800/70">
-      <span className="font-semibold">How to go up</span>
-      {rows.map(([dot, text]) => (
-        <span key={text} className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
-          <span className={`h-2 w-2 shrink-0 rounded-full ${dot}`} aria-hidden="true" />
-          {text}
-        </span>
-      ))}
-    </div>
-  )
-}
-
-/** Boxes from Min to Max reps: green up to the reference reps, Max outlined as the goal. */
-function RepsBar({ min, max, reps, label, nextText }: { min: number; max: number; reps: number | null; label: string; nextText: string }) {
+/** Progress from Min to Max reps as segments, filled up to the reference reps. */
+function Progress({ min, max, reps }: { min: number; max: number; reps: number | null }) {
   const values = range(min, max)
-  const reached = reps !== null && reps >= max
   return (
-    <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${values.length}, minmax(0, 1fr))` }}>
-      {values.map((n) => {
-        const filled = reps !== null && n <= reps
-        const goal = n === max && !reached
-        return (
-          <div key={n} className="flex flex-col items-center gap-1">
-            <span
-              className={`flex h-9 w-full items-center justify-center rounded-lg text-sm font-semibold tabular-nums ${
-                filled ? 'bg-emerald-500 text-white dark:bg-emerald-600'
-                  : goal ? 'border-2 border-emerald-700 text-emerald-700 dark:border-emerald-400 dark:text-emerald-400'
-                  : 'bg-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'
-              }`}
-            >
-              {n}
-            </span>
-            <span className="h-3.5 text-[11px] whitespace-nowrap text-zinc-500 dark:text-zinc-400">
-              {n === max && !reached ? `↑ ${nextText}` : reps !== null && n === Math.min(Math.max(reps, min), max) ? label : ''}
-            </span>
-          </div>
-        )
-      })}
+    <div className="mt-2.5" aria-label={reps === null ? undefined : `${reps} of ${max} reps`}>
+      <div className="flex gap-1">
+        {values.map((n) => (
+          <span key={n} className={`h-2.5 flex-1 rounded ${reps !== null && n <= reps ? 'bg-emerald-600 dark:bg-emerald-500' : 'bg-zinc-200 dark:bg-zinc-700'}`} />
+        ))}
+      </div>
+      <div className="mt-1 flex justify-between text-[11px] text-zinc-500 tabular-nums dark:text-zinc-400"><span>{min}</span><span>{max}</span></div>
     </div>
-  )
-}
-
-function Dots({ min, max, reps }: { min: number; max: number; reps: number | null }) {
-  return (
-    <span className="flex gap-[3px]" aria-hidden="true">
-      {range(min, max).map((n) => (
-        <span key={n} className={`h-2.5 w-2.5 rounded-[3px] ${reps !== null && n <= reps ? 'bg-emerald-500 dark:bg-emerald-600' : 'bg-zinc-200 dark:bg-zinc-700'}`} />
-      ))}
-    </span>
   )
 }
 

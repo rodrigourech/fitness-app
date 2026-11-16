@@ -606,7 +606,11 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
       {progressOpen && (
         <ProgressionSheet
           exerciseId={we.exercise_id}
-          today={advice === 'increase' || !goal ? null : { weight: goal.weight, reps: goal.todayReps }}
+          today={advice === 'increase' || !goal ? null : {
+            weight: goal.weight,
+            reps: goal.todayReps,
+            sets: sets.filter((s) => s.set_type === 'working' && s.completed_at !== null).sort((x, y) => x.position - y.position).map((s) => repsOf(s, eff.isUnilateral)),
+          }}
           advice={advice === 'increase' || advice === 'reduce' ? advice : null}
           onClose={() => setProgressOpen(false)}
         />
