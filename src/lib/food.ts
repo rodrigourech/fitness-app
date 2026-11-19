@@ -192,11 +192,15 @@ function entryRow(userId: string, draft: EntryDraft, existing?: FoodEntry): Food
 
 // --- automatic daily entries (decision 2 November 2026) -----------------------------------------
 // The ESN shake (every day, 08:00) and 2 espressos with milk (Monday to Friday, 09:30; 3 until 9 November 2026) are entered automatically for the
+// (since 19 November 2026 from the staple «Espresso with milk», title without the count, quantity «2 ×» in the item)
 // current day once a sync has run, so both devices know the server state first. The id is derived from user, day and
 // kind, so two devices create the same row and a deleted row is never created again.
 
 export const SHAKE_STAPLE_ID = 'c5a0f6d1-0001-4f00-8000-00000000000a'
-const ESPRESSO = { kcal: 37, protein: 2 } // 2 × (espresso 2 kcal + 2 tbsp milk 2.5 % about 16 kcal, 1 g protein)
+/** Staple «Espresso with milk» (migration 0049): espresso 2 kcal plus 2 tbsp milk about 16.5 kcal, 1 g protein. */
+export const ESPRESSO_STAPLE_ID = 'c5a0f6d1-0001-4f00-8000-000000000013'
+const ESPRESSO = { name: 'Espresso with milk', kcal: 18.5, protein_g: 1 }
+const ESPRESSO_COUNT = 2
 
 /** Name-based UUID (version 5 layout) from SHA-1. */
 export async function stableUuid(name: string): Promise<string> {
@@ -208,7 +212,8 @@ export async function stableUuid(name: string): Promise<string> {
 }
 
 /** Drafts of the automatic entries for a day according to the settings. */
-export function dailyDrafts(day: string, targets: Pick<NutritionTargets, 'shake' | 'espresso'>, shake?: Pick<FoodItem, 'name' | 'kcal' | 'protein_g'>): (EntryDraft & { kind: 'shake' | 'espresso' })[] {
+export function dailyDrafts(day: string, targets: Pick<NutritionTargets, 'shake' | 'espresso'>, shake?: Pick<FoodItem, 'name' | 'kcal' | 'protein_g'>,
+  espresso: Pick<FoodItem, 'name' | 'kcal' | 'protein_g'> = ESPRESSO): (EntryDraft & { kind: 'shake' | 'espresso' })[] {
   const weekday = new Date(`${day}T12:00:00`).getDay()
   const out: (EntryDraft & { kind: 'shake' | 'espresso' })[] = []
   if (targets.shake) {
@@ -218,8 +223,10 @@ export function dailyDrafts(day: string, targets: Pick<NutritionTargets, 'shake'
       items: [{ name: shake?.name ?? 'ESN shake, water', food_item_id: SHAKE_STAPLE_ID, amount: '1 serving', kcal, protein_g: protein, source: 'staple' }], kcal, protein })
   }
   if (targets.espresso && weekday >= 1 && weekday <= 5) {
-    out.push({ kind: 'espresso', eatenAt: new Date(`${day}T09:30:00`).toISOString(), category: 'snack', title: '2 espressos with milk', detail: '2 tbsp milk each',
-      items: [{ name: 'Espresso with milk', food_item_id: null, amount: '2 ×', kcal: ESPRESSO.kcal, protein_g: ESPRESSO.protein, source: 'staple' }], kcal: ESPRESSO.kcal, protein: ESPRESSO.protein })
+    const kcal = Math.round(espresso.kcal * ESPRESSO_COUNT * 10) / 10
+    const protein = Math.round(espresso.protein_g * ESPRESSO_COUNT * 10) / 10
+    out.push({ kind: 'espresso', eatenAt: new Date(`${day}T09:30:00`).toISOString(), category: 'snack', title: espresso.name, detail: '2 tbsp milk each',
+      items: [{ name: espresso.name, food_item_id: ESPRESSO_STAPLE_ID, amount: `${ESPRESSO_COUNT} ×`, kcal, protein_g: protein, source: 'staple' }], kcal, protein })
   }
   return out
 }
@@ -227,8 +234,9 @@ export function dailyDrafts(day: string, targets: Pick<NutritionTargets, 'shake'
 /** Creates the automatic entries of a day that do not exist yet (deleted ones stay deleted). Returns the number created. */
 export async function ensureDailyEntries(userId: string, day: string, targets: Pick<NutritionTargets, 'shake' | 'espresso'>): Promise<number> {
   const shake = await db.food_item.get(SHAKE_STAPLE_ID)
+  const espresso = await db.food_item.get(ESPRESSO_STAPLE_ID)
   const rows: FoodEntry[] = []
-  for (const d of dailyDrafts(day, targets, shake && shake.deleted_at === null ? shake : undefined)) {
+  for (const d of dailyDrafts(day, targets, shake && shake.deleted_at === null ? shake : undefined, espresso && espresso.deleted_at === null ? espresso : undefined)) {
     const id = await stableUuid(`${userId}/${day}/${d.kind}`)
     if (await db.food_entry.get(id)) continue
     const row = entryRow(userId, d)

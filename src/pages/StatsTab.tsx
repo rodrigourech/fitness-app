@@ -513,7 +513,7 @@ function CrowdDetails({ data, className }: { data: AnalyticsData; className: str
               )}
             />
             <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              {grid.ratings} {grid.ratings === 1 ? 'rating' : 'ratings'}, 1 = empty, 10 = packed. Times are when the workout was finished.
+              {grid.ratings} {grid.ratings === 1 ? 'rating' : 'ratings'}, 1 = empty, 10 = packed. A rating counts for the whole workout, from start to end.
             </p>
           </>
         )}

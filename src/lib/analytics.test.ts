@@ -223,4 +223,22 @@ describe('analytics', () => {
     // A single rating of 1 does not beat an average of 1.5 over two ratings
     expect(g.best).toMatchObject({ weekday: 0, slot: 1 })
   })
+
+  it('counts a rating in every slot from start to end of the workout', () => {
+    const w = (started: string, finished: string, crowd: number): WorkoutInfo => ({ id: started, startedAt: started, finishedAt: finished, crowd, strength: true, run: false })
+    const g = crowdGrid([w('2026-10-05T09:20:00', '2026-10-05T10:40:00', 4), w('2026-10-06T21:30:00', '2026-10-07T00:30:00', 6)], 0)
+    expect(g.ratings).toBe(2)
+    expect(g.cells[0]![1]).toMatchObject({ avg: 4, count: 1 }) // Monday 8–10
+    expect(g.cells[0]![2]).toMatchObject({ avg: 4, count: 1 }) // Monday 10–12
+    expect(g.cells[0]![3]).toMatchObject({ avg: null, count: 0 })
+    expect(g.cells[1]![7]).toMatchObject({ avg: 6, count: 1 }) // Tuesday 20+
+    expect(g.cells[2]![0]).toMatchObject({ avg: 6, count: 1 }) // past midnight: Wednesday <8
+  })
+
+  it('caps a workout left open at three hours', () => {
+    const g = crowdGrid([{ id: 'a', startedAt: '2026-10-05T09:00:00', finishedAt: '2026-10-05T20:00:00', crowd: 3, strength: true, run: false }], 0)
+    expect(g.cells[0]![1]!.count).toBe(1) // 8–10
+    expect(g.cells[0]![2]!.count).toBe(1) // 10–12
+    expect(g.cells[0]![3]!.count).toBe(0) // 12–14 lies beyond three hours
+  })
 })

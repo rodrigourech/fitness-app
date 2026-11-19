@@ -416,19 +416,32 @@ export interface CrowdSummary {
   best: CrowdCell | null
 }
 
+/** Longest stretch a rating covers; a workout left open longer than this counts only up to it. */
+export const CROWD_MAX_SPAN_MS = 3 * 60 * 60 * 1000
+
+/**
+ * Crowd ratings per weekday and two-hour slot (decision 19 November 2026): a rating holds for the whole workout, so it
+ * counts in every slot from start to end (at most CROWD_MAX_SPAN_MS after the start), also for all earlier workouts.
+ */
 export function crowdGrid(workouts: WorkoutInfo[], from: number): CrowdSummary {
   const sums = Array.from({ length: 7 }, () => CROWD_SLOTS.map(() => ({ sum: 0, count: 0 })))
   let ratings = 0
   for (const w of workouts) {
     if (w.crowd === null || Date.parse(w.finishedAt) < from) continue
-    const d = new Date(w.finishedAt)
-    const weekday = (d.getDay() + 6) % 7
-    const hour = d.getHours()
-    const slot = CROWD_SLOTS.findIndex((s) => hour >= s.from && hour < s.to)
-    const cell = sums[weekday]![slot]!
-    cell.sum += w.crowd
-    cell.count++
+    const start = Date.parse(w.startedAt)
+    const end = Math.max(start + 1, Math.min(Date.parse(w.finishedAt), start + CROWD_MAX_SPAN_MS))
     ratings++
+    // Walk the slots the workout overlaps, slot by slot in local time
+    const t = new Date(start)
+    while (t.getTime() < end) {
+      const hour = t.getHours()
+      const slotIndex = CROWD_SLOTS.findIndex((s) => hour >= s.from && hour < s.to)
+      const slot = CROWD_SLOTS[slotIndex]!
+      const cell = sums[(t.getDay() + 6) % 7]![slotIndex]!
+      cell.sum += w.crowd
+      cell.count++
+      t.setHours(slot.to, 0, 0, 0) // start of the next slot (hour 24 rolls over to the next day)
+    }
   }
   const cells = sums.map((row, weekday) =>
     row.map((c, slot) => ({ weekday, slot, count: c.count, avg: c.count ? c.sum / c.count : null })),

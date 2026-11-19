@@ -27,6 +27,7 @@ import {
   type PortionSlot,
 } from '../lib/food'
 import { MONTHS } from '../lib/forecast'
+import { entryTotal, formatQuantity, itemsLine, matchesItems, parseAmount, perUnitText, quantityTag, scaleItem, stepOf, unitLabel } from '../lib/foodAmount'
 import { getNutrition, saveNutrition, type NutritionTargets } from '../lib/settings'
 
 // Food tab, variant B (decision 1 November 2026): two numbers for the day, then Day (timeline), Week and Staples.
@@ -144,7 +145,7 @@ export default function FoodTab({ userId }: { userId: string }) {
         </div>
       ) : dayColumn}
 
-      {sheet?.kind === 'entry' && <EntrySheet userId={userId} day={day} entry={sheet.entry} onClose={() => setSheet(null)} />}
+      {sheet?.kind === 'entry' && <EntrySheet userId={userId} day={day} entry={sheet.entry} staples={data.items} onClose={() => setSheet(null)} />}
       {sheet?.kind === 'staples' && <StaplesSheet userId={userId} day={day} today={today} items={data.items} onClose={() => setSheet(null)} />}
       {sheet?.kind === 'item' && <ItemSheet userId={userId} item={sheet.item} onClose={() => setSheet(null)} />}
       {sheet?.kind === 'targets' && <TargetsSheet userId={userId} targets={targets} today={today} onClose={() => setSheet(null)} />}
@@ -269,10 +270,13 @@ function TimelineEntry({ entry: e, last, onOpen }: { entry: FoodEntry; last: boo
         <span className="block text-[11px] font-semibold tracking-wide text-zinc-500 uppercase dark:text-zinc-400">{CATEGORY_LABEL[e.category]}</span>
         <span className="mt-0.5 block font-semibold">
           {e.title}
+          {quantityTag(e) && <span className="ml-1.5 rounded-full bg-indigo-50 px-1.5 py-px align-[1px] text-[11px] font-bold whitespace-nowrap text-indigo-700 tabular-nums dark:bg-indigo-950 dark:text-indigo-300">{quantityTag(e)}</span>}
           {e.source === 'auto' && <span className="ml-1.5 rounded-md bg-zinc-100 px-1.5 py-px align-[1px] text-[10px] font-semibold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">daily</span>}
           {e.source === 'claude' && <span className="ml-1.5 rounded-md bg-violet-50 px-1.5 py-px align-[1px] text-[10px] font-semibold text-violet-700 dark:bg-violet-950 dark:text-violet-300">Claude</span>}
         </span>
-        {e.detail && <span className="mt-0.5 block text-xs text-zinc-500 dark:text-zinc-400">{e.detail}</span>}
+        {(e.detail || (e.items.length === 1 && perUnitText(e.items[0]!))) && (
+          <span className="mt-0.5 block text-xs text-zinc-500 dark:text-zinc-400">{e.detail || perUnitText(e.items[0]!)}</span>
+        )}
         <span className="mt-1.5 flex gap-3 text-sm font-semibold tabular-nums">
           <span>{num(e.kcal)} kcal</span>
           <span className="text-emerald-700 dark:text-emerald-400">{Math.round(e.protein_g)} g protein</span>
@@ -444,14 +448,14 @@ function StaplesView({ items, onOpen }: { items: FoodItem[]; onOpen: (i?: FoodIt
 
 // --- sheets ----------------------------------------------------------------------------------
 
-function localInput(iso: string): string {
-  const d = new Date(iso)
-  return `${localDay(d)}T${time(iso)}`
+/** Local date and time of a timestamp for the separate date and time fields. */
+function localParts(iso: string): { date: string; time: string } {
+  return { date: localDay(new Date(iso)), time: time(iso) }
 }
 
-function defaultTime(day: string): string {
+function defaultParts(day: string): { date: string; time: string } {
   const now = new Date()
-  return day === localDay(now) ? localInput(now.toISOString()) : `${day}T12:00`
+  return day === localDay(now) ? localParts(now.toISOString()) : { date: day, time: '12:00' }
 }
 
 function Label({ text, children }: { text: string; children: ReactNode }) {
@@ -473,28 +477,153 @@ function CategoryPicker({ value, onChange }: { value: FoodCategory; onChange: (c
   )
 }
 
-function EntrySheet({ userId, day, entry, onClose }: { userId: string; day: string; entry?: FoodEntry; onClose: () => void }) {
-  const [when, setWhen] = useState(entry ? localInput(entry.eaten_at) : defaultTime(day))
-  const [category, setCategory] = useState<FoodCategory>(entry?.category ?? categoryAt(new Date(when)))
+/**
+ * Add or edit an entry (decision 19 November 2026): «What» names the food, the quantity is its own field. With items,
+ * kcal and protein follow the quantities automatically (one item: − / + quantity; several: one amount per ingredient,
+ * plus the eaten portions of a meal prep). «Enter values by hand» switches to free values. Date and time are separate.
+ */
+function EntrySheet({ userId, day, entry, staples, onClose }: { userId: string; day: string; entry?: FoodEntry; staples: FoodItem[]; onClose: () => void }) {
+  const start = entry ? localParts(entry.eaten_at) : defaultParts(day)
+  const [date, setDate] = useState(start.date)
+  const [clock, setClock] = useState(start.time)
+  const [category, setCategory] = useState<FoodCategory>(entry?.category ?? categoryAt(new Date(`${start.date}T${start.time}`)))
   const [title, setTitle] = useState(entry?.title ?? '')
+  // Items as stored are the base of the proportional calculation, so repeated changes never drift
+  const [base, setBase] = useState<FoodEntryItem[]>(entry?.items ?? [])
+  const [amounts, setAmounts] = useState<string[]>(() => (entry?.items ?? []).map((i) => { const a = parseAmount(i.amount); return a ? formatQuantity(a.quantity) : '' }))
+  const cooked = entry?.portions_cooked ?? null
+  const [eaten, setEaten] = useState(entry?.portions_eaten ?? 1)
+  const [manual, setManual] = useState(() => !entry || !matchesItems(entry))
   const [kcal, setKcal] = useState(entry ? String(Math.round(entry.kcal)) : '')
   const [protein, setProtein] = useState(entry ? String(entry.protein_g) : '')
-  const k = Number(kcal.replace(',', '.'))
-  const p = Number(protein.replace(',', '.') || '0')
-  const valid = kcal !== '' && Number.isFinite(k) && k >= 0 && Number.isFinite(p) && p >= 0 && when !== ''
-  const save = () => void saveFoodEntry(userId, { eatenAt: new Date(when).toISOString(), category, title, kcal: k, protein: p, items: entry?.items,
-    detail: entry?.detail, portionsCooked: entry?.portions_cooked, portionsEaten: entry?.portions_eaten }, entry).then(onClose)
+  const [adding, setAdding] = useState('')
+
+  const items = base.map((item, i) => {
+    const q = Number((amounts[i] ?? '').replace(',', '.'))
+    return parseAmount(item.amount) && Number.isFinite(q) && amounts[i] !== '' ? scaleItem(item, q) : item
+  })
+  const calculable = items.length > 0 && base.every((i) => parseAmount(i.amount) !== null)
+  const auto = calculable && !manual
+  const computed = entryTotal(items, cooked, cooked && cooked > 1 ? eaten : null)
+  const k = auto ? computed.kcal : Number(kcal.replace(',', '.'))
+  const p = auto ? computed.protein : Number(protein.replace(',', '.') || '0')
+  const valid = (auto || kcal !== '') && Number.isFinite(k) && k >= 0 && Number.isFinite(p) && p >= 0 && date !== '' && clock !== ''
+  const changedAmounts = items.some((it, i) => it.amount !== (entry?.items[i]?.amount ?? it.amount)) || items.length !== (entry?.items.length ?? 0)
+  const detail = changedAmounts && items.length > 1
+    ? `${cooked && cooked > 1 ? `Portion ${eaten} of ${cooked} · ` : ''}${itemsLine(items)}`
+    : entry?.detail
+
+  const setAmount = (i: number, value: string) => setAmounts(amounts.map((a, j) => (j === i ? value : a)))
+  const stepAmount = (i: number, dir: 1 | -1) => {
+    const unit = parseAmount(base[i]!.amount)!.unit
+    const step = stepOf(unit)
+    const now = Number((amounts[i] ?? '0').replace(',', '.')) || 0
+    setAmount(i, formatQuantity(Math.max(step === 1 ? 1 : step, Math.round((now + dir * step) / step) * step)))
+  }
+  const addStaple = (id: string) => {
+    const staple = staples.find((x) => x.id === id)
+    if (!staple) return
+    const q = staple.basis === '100g' ? 100 : 1
+    const v = stapleValues(staple, q)
+    setBase([...base, { name: staple.name, food_item_id: staple.id, amount: amountText(staple, q), kcal: v.kcal, protein_g: v.protein, source: 'staple' }])
+    setAmounts([...amounts, String(q)])
+    if (!entry || base.length === 0) setManual(false)
+    if (!title.trim()) setTitle(staple.name)
+    setAdding('')
+  }
+  const save = () => void saveFoodEntry(userId, { eatenAt: new Date(`${date}T${clock}`).toISOString(), category, title, kcal: k, protein: p, items,
+    detail, portionsCooked: cooked, portionsEaten: cooked && cooked > 1 ? eaten : entry?.portions_eaten }, entry).then(onClose)
+
   return (
     <Sheet title={entry ? 'Edit entry' : 'Add entry'} onClose={onClose}>
       <div className="flex flex-col gap-3">
         <CategoryPicker value={category} onChange={setCategory} />
         <Label text="What"><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Döner, chicken with rice" className={input} /></Label>
+
+        {items.length === 1 && parseAmount(base[0]!.amount) && (
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">Quantity</span>
+            <div className="flex items-center gap-3">
+              <Stepper value={amounts[0] ?? ''} onChange={(v) => setAmount(0, v)} onStep={(d) => stepAmount(0, d)} label={base[0]!.name} />
+              <span className="min-w-0 text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
+                {unitLabel(parseAmount(base[0]!.amount)!.unit, Number(amounts[0]) || 0)} · {perUnitText(base[0]!)}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {(items.length > 1 || (items.length === 1 && !parseAmount(base[0]!.amount))) && (
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">Ingredients</span>
+            <div className="rounded-xl border border-zinc-200 px-3 dark:border-zinc-700">
+              {items.map((it, i) => {
+                const a = parseAmount(base[i]!.amount)
+                return (
+                  <div key={i} className="flex items-center justify-between gap-3 border-b border-zinc-100 py-2 last:border-0 dark:border-zinc-800">
+                    <span className="min-w-0 text-sm">
+                      <span className="block truncate">{it.name}{it.source === 'estimate' && <span className="ml-1 text-[11px] text-violet-600 dark:text-violet-400">estimate</span>}</span>
+                      <span className="block text-xs text-zinc-500 tabular-nums dark:text-zinc-400">{Math.round(it.kcal)} kcal · {Math.round(it.protein_g * 10) / 10} g</span>
+                    </span>
+                    {a ? (
+                      <span className="flex shrink-0 items-center gap-1.5">
+                        <input inputMode="decimal" aria-label={`${it.name} amount`} value={amounts[i] ?? ''} onChange={(e) => setAmount(i, e.target.value)}
+                          className="w-16 rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-right text-sm tabular-nums dark:border-zinc-700" />
+                        <span className="w-12 truncate text-xs text-zinc-500 dark:text-zinc-400">{unitLabel(a.unit, Number(amounts[i]) || 0)}</span>
+                      </span>
+                    ) : <span className="shrink-0 text-xs text-zinc-500">{it.amount}</span>}
+                  </div>
+                )
+              })}
+              {staples.length > 0 && (
+                <select aria-label="Add ingredient" value={adding} onChange={(e) => addStaple(e.target.value)}
+                  className="my-1.5 w-full bg-transparent py-1 text-sm font-semibold text-accent">
+                  <option value="">+ Add ingredient</option>
+                  {staples.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                </select>
+              )}
+            </div>
+          </div>
+        )}
+
+        {cooked !== null && cooked > 1 && (
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">Portions</span>
+            <Stepper value={String(eaten)} onChange={(v) => setEaten(Math.min(cooked, Math.max(1, Number(v) || 1)))} onStep={(d) => setEaten(Math.min(cooked, Math.max(1, eaten + d)))} label="Portions" />
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">of {cooked} cooked</span>
+          </div>
+        )}
+
+        {items.length === 0 && staples.length > 0 && (
+          <select aria-label="Add from staples" value={adding} onChange={(e) => addStaple(e.target.value)} className={`${input} text-zinc-600 dark:text-zinc-300`}>
+            <option value="">From staples (optional)</option>
+            {staples.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+          </select>
+        )}
+
         <div className="grid grid-cols-2 gap-2">
-          <Label text="kcal"><input inputMode="numeric" value={kcal} onChange={(e) => setKcal(e.target.value)} className={input} /></Label>
-          <Label text="Protein g"><input inputMode="decimal" value={protein} onChange={(e) => setProtein(e.target.value)} className={input} /></Label>
+          {auto ? (
+            <>
+              <Label text="kcal · auto"><span className={`${input} border-dashed bg-zinc-50 dark:bg-zinc-900`}>{num(computed.kcal)}</span></Label>
+              <Label text="Protein g · auto"><span className={`${input} border-dashed bg-zinc-50 dark:bg-zinc-900`}>{Math.round(computed.protein)}</span></Label>
+            </>
+          ) : (
+            <>
+              <Label text="kcal"><input inputMode="numeric" value={kcal} onChange={(e) => setKcal(e.target.value)} className={input} /></Label>
+              <Label text="Protein g"><input inputMode="decimal" value={protein} onChange={(e) => setProtein(e.target.value)} className={input} /></Label>
+            </>
+          )}
         </div>
-        <Label text="Time"><input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} className={input} /></Label>
-        {entry && entry.items.length > 0 && <ItemList items={entry.items} entry={entry} />}
+        {calculable && (
+          <button type="button" onClick={() => { if (auto) { setKcal(String(computed.kcal)); setProtein(String(computed.protein)) } setManual(auto) }}
+            className="-mt-1 self-start text-xs font-semibold text-accent">
+            {auto ? 'Enter values by hand' : 'Calculate from quantities'}
+          </button>
+        )}
+
+        <div className="grid grid-cols-[1fr_auto] gap-2">
+          <Label text="Date"><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={input} /></Label>
+          <Label text="Time"><input type="time" value={clock} onChange={(e) => setClock(e.target.value)} className={`${input} w-32`} /></Label>
+        </div>
         <div className="mt-1 flex gap-2">
           {entry && <button onClick={() => void deleteFoodEntry(entry).then(onClose)} className="rounded-lg px-3 py-2 text-sm font-semibold text-red-700 dark:text-red-400">Delete</button>}
           <button disabled={!valid} onClick={save} className="ml-auto rounded-lg bg-accent px-5 py-2 text-sm font-semibold text-accent-fg disabled:opacity-40">Save</button>
@@ -504,17 +633,16 @@ function EntrySheet({ userId, day, entry, onClose }: { userId: string; day: stri
   )
 }
 
-function ItemList({ items, entry }: { items: FoodEntryItem[]; entry: FoodEntry }) {
+/** Number field with − and + around it. */
+function Stepper({ value, onChange, onStep, label }: { value: string; onChange: (v: string) => void; onStep: (dir: 1 | -1) => void; label: string }) {
+  const btn = 'h-9 w-9 text-lg font-semibold text-accent'
   return (
-    <div className="rounded-xl bg-zinc-100 p-3 text-xs dark:bg-zinc-800">
-      {items.map((i, n) => (
-        <div key={n} className="flex justify-between gap-2 py-0.5 tabular-nums">
-          <span>{i.name}, {i.amount}{i.source === 'estimate' && <span className="ml-1 text-violet-600">estimate</span>}</span>
-          <span className="shrink-0">{Math.round(i.kcal)} kcal · {i.protein_g} g</span>
-        </div>
-      ))}
-      {entry.portions_cooked && <div className="mt-1 text-zinc-500">{entry.portions_eaten ?? 1} of {entry.portions_cooked} portions</div>}
-    </div>
+    <span className="flex shrink-0 items-center overflow-hidden rounded-lg border border-zinc-300 dark:border-zinc-700">
+      <button type="button" aria-label={`Less ${label}`} onClick={() => onStep(-1)} className={btn}>−</button>
+      <input inputMode="decimal" aria-label={`${label} quantity`} value={value} onChange={(e) => onChange(e.target.value)}
+        className="h-9 w-14 border-x border-zinc-200 bg-transparent text-center text-sm font-semibold tabular-nums dark:border-zinc-700" />
+      <button type="button" aria-label={`More ${label}`} onClick={() => onStep(1)} className={btn}>+</button>
+    </span>
   )
 }
 

@@ -14,6 +14,7 @@ Letzte Aktualisierung 5. November 2026
 
 ## Stand
 
+- 19. November: Food-Einträge mit separater Menge (− / +, Zutatenmengen, Portionen), kcal und Protein automatisch, Datum und Uhrzeit getrennt; Espresso als Standardlebensmittel (Migration 0049 offen); Gym crowd zählt über die ganze Trainingsdauer. Offen auf production: 0047, 0048, 0049
 - 16. November: Progressionsblatt mit Abschnitten Goal (gestrichelt, erreicht voll grün), Today und History (src/components/ProgressionSheet.tsx; WorkoutPage übergibt die abgehakten Sätze)
 - 16. November: Food-Tagesziele als drei Kacheln (Calories, Deficit, Protein), Defizit-Status als Pille «Goal kept» / «N short» / «Over need»
 - 15. November (Mittag, gilt): Food-Tag mit «Daily goals» unter dem Titel, kcal-Karte Eaten · Need (Ziel nur oben), Balken blau, hellblau über dem Ziel, rot erst über dem Bedarf, orange Defizit, gestrichelte Ziellinie, Fusszeile Deficit mit Status zum Zieldefizit; Protein-Zeile ohne Text, Balken voll beim Minimum. Die Kachel-Varianten vom Vormittag sind ersetzt. 390 px hell und dunkel, auch über dem Ziel, geprüft

@@ -55,7 +55,7 @@ describe('food', () => {
   it('daily entries: shake every day, espressos Monday to Friday, created once, deleted stays deleted', async () => {
     expect(dailyDrafts('2026-11-02', { shake: true, espresso: true }).map((d) => d.kind)).toEqual(['shake', 'espresso'])
     expect(dailyDrafts('2026-11-01', { shake: true, espresso: true }).map((d) => d.kind)).toEqual(['shake'])
-    expect(dailyDrafts('2026-11-09', { shake: false, espresso: true })[0]).toMatchObject({ title: '2 espressos with milk', kcal: 37, protein: 2 })
+    expect(dailyDrafts('2026-11-09', { shake: false, espresso: true })[0]).toMatchObject({ title: 'Espresso with milk', kcal: 37, protein: 2, items: [{ amount: '2 ×', food_item_id: 'c5a0f6d1-0001-4f00-8000-000000000013' }] })
     expect(dailyDrafts('2026-11-02', { shake: false, espresso: false })).toEqual([])
     expect(await stableUuid('a')).toBe(await stableUuid('a'))
     expect(await stableUuid('a')).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
