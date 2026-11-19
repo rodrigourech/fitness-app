@@ -1,3 +1,7 @@
+import { useLiveQuery } from 'dexie-react-hooks'
+import { useState } from 'react'
+import { db } from '../lib/db'
+import { effective } from '../lib/workout'
 import Sheet from './Sheet'
 
 // «How progression works» (decision 19 November 2026, card «Progression_Regeln_Karte»): the rules of the app in short,
@@ -17,7 +21,50 @@ function Outcome({ icon, tone, title, text }: { icon: string; tone: string; titl
 
 const head = 'mt-5 mb-2 text-xs font-bold tracking-wide text-zinc-500 uppercase dark:text-zinc-400'
 
+interface Groups { topOn: string[]; topOff: string[]; sides: string[] }
+
+/** Exercises of the active plans by progression type (decision 20 November 2026): top set on, off, left and right. */
+async function loadGroups(): Promise<Groups> {
+  const [templates, slots, exercises] = await Promise.all([db.template.toArray(), db.template_exercise.toArray(), db.exercise.toArray()])
+  const active = new Set(templates.filter((t) => t.deleted_at === null && !t.archived_at).map((t) => t.id))
+  const byId = new Map(exercises.map((e) => [e.id, e]))
+  const ids = [...new Set(slots.filter((s) => s.deleted_at === null && active.has(s.template_id)).map((s) => s.exercise_id))]
+  const groups: Groups = { topOn: [], topOff: [], sides: [] }
+  for (const id of ids) {
+    const ex = byId.get(id)
+    if (!ex || ex.deleted_at !== null) continue
+    const eff = effective(ex, byId)
+    if (eff.trackingType !== 'weight_reps') continue
+    const parent = ex.parent_id ? byId.get(ex.parent_id) : undefined
+    const name = parent ? `${parent.name} · ${ex.name}` : ex.name
+    ;(eff.topSet ? groups.topOn : groups.topOff).push(name)
+    if (eff.isUnilateral) groups.sides.push(name)
+  }
+  for (const list of Object.values(groups)) list.sort((a: string, b: string) => a.localeCompare(b))
+  return groups
+}
+
+/** «Show exercises (N)»: the exercises of the active plans that follow this type. */
+function ExerciseList({ names }: { names: string[] | undefined }) {
+  const [open, setOpen] = useState(false)
+  if (!names) return null
+  if (names.length === 0) return <div className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">No exercise in your plans.</div>
+  return (
+    <div className="mt-2">
+      <button onClick={() => setOpen(!open)} aria-expanded={open} className="text-xs font-semibold text-accent">
+        {open ? 'Hide exercises' : `Show exercises (${names.length})`}
+      </button>
+      {open && (
+        <ul className="mt-1 flex flex-col gap-0.5 text-xs text-zinc-600 dark:text-zinc-300">
+          {names.map((n) => <li key={n}>{n}</li>)}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 export default function ProgressionRules({ onClose }: { onClose: () => void }) {
+  const groups = useLiveQuery(loadGroups, [])
   return (
     <Sheet title="How progression works" onClose={onClose}>
       <h3 className={`${head} mt-0`}>Your range</h3>
@@ -29,15 +76,16 @@ export default function ProgressionRules({ onClose }: { onClose: () => void }) {
       </div>
 
       <h3 className={head}>Which sets count</h3>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 items-start gap-2">
         <div className="rounded-2xl bg-zinc-100 p-3 dark:bg-zinc-800/70">
           <div className="text-sm font-bold">Top set on</div>
-          <div className="text-sm text-zinc-600 dark:text-zinc-300">Only the heaviest set.</div>
+          <div className="text-sm text-zinc-600 dark:text-zinc-300">Only the top set, the first at the heaviest weight.</div>
           <div className="mt-2 flex gap-1" aria-hidden="true">
             <span className="h-5 flex-1 rounded border border-orange-500 bg-orange-50 dark:bg-orange-500/10" />
             <span className="h-5 flex-1 rounded border border-dashed border-orange-400" />
             <span className="h-5 flex-1 rounded border border-dashed border-orange-400" />
           </div>
+          <ExerciseList names={groups?.topOn} />
         </div>
         <div className="rounded-2xl bg-zinc-100 p-3 dark:bg-zinc-800/70">
           <div className="text-sm font-bold">Top set off</div>
@@ -45,9 +93,13 @@ export default function ProgressionRules({ onClose }: { onClose: () => void }) {
           <div className="mt-2 flex gap-1" aria-hidden="true">
             <span className="h-5 flex-1 rounded bg-accent" /><span className="h-5 flex-1 rounded bg-accent" /><span className="h-5 flex-1 rounded bg-accent" />
           </div>
+          <ExerciseList names={groups?.topOff} />
         </div>
       </div>
-      <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">Left and right: the weaker side counts.</p>
+      <div className="mt-2 rounded-2xl bg-zinc-100 p-3 dark:bg-zinc-800/70">
+        <div className="text-sm text-zinc-600 dark:text-zinc-300">Left and right: the weaker side counts.</div>
+        <ExerciseList names={groups?.sides} />
+      </div>
 
       <h3 className={head}>After each workout</h3>
       <div className="flex flex-col gap-2">
