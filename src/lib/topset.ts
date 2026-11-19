@@ -103,7 +103,7 @@ export function warmUpWeight(current: (number | null)[], warmUp: number, step: n
 
 /**
  * Weight fields marked while «Increase weight» applies, until the weight is raised or the set is checked.
- * Top set on: the sets that carried the top weight last time. Off: every set.
+ * Top set on: the top set of last time (one top set). Off: every set.
  */
 export function increaseMarks(current: (number | null)[], previous: (number | null)[], done: boolean[], topSet: boolean): boolean[] {
   const prevTop = topIndex(previous)
@@ -111,7 +111,7 @@ export function increaseMarks(current: (number | null)[], previous: (number | nu
   return current.map((kg, i) => {
     const before = previous[i] ?? previous.at(-1) ?? null
     if (done[i] || before === null) return false
-    if (topSet && before !== topKg) return false
+    if (topSet && (i !== prevTop || before !== topKg)) return false
     return kg === null || kg <= before
   })
 }

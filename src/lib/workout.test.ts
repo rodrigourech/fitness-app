@@ -329,3 +329,12 @@ describe('start reps', () => {
     expect(midReps(10, 15)).toBe(12)
   })
 })
+
+describe('back-off prefill', () => {
+  it('starts every set but the top set at Rec. kg (decision 20 November 2026)', async () => {
+    const { withBackOff } = await import('./workout')
+    const eff = { topSet: true, trackingType: 'weight_reps', weightStep: 6.8 }
+    expect(withBackOff([{ weight: 39 }, { weight: 32 }, { weight: 39 }], eff, 85).map((s) => s.weight)).toEqual([39, 32, 32])
+    expect(withBackOff([{ weight: 39 }, { weight: 39 }], { ...eff, topSet: false }, 85).map((s) => s.weight)).toEqual([39, 39])
+  })
+})

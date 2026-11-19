@@ -1,7 +1,9 @@
 import { db, type Exercise, type TemplateSet, type Workout, type WorkoutExercise, type WorkoutSet } from './db'
 import { prefillSource } from './goal'
 import { isExtra } from './extra'
+import { getTrainingShares } from './settings'
 import { saveRows } from './sync'
+import { shareOf, topIndex } from './topset'
 import { exerciseTrainingSettings, repetitionTargets } from './training'
 
 // Workout logging. A workout copies its template at start; later template edits do not affect it.
@@ -145,6 +147,7 @@ export async function startWorkout(templateId: string, userId: string): Promise<
   const wes: WorkoutExercise[] = []
   const sets: WorkoutSet[] = []
   const byId = new Map((await db.exercise.toArray()).map((ex) => [ex.id, ex]))
+  const { backOff } = await getTrainingShares()
   for (const te of tes) {
     const ex = byId.get(te.exercise_id)
     if (!ex) throw new Error('Exercise not found')
@@ -171,7 +174,7 @@ export async function startWorkout(templateId: string, userId: string): Promise<
     // Prefill: last performance of this exercise in any workout; else the template targets (decision 15 October 2026)
     const recent = (await recentSets(te.exercise_id, undefined, null, JUMP_LOOKBACK)).map(workingOnly)
     const source = recent[prefillSource(recent, eff.topSet, eff.isUnilateral, targets)] ?? []
-    sets.push(...prefilledSets(we, eff, planned, source, userId, ts))
+    sets.push(...prefilledSets(we, eff, planned, source, backOff, userId, ts))
   }
 
   await saveRows('workout', [workout])
@@ -211,21 +214,19 @@ export async function addExerciseToWorkout(w: Workout, exerciseId: string): Prom
       workout_exercise_id: we.id,
       position: i + 1 + (warmUp ? 1 : 0),
       set_type: 'working',
-      ...(p ? measureOf(p) : {
-        weight: null,
-        reps: eff.trackingType === 'weight_reps' && !eff.isUnilateral ? midReps(eff.minReps, eff.targetReps) : null,
-        reps_left: eff.trackingType === 'weight_reps' && eff.isUnilateral ? midReps(eff.minReps, eff.targetReps) : null,
-        reps_right: eff.trackingType === 'weight_reps' && eff.isUnilateral ? midReps(eff.minReps, eff.targetReps) : null,
-        duration_s: null, distance_km: null,
+      // Reps start empty with last time's value in grey (decision 19 November 2026)
+      ...(p ? { ...measureOf(p), ...(eff.trackingType === 'weight_reps' ? { reps: null, reps_left: null, reps_right: null } : {}) } : {
+        weight: null, reps: null, reps_left: null, reps_right: null, duration_s: null, distance_km: null,
       }),
       rir: null,
       completed_at: null,
       ...base(w.user_id, ts),
     }
   })
-  if (warmUp) sets.unshift(warmUpSet(we, w.user_id, ts))
+  const work = withBackOff(sets, eff, (await getTrainingShares()).backOff)
+  if (warmUp) work.unshift(warmUpSet(we, w.user_id, ts))
   await saveRows('workout_exercise', [we])
-  await saveRows('workout_set', sets)
+  await saveRows('workout_set', work)
 }
 
 // Own weight jumps (decision Rodrigo, 19 November 2026): the prefill skips a performance at a heavier weight that the app
@@ -245,6 +246,7 @@ function prefilledSets(
   eff: ReturnType<typeof effective>,
   planned: Planned[],
   prevWorking: WorkoutSet[],
+  backOff: number,
   userId: string,
   ts: string,
 ): WorkoutSet[] {
@@ -280,7 +282,19 @@ function prefilledSets(
       ...base(userId, ts),
     })
   })
-  return sets
+  return warmUp ? [sets[0]!, ...withBackOff(sets.slice(1), eff, backOff)] : withBackOff(sets, eff, backOff)
+}
+
+/**
+ * Back-off sets start at Rec. kg (decision Rodrigo, 20 November 2026): with top set on, every work set but the top set
+ * gets the back-off share of the top weight, as the Rec. kg column shows it; a slip from last time is not carried on.
+ */
+export function withBackOff<T extends { weight: number | null }>(sets: T[], eff: { topSet: boolean; trackingType: string; weightStep: number | null }, backOff: number): T[] {
+  if (!eff.topSet || eff.trackingType !== 'weight_reps') return sets
+  const top = topIndex(sets.map((s) => s.weight))
+  if (top === -1) return sets
+  const kg = shareOf(sets[top]!.weight!, backOff / 100, eff.weightStep).kg
+  return sets.map((s, i) => (i === top ? s : { ...s, weight: kg }))
 }
 
 // --- alternative exercises (decision 22 October 2026) -------------------------------
@@ -337,7 +351,7 @@ export async function switchExercise(we: WorkoutExercise): Promise<void> {
   const prev = recent[prefillSource(recent, eff.topSet, eff.isUnilateral, targets)] ?? []
   if (sets.length) await saveRows('workout_set', sets.map((s) => ({ ...s, deleted_at: ts })))
   await saveRows('workout_exercise', [next])
-  await saveRows('workout_set', prefilledSets(next, eff, planned, prev, current.user_id, ts))
+  await saveRows('workout_set', prefilledSets(next, eff, planned, prev, (await getTrainingShares()).backOff, current.user_id, ts))
 }
 
 /** Middle of the rep range, rounded down: the start value of the reps fields. */

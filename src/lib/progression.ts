@@ -1,5 +1,6 @@
 import { db, displayName, type WorkoutSet } from './db'
 import { repetitionTargets, type RepetitionTargets } from './training'
+import { topIndex } from './topset'
 import { effective, recentTrainingSessions, type TrainingSession } from './workout'
 
 export interface ReadyExercise {
@@ -20,10 +21,10 @@ function repsOf(set: WorkoutSet, unilateral: boolean): number | null {
   return unilateral ? set.reps_left !== null && set.reps_right !== null ? Math.min(set.reps_left, set.reps_right) : null : set.reps
 }
 
-/** Work sets that carry the heaviest weight (the top set, or all sets at equal weight; all sets without weight). */
+/** The top set: the first set at the heaviest weight (one top set, decision 20 November 2026); all sets without weight. */
 function topWeightSets(sets: WorkoutSet[]): WorkoutSet[] {
-  const top = Math.max(0, ...sets.map((s) => s.weight ?? 0))
-  return top > 0 ? sets.filter((s) => s.weight === top) : sets
+  const top = topIndex(sets.map((s) => s.weight))
+  return top === -1 ? sets : [sets[top]!]
 }
 
 /**

@@ -74,7 +74,8 @@ describe('top set', () => {
     expect(increaseMarks([36, 32, 32], [36, 32, 32], open, true)).toEqual([true, false, false])
     expect(increaseMarks([40, 32, 32], [36, 32, 32], open, true)).toEqual([false, false, false])
     expect(increaseMarks([36, 32, 32], [36, 32, 32], [true, false, false], true)).toEqual([false, false, false])
-    expect(increaseMarks([45, 45, 45], [45, 45, 45], open, true)).toEqual([true, true, true])
+    // One top set (decision 20 November 2026): only the first set at the top weight
+    expect(increaseMarks([45, 45, 45], [45, 45, 45], open, true)).toEqual([true, false, false])
     expect(increaseMarks([5.5, 4.5, 4.5], [4.5, 4.5, 4.5], open, false)).toEqual([false, true, true])
   })
 })

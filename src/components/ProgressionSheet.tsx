@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Fragment, useState } from 'react'
+import { useState } from 'react'
 import { db } from '../lib/db'
 import { decidingIndexes, historyBars, repsOf, type HistoryBar } from '../lib/goal'
 import { nextWeight } from '../lib/topset'
@@ -8,8 +8,8 @@ import { effective, formatNumber, recentTrainingSessions } from '../lib/workout'
 import ProgressionRules from './ProgressionRules'
 import Sheet from './Sheet'
 
-// Progression sheet (decision 19 November 2026, design «Progression_einfach»): one row per set, marked as in the
-// workout (TOP orange, BACK dashed orange, SET grey), with its weight and the goal reps; below the next weight. The
+// Progression sheet (decision 19 November 2026, design «Progression_einfach»; since 20 November only the goal): one row
+// with the counting weight (TOP or ALL SETS) and the goal reps; below the next weight. The
 // last workouts and today show in the history chart (reps as bars, kg above), switchable between the counting set and
 // the others. Opened from the progress button in the workout and from Stats › Progression.
 
@@ -68,7 +68,7 @@ export default function ProgressionSheet({ exerciseId, includeVariants = false, 
   // Rows: today's work sets in the workout, else the sets of the last workout
   const work = today?.work ?? last.map((s) => ({ weight: s.weight, reps: repsOf(s, unilateral), done: true }))
   const counting = new Set(decidingIndexes(work, eff.topSet))
-  const top = Math.max(0, ...work.map((s) => s.weight ?? 0))
+  const top = Math.max(0, ...work.filter((_, i) => counting.has(i)).map((s) => s.weight ?? 0))
   const step = eff.weightStep
   const next = top > 0 && step ? `${formatNumber(nextWeight(top, step))} kg` : 'heavier'
   const hit = (s: (typeof work)[number]) => s.done && (s.reps ?? 0) >= targets.target
@@ -104,35 +104,23 @@ export default function ProgressionSheet({ exerciseId, includeVariants = false, 
       {work.length === 0 || top <= 0 ? (
         <p className="mt-4 text-sm text-zinc-500">No weight yet. Log a workout first.</p>
       ) : (
-        <div className="mt-4 grid grid-cols-[64px_1fr_auto] items-center gap-x-3 gap-y-2">
-          <span />
-          <span className="text-[11px] font-bold tracking-wide text-zinc-500 uppercase dark:text-zinc-400">Weight</span>
-          <span className="text-right text-[11px] font-bold tracking-wide text-emerald-700 uppercase dark:text-emerald-400">Goal</span>
-          {work.map((s, i) => {
-            const isTop = eff.topSet && counting.has(i)
-            const isBack = eff.topSet && !counting.has(i)
-            const tag = isTop
+        <div className="mt-4">
+          {/* Only the goal (decision Rodrigo, 20 November 2026, «Ziel_nur»): the counting weight and the goal reps in one
+              row, TOP with a top set, ALL SETS without; back-off sets do not appear */}
+          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900">
+            <span className={`rounded-md px-2.5 py-1.5 text-xs font-extrabold tracking-wide ${eff.topSet
               ? 'border border-orange-500 bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300'
-              : isBack ? 'border border-dashed border-orange-400 text-orange-700 dark:text-orange-300' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'
-            return (
-              <Fragment key={i}>
-                <span className={`flex h-8 items-center justify-center rounded-md text-xs font-extrabold tracking-wide ${tag}`}>{isTop ? 'TOP' : isBack ? 'BACK' : `SET ${i + 1}`}</span>
-                <span className={`text-lg font-bold tabular-nums ${isBack ? 'text-zinc-400 dark:text-zinc-500' : ''}`}>
-                  {s.weight === null ? '–' : formatNumber(s.weight)}<span className="ml-1 text-xs font-normal text-zinc-500 dark:text-zinc-400">kg</span>
-                </span>
-                {isBack ? (
-                  <span className="text-right text-xs text-zinc-500 dark:text-zinc-400">doesn't count</span>
-                ) : (
-                  <span className={`justify-self-end rounded-full px-2.5 py-0.5 text-sm font-bold tabular-nums ${hit(s) && inWorkout ? 'bg-emerald-600 text-white dark:bg-emerald-500' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'}`}>
-                    {hit(s) && inWorkout ? '✓ ' : '⚑ '}{targets.target} reps{unilateral ? ' each side' : ''}
-                  </span>
-                )}
-              </Fragment>
-            )
-          })}
-          <div className="col-span-full mt-1 flex items-center justify-between gap-3 border-t border-zinc-200 pt-3 dark:border-zinc-800">
+              : 'border border-accent bg-accent-soft text-accent-ink'}`}>{eff.topSet ? 'TOP' : 'ALL SETS'}</span>
+            <span className="text-2xl font-extrabold tabular-nums">
+              {formatNumber(top)}<span className="ml-1 text-sm font-medium text-zinc-500 dark:text-zinc-400">kg</span>
+            </span>
+            <span className={`rounded-full px-3 py-1 text-base font-extrabold tabular-nums ${reached && inWorkout ? 'bg-emerald-600 text-white dark:bg-emerald-500' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'}`}>
+              {reached && inWorkout ? '✓ ' : '⚑ '}{targets.target} reps{unilateral ? ' each side' : ''}
+            </span>
+          </div>
+          <div className="mt-4 flex items-center justify-between gap-3 border-t border-zinc-200 pt-3 dark:border-zinc-800">
             <span className="text-sm text-zinc-500 dark:text-zinc-400">
-              {raiseToday ? 'Last time all at Max · go up today' : reached && inWorkout ? 'Goal reached · next workout' : reached ? 'Last time all at Max · go up' : eff.topSet ? 'Next weight once TOP hits the goal' : 'Next weight once every set hits the goal'}
+              {raiseToday ? 'Last time at Max · go up today' : reached && inWorkout ? 'Goal reached · next workout' : reached ? 'Last time at Max · go up' : 'Then next weight'}
             </span>
             <span className={`shrink-0 rounded-lg px-3 py-1.5 text-base font-extrabold tabular-nums ${reached || raiseToday ? 'bg-emerald-600 text-white dark:bg-emerald-500' : 'bg-zinc-100 dark:bg-zinc-800'}`}>
               {reached || raiseToday ? `↑ ${next}` : `→ ${next}`}
@@ -193,10 +181,6 @@ function HistoryChart({ bars, minimum, target, neutral }: { bars: HistoryBar[]; 
         </g>
       ))}
       <text x={0} y={12} fontSize="9.5" className="fill-zinc-400 dark:fill-zinc-500">reps</text>
-      {/* Today on a grey column over the whole height (decision 19 November 2026, variant A in grey, no outline) */}
-      {bars.map((b, i) => b.date === 'today' && (
-        <rect key="today" x={left + i * bw + 3} y={4} width={bw - 6} height={H - 4} rx={10} className="fill-zinc-100 dark:fill-zinc-800/80" />
-      ))}
       {bars.map((b, i) => {
         const cx = left + i * bw + bw / 2
         const w = Math.min(30, bw * 0.66)
@@ -205,8 +189,8 @@ function HistoryChart({ bars, minimum, target, neutral }: { bars: HistoryBar[]; 
         if (b.reps === null) {
           return (
             <g key={i}>
-              {isToday && <rect x={cx - w / 2} y={y(target)} width={w} height={H - bottom - y(target)} rx={5} className="fill-white stroke-zinc-400 dark:fill-zinc-900 dark:stroke-zinc-500" strokeDasharray="3 3" />}
-              <text x={cx} y={isToday ? (y(target) + H - bottom) / 2 + 3 : H - bottom - 4} textAnchor="middle" fontSize="10" className="fill-zinc-400 dark:fill-zinc-500">{isToday ? 'open' : '–'}</text>
+              {isToday && <rect x={cx - w / 2} y={y(target)} width={w} height={H - bottom - y(target)} rx={5} className="fill-none stroke-zinc-400 dark:stroke-zinc-500" strokeDasharray="3 3" />}
+              <text x={cx} y={isToday ? (y(target) + H - bottom) / 2 + 3 : H - bottom - 4} textAnchor="middle" fontSize="9" className="fill-zinc-400 dark:fill-zinc-500">{isToday ? 'open' : '–'}</text>
               <text x={cx} y={H - 6} textAnchor="middle" fontSize="10" className={isToday ? 'fill-zinc-900 font-bold dark:fill-zinc-100' : 'fill-zinc-400 dark:fill-zinc-500'}>{label}</text>
             </g>
           )
@@ -221,7 +205,7 @@ function HistoryChart({ bars, minimum, target, neutral }: { bars: HistoryBar[]; 
             <text x={cx} y={y(b.reps) + 13} textAnchor="middle" fontSize="11" fontWeight="800" className={neutral ? 'fill-orange-700 dark:fill-orange-300' : 'fill-white'}>{b.reps}</text>
             {kgText && (
               <g>
-                <rect x={cx - chip / 2} y={y(b.reps) - 19} width={chip} height={15} rx={4} className={isToday ? 'fill-white dark:fill-zinc-950' : 'fill-zinc-100 dark:fill-zinc-800'} />
+                <rect x={cx - chip / 2} y={y(b.reps) - 19} width={chip} height={15} rx={4} className="fill-zinc-100 dark:fill-zinc-800" />
                 <text x={cx} y={y(b.reps) - 8} textAnchor="middle" fontSize="9.5" fontWeight="700" className="fill-zinc-700 dark:fill-zinc-200">{kgText}</text>
               </g>
             )}

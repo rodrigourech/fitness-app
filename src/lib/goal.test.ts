@@ -12,7 +12,10 @@ describe('goal (decision 5 November 2026)', () => {
     const work = [set(1, 20, 10), set(2, 15, 10), set(3, 15, 10)]
     expect(decidingIndexes(work, true)).toEqual([0])
     expect(decidingIndexes(work, false)).toEqual([0, 1, 2])
-    expect(decidingReps([set(1, 20, 11), set(2, 20, 9)], true, false)).toBe(9)
+    // One top set (decision 20 November 2026): a later set at the same weight is a back-off set
+    expect(decidingIndexes([set(1, 39, 12), set(2, 32, 12), set(3, 39, 10)], true)).toEqual([0])
+    expect(decidingReps([set(1, 20, 11), set(2, 20, 9)], true, false)).toBe(11)
+    expect(decidingReps([set(1, 20, 11), set(2, 20, 9)], false, false)).toBe(9)
   })
 
   it('goal line: weight, next step and reached only when every deciding set is checked at Max reps', () => {

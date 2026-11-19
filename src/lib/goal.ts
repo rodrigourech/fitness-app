@@ -1,6 +1,6 @@
 import type { WorkoutSet } from './db'
 import type { RepetitionTargets } from './training'
-import { nextWeight } from './topset'
+import { nextWeight, topIndex } from './topset'
 
 // Progress towards the next weight step (decision 5 November 2026, design «Progression im Workout», simpler version):
 // the deciding sets are the top set (the sets at the heaviest weight) or, without a top set, every work set. The weight
@@ -15,12 +15,15 @@ export function repsOf(set: Reps, unilateral: boolean): number | null {
   return set.reps_left !== null && set.reps_right !== null ? Math.min(set.reps_left, set.reps_right) : null
 }
 
-/** Indexes of the deciding sets among the work sets (in their order). */
+/**
+ * Indexes of the deciding sets among the work sets (in their order). Top set on: only the top set, the first set at
+ * the heaviest weight (decision Rodrigo, 20 November 2026: one top set; a later set at the same weight is a back-off
+ * set). Off: every work set.
+ */
 export function decidingIndexes(work: Pick<WorkoutSet, 'weight'>[], topSet: boolean): number[] {
   if (!topSet) return work.map((_, i) => i)
-  const top = Math.max(0, ...work.map((s) => s.weight ?? 0))
-  if (top <= 0) return work.map((_, i) => i)
-  return work.flatMap((s, i) => (s.weight === top ? [i] : []))
+  const top = topIndex(work.map((s) => s.weight))
+  return top === -1 ? work.map((_, i) => i) : [top]
 }
 
 /** Heaviest weight of the deciding sets, or null. */
