@@ -504,30 +504,26 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
 
   return wrap(
     <section className={`card p-3 ${extra ? extraTone : ''}`}>
+      {/* Head (decision 20 November 2026): the name opens the exercise, a tap anywhere else in the head collapses the
+          card; no › and no collapse arrow. The rep range sits small right of the name */}
+      <div onClick={() => onToggle(false)} className="cursor-pointer">
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-start gap-1">
-        <button onClick={() => onOpen(we.exercise_id)} className="min-w-0 text-left">
-          <h2 className="font-semibold underline-offset-2 hover:underline">
-            {name} <span className="text-zinc-400">›</span>
+        <div className="min-w-0">
+          <h2 className="font-semibold">
+            {/* Only the name itself opens the exercise; the range stays with the last word so it never wraps alone */}
+            <NameWithRange name={name} range={tt === 'weight_reps' ? `${targets.minimum}–${targets.target}` : null}
+              onOpen={() => onOpen(we.exercise_id)} />
             {extraTag}
           </h2>
-          {/* The rep range sits small in the column head (decision 20 November 2026, variant B) */}
           {variant && <p className="text-sm text-zinc-700 dark:text-zinc-300">{variant}</p>}
           {originalName && <p className="text-xs text-zinc-500 dark:text-zinc-400">Alternative for {originalName}</p>}
-        </button>
-        <button
-          onClick={() => onToggle(false)}
-          aria-label="Collapse"
-          aria-expanded={true}
-          title="Collapse"
-          className="-mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M6 15l6-6 6 6" />
-          </svg>
+        </div>
+        <button onClick={(e) => { e.stopPropagation(); onToggle(false) }} aria-label="Collapse" aria-expanded={true} className="sr-only">
+          Collapse
         </button>
         </div>
-        <span className="flex shrink-0 items-center gap-1.5">
+        <span className="flex shrink-0 cursor-default items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
           {/* Switch to the alternative and back while no set is done (decision 22 October 2026) */}
           {switchTo && !sets.some((s) => s.completed_at !== null) && (
             <button
@@ -551,6 +547,7 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
       </div>
       {/* Settings in one line (decision 5 November 2026, card variant A); the full text is behind «i» */}
       {eff.setupNote && <p className="mt-0.5 truncate text-sm text-zinc-500 dark:text-zinc-400">{eff.setupNote.split('\n').join(' · ')}</p>}
+      </div>
 
 
       <div className={`mt-3 grid ${cols} items-center gap-x-1 gap-y-1.5 text-xs text-zinc-500 dark:text-zinc-400`}>
@@ -579,13 +576,7 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
             )}
           </>
         )}
-        {tt === 'weight_reps' ? (
-          <span className="flex justify-center" title={`Rep range ${targets.minimum} to ${targets.target}`}>
-            <span className="rounded-full border border-zinc-300 px-1.5 text-[10px] leading-4 font-semibold whitespace-nowrap text-zinc-500 tabular-nums dark:border-zinc-600 dark:text-zinc-400">
-              {targets.minimum}–{targets.target}
-            </span>
-          </span>
-        ) : <span />}
+        <span />
 
         {sets.map((s) => {
           const warm = s.set_type === 'warmup'
@@ -696,6 +687,31 @@ function hintOf(s: WorkoutSet | undefined): RepsHint | undefined {
 }
 
 const str = (n: number | null | undefined) => (n === null || n === undefined ? undefined : String(n))
+
+/** Exercise name (a tap opens the exercise) with the rep range as a small grey pill right after it. */
+function NameWithRange({ name, range, onOpen }: { name: string; range: string | null; onOpen: () => void }) {
+  const cut = name.lastIndexOf(' ')
+  const head = cut > 0 ? name.slice(0, cut + 1) : ''
+  const last = cut > 0 ? name.slice(cut + 1) : name
+  const open = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onOpen()
+  }
+  return (
+    <>
+      {head && <button onClick={open} className="inline text-left">{head}</button>}
+      <span className="whitespace-nowrap">
+        <button onClick={open} className="inline text-left">{last}</button>
+        {range && (
+          <span title={`Rep range ${range}`}
+            className="ml-1.5 inline-block rounded-full border border-zinc-300 px-1.5 align-[2px] text-[10px] leading-4 font-semibold text-zinc-500 tabular-nums dark:border-zinc-600 dark:text-zinc-400">
+            {range}
+          </span>
+        )}
+      </span>
+    </>
+  )
+}
 
 type ProgressState = 'up' | 'down' | 'none'
 
