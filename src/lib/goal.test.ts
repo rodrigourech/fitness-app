@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { decidingIndexes, decidingReps, goalState, progressPoints, startReps } from './goal'
+import { decidingIndexes, decidingReps, goalState, historyBars, progressPoints, startReps } from './goal'
 
 type S = { set_type: 'working' | 'warmup'; weight: number | null; reps: number | null; reps_left: number | null; reps_right: number | null; completed_at: string | null; position: number }
 const set = (position: number, weight: number, reps: number | null, done = false, type: S['set_type'] = 'working'): S => ({
@@ -64,5 +64,23 @@ describe('warm-up of plate-loaded machines (decision 5 November 2026)', () => {
     const { warmUpPlan } = await import('./workout')
     expect(warmUpPlan('plate_loaded', { warmUp: 50, backOff: 85 })).toEqual({ share: 0.85, reps: 4, hint: '4–5' })
     expect(warmUpPlan('pin_loaded', { warmUp: 50, backOff: 85 })).toEqual({ share: 0.5, reps: 6, hint: '6–7' })
+  })
+})
+
+describe('history bars', () => {
+  const set = (position: number, weight: number, reps: number) => ({ set_type: 'working' as const, position, weight, reps, reps_left: null, reps_right: null, completed_at: 'x' })
+  it('splits top set and back-off sets, oldest first', () => {
+    const sessions = [
+      { date: '2026-10-29', sets: [set(1, 50, 8), set(2, 40, 8)] },
+      { date: '2026-10-22', sets: [set(1, 40, 10), set(2, 50, 9), set(3, 40, 7)] },
+    ]
+    const b = historyBars(sessions, true, false)
+    expect(b.top).toEqual([{ date: '2026-10-22', kg: 50, reps: 9 }, { date: '2026-10-29', kg: 50, reps: 8 }])
+    expect(b.other).toEqual([{ date: '2026-10-22', kg: 40, reps: 7 }, { date: '2026-10-29', kg: 40, reps: 8 }])
+  })
+  it('shows the lowest set and set 1 without a top set', () => {
+    const b = historyBars([{ date: 'd', sets: [set(1, 25, 12), set(2, 25, 10), set(3, 25, 11)] }], false, false)
+    expect(b.top).toEqual([{ date: 'd', kg: 25, reps: 10 }])
+    expect(b.other).toEqual([{ date: 'd', kg: 25, reps: 12 }])
   })
 })

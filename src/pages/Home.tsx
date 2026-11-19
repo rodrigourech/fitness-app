@@ -26,6 +26,7 @@ import ChangePasswordSheet from '../components/ChangePasswordSheet'
 import HomeTab, { type HomeTarget } from './HomeTab'
 import TemplateEditor from './TemplateEditor'
 import TrashPage from './TrashPage'
+import ProgressionRules from '../components/ProgressionRules'
 import InfoPage from './InfoPage'
 import TrainingSettingsPage from './TrainingSettingsPage'
 import { isBetaSandbox } from '../lib/environment'
@@ -94,6 +95,7 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
   const [account, setAccount] = useState(false)
   const [info, setInfo] = useState(false)
   const [training, setTraining] = useState(false)
+  const [rules, setRules] = useState(false)
   const [more, setMore] = useState(false)
   const wide = useWide()
   const [photos, setPhotos] = useState(false)
@@ -255,6 +257,7 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
           <button onClick={() => open('trash')}><AppIcon name="trash" />Trash</button>
           <button onClick={() => { setMore(false); setTraining(true) }}><AppIcon name="stats" />Training settings</button>
           <button onClick={() => open('info')}><AppIcon name="guide" />Training guide</button>
+          <button onClick={() => { setMore(false); setRules(true) }}><AppIcon name="stats" />Progression rules</button>
           <button onClick={() => open('account')}><AppIcon name="body" />Change password</button>
           <button onClick={() => void handleSignOut()}><AppIcon name="arrow" />Sign out · {user.username}</button>
         </div>
@@ -262,6 +265,7 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
       </Sheet>}
       {photos && (isBetaSandbox ? <Sheet title="Photo passphrase" onClose={() => setPhotos(false)}><p className="text-sm">Photo changes are available in the live app.</p><button onClick={() => { setPhotos(false); setTab('body') }} className="home-primary mt-4">Open Body</button></Sheet> : photoAccess === undefined ? <Sheet title="Photo passphrase" onClose={() => setPhotos(false)}>Checking photo access …</Sheet> : <PassphraseSheet mode={photoAccess === 'ready' ? 'change' : photoAccess} userId={user.id} onClose={() => setPhotos(false)} />)}
       {sheet && <ExerciseSheet exerciseId={sheet} onClose={() => setSheet(null)} />}
+      {rules && <ProgressionRules onClose={() => setRules(false)} />}
     </main>
   )
 }

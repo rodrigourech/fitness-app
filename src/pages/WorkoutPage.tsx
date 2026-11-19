@@ -18,7 +18,7 @@ import UndoToast from '../components/UndoToast'
 import { cardOpen, doneSummary, exerciseDone, focusId, isExtra, todoSummary } from '../lib/focus'
 import { startRest, stopRest } from '../lib/rest'
 import { db, displayName, type Exercise, type ExerciseLink, type Workout, type WorkoutExercise, type WorkoutSet } from '../lib/db'
-import { linkLabel, linksFor } from '../lib/exercise'
+import { fillLinkTitles, linkLabel, linksFor } from '../lib/exercise'
 import { bestBefore, recordsOf, type Best } from '../lib/stats'
 import { belowMinimum, progressionAdvice, type ProgressionAdvice } from '../lib/progression'
 import { repetitionTargets, type RepetitionTargets } from '../lib/training'
@@ -606,10 +606,11 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
       {progressOpen && (
         <ProgressionSheet
           exerciseId={we.exercise_id}
-          today={advice === 'increase' || !goal ? null : {
-            weight: goal.weight,
-            reps: goal.todayReps,
-            sets: sets.filter((s) => s.set_type === 'working' && s.completed_at !== null).sort((x, y) => x.position - y.position).map((s) => repsOf(s, eff.isUnilateral)),
+          today={{
+            weight: goal?.weight ?? 0,
+            reps: goal?.todayReps ?? null,
+            work: sets.filter((s) => s.set_type === 'working').sort((x, y) => x.position - y.position)
+              .map((s) => ({ weight: s.weight, reps: repsOf(s, eff.isUnilateral), done: s.completed_at !== null })),
           }}
           advice={advice === 'increase' || advice === 'reduce' ? advice : null}
           onClose={() => setProgressOpen(false)}
@@ -697,32 +698,32 @@ function ProgressButton({ state, onClick }: { state: ProgressState; onClick: () 
 function InfoButton({ setup, cue, links, onEdit }: { setup: string | null; cue: string | null; links: ExerciseLink[]; onEdit: () => void }) {
   const cls = `${roundButton} w-8 border-zinc-300 text-zinc-500 dark:border-zinc-600 dark:text-zinc-400`
   const head = 'text-[11px] font-bold tracking-wide text-zinc-500 dark:text-zinc-400'
+  // Info window (decision 19 November 2026, design «A»): videos first, then the execution; the setup already stands
+  // under the exercise name and is not repeated here. Video titles fill themselves in.
+  useEffect(() => void fillLinkTitles(links), [links])
   return (
     <Popover label="i" ariaLabel="Exercise info" triggerClassName={cls} align="right">
       {(close) => (
         <span className="flex flex-col gap-1 text-sm">
-          {setup && (
+          {links.length > 0 && (
             <>
-              <span className={head}>SETUP</span>
-              <span className="whitespace-pre-line">{setup}</span>
+              <span className={head}>VIDEOS</span>
+              <span className="flex flex-col">
+                {links.map((l) => (
+                  <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" onClick={close} className="-mx-2 truncate rounded-md px-2 py-1.5 font-medium text-accent-ink hover:bg-zinc-100 dark:hover:bg-zinc-800">
+                    ▶ {linkLabel(l)}
+                  </a>
+                ))}
+              </span>
             </>
           )}
           {cue && (
             <>
-              <span className={`${head} ${setup ? 'mt-1.5' : ''}`}>EXECUTION</span>
-              <span>{cue}</span>
+              <span className={`${head} ${links.length ? 'mt-1.5' : ''}`}>EXECUTION</span>
+              <span className="whitespace-pre-line">{cue}</span>
             </>
           )}
-          {links.length > 0 && (
-            <span className={`flex flex-col ${setup || cue ? 'mt-1.5' : ''}`}>
-              {links.map((l) => (
-                <a key={l.id} href={l.url} target="_blank" rel="noopener noreferrer" onClick={close} className="-mx-2 truncate rounded-md px-2 py-2 font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800">
-                  ▶ {linkLabel(l)}
-                </a>
-              ))}
-            </span>
-          )}
-          {!setup && !cue && links.length === 0 && <span className="text-zinc-500 dark:text-zinc-400">No setup, cue or video yet.</span>}
+          {!cue && links.length === 0 && <span className="text-zinc-500 dark:text-zinc-400">{setup ? 'No execution or video yet.' : 'No setup, execution or video yet.'}</span>}
           <button
             onClick={() => {
               close()

@@ -40,18 +40,64 @@ export function normalizeUrl(input: string): string | null {
 
 export async function addLink(ex: Exercise, url: string, title: string | null): Promise<void> {
   const ts = new Date().toISOString()
-  await saveRows('exercise_link', [
-    {
-      id: crypto.randomUUID(),
-      user_id: ex.user_id,
-      exercise_id: ex.id,
-      url,
-      title,
-      created_at: ts,
-      updated_at: ts,
-      deleted_at: null,
-    } satisfies ExerciseLink,
-  ])
+  const link = {
+    id: crypto.randomUUID(),
+    user_id: ex.user_id,
+    exercise_id: ex.id,
+    url,
+    title,
+    created_at: ts,
+    updated_at: ts,
+    deleted_at: null,
+  } satisfies ExerciseLink
+  await saveRows('exercise_link', [link])
+  if (!title) void fillLinkTitles([link])
+}
+
+/** True for YouTube video links (youtube.com, youtu.be, m.youtube.com, Shorts). */
+export function isYouTube(url: string): boolean {
+  try {
+    return /(^|\.)(youtube\.com|youtu\.be)$/.test(new URL(url).hostname)
+  } catch {
+    return false
+  }
+}
+
+/** Title of a YouTube video via oEmbed (no key needed); noembed.com as fallback. Null if neither answers. */
+export async function videoTitle(url: string): Promise<string | null> {
+  const sources = [
+    `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(url)}`,
+    `https://noembed.com/embed?url=${encodeURIComponent(url)}`,
+  ]
+  for (const source of sources) {
+    try {
+      const res = await fetch(source)
+      if (!res.ok) continue
+      const data = (await res.json()) as { title?: unknown }
+      if (typeof data.title === 'string' && data.title.trim()) return data.title.trim()
+    } catch {
+      // offline or blocked: try the next source
+    }
+  }
+  return null
+}
+
+const asked = new Set<string>()
+
+/**
+ * Video titles fill themselves in (decision 19 November 2026): YouTube links without a title get the title of the
+ * video, once per link and session; the title is saved and synced like a hand-written one.
+ */
+export async function fillLinkTitles(links: ExerciseLink[]): Promise<void> {
+  for (const link of links) {
+    if (link.title || link.deleted_at || !isYouTube(link.url) || asked.has(link.id)) continue
+    asked.add(link.id)
+    const title = await videoTitle(link.url)
+    if (!title) continue
+    const current = (await db.exercise_link.get(link.id)) ?? link
+    if (current.title || current.deleted_at) continue
+    await saveRows('exercise_link', [{ ...current, title, updated_at: new Date().toISOString() }])
+  }
 }
 
 export async function removeLink(link: ExerciseLink): Promise<void> {
@@ -61,6 +107,8 @@ export async function removeLink(link: ExerciseLink): Promise<void> {
 
 /** Short label for a link: its title or the host name. */
 export function linkLabel(link: ExerciseLink): string {
+  // YouTube links read «YouTube · title of the video» (decision 19 November 2026); the title fills itself in
+  if (isYouTube(link.url)) return `YouTube · ${link.title ?? 'video'}`
   if (link.title) return link.title
   try {
     return new URL(link.url).hostname.replace(/^www\./, '')

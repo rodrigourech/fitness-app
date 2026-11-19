@@ -91,3 +91,37 @@ export function progressPoints(sessions: { date: string; sets: Work[] }[], topSe
   })
   return points.map((p, i) => ({ ...p, up: i + 1 < points.length && p.weight > points[i + 1]!.weight }))
 }
+
+export interface HistoryBar {
+  date: string
+  /** Weight of the shown set, null when the workout had no such set */
+  kg: number | null
+  reps: number | null
+}
+
+/**
+ * History bars of the progression sheet (decision 19 November 2026), oldest first. Top set on: «top» is the top set
+ * (heaviest weight, lowest reps among the sets at that weight), «other» the back-off sets (their heaviest weight, lowest
+ * reps). Top set off: «top» is the lowest set (every set counts), «other» set 1.
+ */
+export function historyBars(sessions: { date: string; sets: Work[] }[], topSet: boolean, unilateral: boolean): { top: HistoryBar[]; other: HistoryBar[] } {
+  const top: HistoryBar[] = []
+  const other: HistoryBar[] = []
+  for (const s of [...sessions].reverse()) {
+    const work = s.sets.filter((x) => x.set_type === 'working').sort((a, b) => a.position - b.position)
+    const weight = Math.max(0, ...work.map((x) => x.weight ?? 0))
+    if (weight <= 0) continue
+    top.push({ date: s.date, kg: weight, reps: decidingReps(work, topSet, unilateral) })
+    if (topSet) {
+      const deciding = new Set(decidingIndexes(work, true))
+      const backs = work.filter((_, i) => !deciding.has(i))
+      const reps = backs.map((x) => repsOf(x, unilateral)).filter((r): r is number => r !== null)
+      const kg = Math.max(0, ...backs.map((x) => x.weight ?? 0))
+      other.push({ date: s.date, kg: backs.length && kg > 0 ? kg : null, reps: backs.length && reps.length ? Math.min(...reps) : null })
+    } else {
+      const first = work[0]
+      other.push({ date: s.date, kg: first?.weight ?? null, reps: first ? repsOf(first, unilateral) : null })
+    }
+  }
+  return { top, other }
+}
