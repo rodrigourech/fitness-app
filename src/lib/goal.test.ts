@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { decidingIndexes, decidingReps, goalState, historyBars, progressPoints, startReps } from './goal'
+import { decidingIndexes, decidingReps, goalState, historyBars, prefillSource, progressPoints, startReps } from './goal'
 
 type S = { set_type: 'working' | 'warmup'; weight: number | null; reps: number | null; reps_left: number | null; reps_right: number | null; completed_at: string | null; position: number }
 const set = (position: number, weight: number, reps: number | null, done = false, type: S['set_type'] = 'working'): S => ({
@@ -82,5 +82,32 @@ describe('history bars', () => {
     const b = historyBars([{ date: 'd', sets: [set(1, 25, 12), set(2, 25, 10), set(3, 25, 11)] }], false, false)
     expect(b.top).toEqual([{ date: 'd', kg: 25, reps: 10 }])
     expect(b.other).toEqual([{ date: 'd', kg: 25, reps: 12 }])
+  })
+})
+
+describe('prefillSource (own weight jumps)', () => {
+  const w = (weight: number, reps: number, position: number) => ({ set_type: 'working' as const, weight, reps, reps_left: null, reps_right: null, completed_at: 'x', position })
+  const t = { minimum: 6, target: 10 }
+  it('keeps an own jump that reached Min', () => {
+    expect(prefillSource([[w(55, 6, 1), w(45, 10, 2)], [w(50, 8, 1), w(42.5, 10, 2)]], true, false, t)).toBe(0)
+  })
+  it('goes back to the old weight if the own jump stayed below Min', () => {
+    expect(prefillSource([[w(55, 4, 1), w(45, 10, 2)], [w(50, 8, 1), w(42.5, 10, 2)]], true, false, t)).toBe(1)
+  })
+  it('back-off sets do not count with a top set', () => {
+    expect(prefillSource([[w(55, 7, 1), w(45, 3, 2)], [w(50, 8, 1), w(42.5, 10, 2)]], true, false, t)).toBe(0)
+  })
+  it('without top set every set counts', () => {
+    expect(prefillSource([[w(55, 8, 1), w(55, 5, 2)], [w(50, 8, 1), w(50, 8, 2)]], false, false, t)).toBe(1)
+  })
+  it('a jump the app suggested is not skipped', () => {
+    expect(prefillSource([[w(55, 4, 1)], [w(50, 10, 1)]], true, false, t)).toBe(0)
+  })
+  it('skips several failed own jumps in a row', () => {
+    expect(prefillSource([[w(60, 3, 1)], [w(55, 4, 1)], [w(50, 8, 1)]], true, false, t)).toBe(2)
+  })
+  it('unilateral counts the weaker side', () => {
+    const u = (weight: number, l: number, r: number) => ({ set_type: 'working' as const, weight, reps: null, reps_left: l, reps_right: r, completed_at: 'x', position: 1 })
+    expect(prefillSource([[u(20, 8, 5)], [u(18, 8, 8)]], true, true, t)).toBe(1)
   })
 })

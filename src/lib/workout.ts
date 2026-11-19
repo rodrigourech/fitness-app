@@ -1,5 +1,5 @@
 import { db, type Exercise, type TemplateSet, type Workout, type WorkoutExercise, type WorkoutSet } from './db'
-import { decidingIndexes, repsOf } from './goal'
+import { decidingIndexes, prefillSource, repsOf } from './goal'
 import { isExtra } from './extra'
 import { saveRows } from './sync'
 import { exerciseTrainingSettings, repetitionTargets, type RepetitionTargets } from './training'
@@ -40,6 +40,11 @@ export async function previousSetsOfTemplate(exerciseId: string, templateId: str
 }
 
 async function latestSets(exerciseId: string, excludeWorkoutId: string | undefined, templateId: string | null): Promise<WorkoutSet[]> {
+  return (await recentSets(exerciseId, excludeWorkoutId, templateId, 1))[0] ?? []
+}
+
+/** Sets of the last n finished performances of an exercise, newest first. */
+export async function recentSets(exerciseId: string, excludeWorkoutId: string | undefined, templateId: string | null, n: number): Promise<WorkoutSet[][]> {
   const candidates = await db.workout_exercise
     .where('exercise_id')
     .equals(exerciseId)
@@ -47,21 +52,24 @@ async function latestSets(exerciseId: string, excludeWorkoutId: string | undefin
     .toArray()
   if (candidates.length === 0) return []
   const workouts = await db.workout.bulkGet(candidates.map((c) => c.workout_id))
-  let best: { we: WorkoutExercise; started: string } | undefined
+  const found: { we: WorkoutExercise; started: string }[] = []
   candidates.forEach((we, i) => {
     const w = workouts[i]
     if (!w || w.deleted_at !== null || w.finished_at === null) return
     if (templateId && w.template_id !== templateId) return
-    if (!best || w.started_at > best.started) best = { we, started: w.started_at }
+    found.push({ we, started: w.started_at })
   })
-  if (!best) return []
-  const bestId = best.we.id
-  const sets = await db.workout_set
-    .where('workout_exercise_id')
-    .equals(bestId)
-    .filter((s) => s.deleted_at === null)
-    .toArray()
-  return sets.sort((a, b) => a.position - b.position)
+  found.sort((a, b) => (a.started < b.started ? 1 : a.started > b.started ? -1 : 0))
+  const out: WorkoutSet[][] = []
+  for (const { we } of found.slice(0, n)) {
+    const sets = await db.workout_set
+      .where('workout_exercise_id')
+      .equals(we.id)
+      .filter((s) => s.deleted_at === null)
+      .toArray()
+    out.push(sets.sort((a, b) => a.position - b.position))
+  }
+  return out
 }
 
 export interface TrainingSession {
@@ -161,8 +169,9 @@ export async function startWorkout(templateId: string, userId: string): Promise<
     }
     wes.push(we)
     // Prefill: last performance of this exercise in any workout; else the template targets (decision 15 October 2026)
-    const prev = await previousSets(te.exercise_id)
-    sets.push(...prefilledSets(we, eff, targets, planned, prev.filter((s) => s.set_type === 'working'), userId, ts))
+    const recent = (await recentSets(te.exercise_id, undefined, null, JUMP_LOOKBACK)).map(workingOnly)
+    const source = recent[prefillSource(recent, eff.topSet, eff.isUnilateral, targets)] ?? []
+    sets.push(...prefilledSets(we, eff, targets, planned, source, userId, ts))
   }
 
   await saveRows('workout', [workout])
@@ -191,7 +200,8 @@ export async function addExerciseToWorkout(w: Workout, exerciseId: string): Prom
     warm_up: eff.trackingType === 'weight_reps' && eff.warmUp,
     ...base(w.user_id, ts),
   }
-  const prev = (await previousSets(ex.id, w.id)).filter((s) => s.set_type === 'working')
+  const recent = (await recentSets(ex.id, w.id, null, JUMP_LOOKBACK)).map(workingOnly)
+  const prev = recent[prefillSource(recent, eff.topSet, eff.isUnilateral, { minimum: eff.minReps, target: eff.targetReps })] ?? []
   const count = prev.length || (eff.trackingType === 'weight_reps' ? 3 : 1)
   const warmUp = eff.trackingType === 'weight_reps' && eff.warmUp
   const sets: WorkoutSet[] = Array.from({ length: count }, (_, i) => {
@@ -217,6 +227,11 @@ export async function addExerciseToWorkout(w: Workout, exerciseId: string): Prom
   await saveRows('workout_exercise', [we])
   await saveRows('workout_set', sets)
 }
+
+// Own weight jumps (decision Rodrigo, 19 November 2026): the prefill skips a performance at a heavier weight that the app
+// did not suggest and in which a counting set stayed below Min reps; the next workout starts at the old weight again
+const JUMP_LOOKBACK = 6
+const workingOnly = (sets: WorkoutSet[]) => sets.filter((s) => s.set_type === 'working')
 
 type Planned = Pick<TemplateSet, 'target_weight' | 'target_duration_s' | 'target_distance_km'>
 
@@ -336,7 +351,8 @@ export async function switchExercise(we: WorkoutExercise): Promise<void> {
     min_reps: weightReps ? targets.minimum : null,
     warm_up: weightReps && eff.warmUp,
   }
-  const prev = (await previousSets(target.id, current.workout_id)).filter((s) => s.set_type === 'working')
+  const recent = (await recentSets(target.id, current.workout_id, null, JUMP_LOOKBACK)).map(workingOnly)
+  const prev = recent[prefillSource(recent, eff.topSet, eff.isUnilateral, targets)] ?? []
   if (sets.length) await saveRows('workout_set', sets.map((s) => ({ ...s, deleted_at: ts })))
   await saveRows('workout_exercise', [next])
   await saveRows('workout_set', prefilledSets(next, eff, targets, planned, prev, current.user_id, ts))

@@ -135,7 +135,7 @@ Der Benutzer hat nach der veröffentlichten Beta ausdrücklich die Übernahme in
 - GitHub Actions auf Node-24-Versionen aktualisieren
 - Ausführungsanleitung pro Übung (Rodrigo, 19. November 2026): für jede Übung kompakte Schritte auf Deutsch, nummeriert im Stil «1)», «2)», «3)», «4)», wie man die Ausführung sauber macht. Anzeige beim Info-Knopf «i» zusammen mit Setup und den YouTube-Videos (Entwurf «Uebung_Ausfuehrung_Info»: A im bestehenden Info-Fenster oder B als eigenes Blatt von unten). Neues Feld an der Übung (z. B. exercise.instructions, Migration); Texte vor dem Eintragen Rodrigo zur Durchsicht vorlegen
 - Gym crowd: Zeitraum wählbar (3 Monate, 1 Jahr, All), Standard 3 Monate (Vorschlag 16. November, noch nicht entschieden)
-- Offene Aufträge vom 19. November: Eingabefelder nach Vorgabe (Reps leer mit grauem Platzhalter, ✓ übernimmt, Feld beim Antippen leeren, grüner Rand bei entscheidenden Sätzen, Spaltenkopf «Reps ↑N» grün fett), Regel selbst erhöhtes Gewicht (alle zählenden Sätze mindestens Min Reps, sonst nächstes Mal wieder das alte Gewicht, auch ohne Top Set)
+- Offene Aufträge vom 19. November: Eingabefelder nach Vorgabe (Reps leer mit grauem Platzhalter, ✓ übernimmt, Feld beim Antippen leeren, grüner Rand bei entscheidenden Sätzen, Spaltenkopf «Reps ↑N» grün fett); Regel selbst erhöhtes Gewicht ist umgesetzt (19. November). Today-Balken in der Progressions-History neu visualisieren (Rodrigo: Umrandung nicht ideal)
 
 ## Weitere Punkte aus dem ursprünglichen Handover
 

@@ -23,6 +23,37 @@ export function decidingIndexes(work: Pick<WorkoutSet, 'weight'>[], topSet: bool
   return work.flatMap((s, i) => (s.weight === top ? [i] : []))
 }
 
+/** Heaviest weight of the deciding sets, or null. */
+function countingWeight(work: Pick<WorkoutSet, 'weight'>[], topSet: boolean): number | null {
+  const w = decidingIndexes(work, topSet).map((i) => work[i]!.weight ?? 0)
+  return w.length ? Math.max(...w) : null
+}
+
+/**
+ * Which of the recent performances (work sets, newest first) prefills the next workout (decision Rodrigo,
+ * 19 November 2026). A performance is skipped if its counting weight is heavier than the one before, the app did not
+ * suggest that jump (not every counting set of the one before reached Max), and a counting set stayed below Min.
+ * Then the older performance with the last qualified weight is used.
+ */
+export function prefillSource(recent: Work[][], topSet: boolean, unilateral: boolean, targets: Pick<RepetitionTargets, 'minimum' | 'target'>): number {
+  let i = 0
+  while (i + 1 < recent.length) {
+    const now = recent[i]!
+    const before = recent[i + 1]!
+    const wNow = countingWeight(now, topSet)
+    const wBefore = countingWeight(before, topSet)
+    if (wNow === null || wBefore === null || wNow <= wBefore) return i
+    const suggested = (decidingReps(before, topSet, unilateral) ?? 0) >= targets.target
+    const nowLow = decidingIndexes(now, topSet).some((k) => {
+      const r = repsOf(now[k]!, unilateral)
+      return r !== null && r < targets.minimum
+    })
+    if (suggested || !nowLow) return i
+    i += 1
+  }
+  return i
+}
+
 /** Lowest reps of the deciding sets that have reps, or null. */
 export function decidingReps<T extends Work>(work: T[], topSet: boolean, unilateral: boolean, onlyDone = false): number | null {
   const reps = decidingIndexes(work, topSet)
