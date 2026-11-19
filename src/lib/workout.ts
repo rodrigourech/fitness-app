@@ -577,6 +577,7 @@ export function effective(ex: Exercise, byId: Map<string, Exercise>) {
     setupNote: ex.setup_note ?? parent?.setup_note ?? null,
     focusMuscles: ex.focus_muscles ?? parent?.focus_muscles ?? [],
     focusCue: ex.focus_cue ?? parent?.focus_cue ?? null,
+    instructions: ex.instructions ?? parent?.instructions ?? null,
     restS: ex.default_rest_s ?? parent?.default_rest_s ?? null,
     equipment: ex.equipment ?? parent?.equipment ?? null,
     weightStep: pairStep(ex.weight_step ?? parent?.weight_step ?? null, ex.equipment ?? parent?.equipment ?? null, ex.is_unilateral ?? parent?.is_unilateral ?? false),

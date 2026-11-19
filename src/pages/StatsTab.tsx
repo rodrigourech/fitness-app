@@ -481,8 +481,25 @@ function CrowdCard({ className = '' }: { className?: string }) {
   return <CrowdDetails data={data} className={className} />
 }
 
+// Range of the ratings (decision Rodrigo, 20 November 2026): 3 months by default, 1 year or all
+const CROWD_RANGES = [
+  { key: '3m', label: '3 months', months: 3 },
+  { key: '1y', label: '1 year', months: 12 },
+  { key: 'all', label: 'All', months: null },
+] as const
+type CrowdRange = (typeof CROWD_RANGES)[number]['key']
+
+function crowdFrom(range: CrowdRange): number {
+  const months = CROWD_RANGES.find((r) => r.key === range)!.months
+  if (months === null) return 0
+  const d = new Date()
+  d.setMonth(d.getMonth() - months)
+  return d.getTime()
+}
+
 function CrowdDetails({ data, className }: { data: AnalyticsData; className: string }) {
-  const grid = crowdGrid(data.workouts, 0)
+  const [range, setRange] = useState<CrowdRange>('3m')
+  const grid = crowdGrid(data.workouts, crowdFrom(range))
   const slot = (i: number) => CROWD_SLOTS[i]!.label
   const quietest = grid.best ? `quietest so far: ${WEEKDAYS[grid.best.weekday]} ${slot(grid.best.slot)}` : ''
   return (
@@ -495,7 +512,15 @@ function CrowdDetails({ data, className }: { data: AnalyticsData; className: str
         <span className="shrink-0 text-xs text-zinc-500 dark:text-zinc-400"><span className="group-open:hidden">Show ›</span><span className="hidden group-open:inline">Hide</span></span>
       </summary>
       <div className="mt-3">
-        {grid.ratings === 0 ? <Empty>No ratings yet. Rate the crowd at the end of a workout.</Empty> : (
+        <span className="mb-3 inline-flex rounded-lg bg-zinc-100 p-0.5 dark:bg-zinc-800" role="group" aria-label="Crowd range">
+          {CROWD_RANGES.map((r) => (
+            <button key={r.key} onClick={() => setRange(r.key)} aria-pressed={range === r.key}
+              className={`rounded-md px-2.5 py-1 text-xs font-semibold ${range === r.key ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400'}`}>
+              {r.label}
+            </button>
+          ))}
+        </span>
+        {grid.ratings === 0 ? <Empty>{range === 'all' ? 'No ratings yet. Rate the crowd at the end of a workout.' : 'No ratings in this range.'}</Empty> : (
           <>
             <Heatmap
               rows={[...WEEKDAYS]}

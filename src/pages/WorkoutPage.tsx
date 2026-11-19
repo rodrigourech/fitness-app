@@ -370,7 +370,7 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
   const { we, exercise, name, variant, topSet, weightStep, sets, previous, repsHint, links, best, advice, targets, switchTo, originalName } = block
   const eff = exercise
     ? effective(exercise, byId)
-    : { trackingType: 'weight_reps', isUnilateral: false, equipment: null as string | null, floor: null, seat: null, footPosition: null, setupNote: null, focusMuscles: [] as string[], focusCue: null, restS: null }
+    : { trackingType: 'weight_reps', isUnilateral: false, equipment: null as string | null, floor: null, seat: null, footPosition: null, setupNote: null, focusMuscles: [] as string[], focusCue: null, instructions: null, restS: null }
 
   const [progressOpen, setProgressOpen] = useState(false)
 
@@ -542,7 +542,7 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
             </button>
           )}
           {tt === 'weight_reps' && <ProgressButton state={progress} onClick={() => setProgressOpen(true)} />}
-          <InfoButton setup={eff.setupNote} cue={eff.focusCue} links={links} onEdit={() => onOpen(we.exercise_id)} />
+          <InfoButton setup={eff.setupNote} steps={eff.instructions} cue={eff.focusCue} links={links} onEdit={() => onOpen(we.exercise_id)} />
         </span>
       </div>
       {/* Settings in one line (decision 5 November 2026, card variant A); the full text is behind «i» */}
@@ -691,7 +691,7 @@ const str = (n: number | null | undefined) => (n === null || n === undefined ? u
 /** Exercise name (a tap opens the exercise) with the rep range as a small grey pill right after it. */
 function NameWithRange({ name, range, onOpen }: { name: string; range: string | null; onOpen: () => void }) {
   const cut = name.lastIndexOf(' ')
-  const head = cut > 0 ? name.slice(0, cut + 1) : ''
+  const head = cut > 0 ? name.slice(0, cut) : ''
   const last = cut > 0 ? name.slice(cut + 1) : name
   const open = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -699,7 +699,7 @@ function NameWithRange({ name, range, onOpen }: { name: string; range: string | 
   }
   return (
     <>
-      {head && <button onClick={open} className="inline text-left">{head}</button>}
+      {head && <><button onClick={open} className="inline text-left">{head}</button>{' '}</>}
       <span className="whitespace-nowrap">
         <button onClick={open} className="inline text-left">{last}</button>
         {range && (
@@ -736,11 +736,13 @@ function ProgressButton({ state, onClick }: { state: ProgressState; onClick: () 
 }
 
 /** «i»: settings, execution cue and videos of the exercise (card variant A); editing in the exercise sheet. */
-function InfoButton({ setup, cue, links, onEdit }: { setup: string | null; cue: string | null; links: ExerciseLink[]; onEdit: () => void }) {
+function InfoButton({ setup, steps, cue, links, onEdit }: { setup: string | null; steps: string | null; cue: string | null; links: ExerciseLink[]; onEdit: () => void }) {
   const cls = `${roundButton} w-8 border-zinc-300 text-zinc-500 dark:border-zinc-600 dark:text-zinc-400`
   const head = 'text-[11px] font-bold tracking-wide text-zinc-500 dark:text-zinc-400'
   // Info window (decision 19 November 2026, design «A»): videos first, then the execution; the setup already stands
-  // under the exercise name and is not repeated here. Video titles fill themselves in.
+  // under the exercise name and is not repeated here. Video titles fill themselves in. The execution steps (decision
+  // 20 November 2026) stand under the videos, the single cue below them as a tip
+  const lines = (steps ?? '').split('\n').map((l) => l.trim()).filter(Boolean)
   useEffect(() => void fillLinkTitles(links), [links])
   return (
     <Popover label="i" ariaLabel="Exercise info" triggerClassName={cls} align="right">
@@ -758,13 +760,29 @@ function InfoButton({ setup, cue, links, onEdit }: { setup: string | null; cue: 
               </span>
             </>
           )}
-          {cue && (
+          {lines.length > 0 && (
             <>
               <span className={`${head} ${links.length ? 'mt-1.5' : ''}`}>EXECUTION</span>
+              <span className="flex flex-col gap-1">
+                {lines.map((l, i) => {
+                  const m = /^(\d+\))\s*(.*)$/.exec(l)
+                  return (
+                    <span key={i} className="grid grid-cols-[1.25rem_1fr] gap-0.5">
+                      <span className="font-semibold text-zinc-400 tabular-nums">{m ? m[1] : '·'}</span>
+                      <span>{m ? m[2] : l}</span>
+                    </span>
+                  )
+                })}
+              </span>
+            </>
+          )}
+          {cue && (
+            <>
+              <span className={`${head} ${links.length || lines.length ? 'mt-1.5' : ''}`}>{lines.length ? 'TIP' : 'EXECUTION'}</span>
               <span className="whitespace-pre-line">{cue}</span>
             </>
           )}
-          {!cue && links.length === 0 && <span className="text-zinc-500 dark:text-zinc-400">{setup ? 'No execution or video yet.' : 'No setup, execution or video yet.'}</span>}
+          {!cue && lines.length === 0 && links.length === 0 && <span className="text-zinc-500 dark:text-zinc-400">{setup ? 'No execution or video yet.' : 'No setup, execution or video yet.'}</span>}
           <button
             onClick={() => {
               close()

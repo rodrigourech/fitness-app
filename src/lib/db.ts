@@ -41,6 +41,8 @@ export interface Exercise extends SyncColumns {
   top_set?: boolean | null
   /** Exercise to switch to in a running workout when this one is taken (migration 0026); null on a variant = inherit */
   alternative_id?: string | null
+  /** Short execution steps in German, one per line «1) …» (migration 0051); null on a variant = inherit */
+  instructions?: string | null
 }
 
 export interface ExerciseLink extends SyncColumns {
