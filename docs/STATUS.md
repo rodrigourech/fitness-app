@@ -14,7 +14,7 @@ Letzte Aktualisierung 5. November 2026
 
 ## Stand
 
-- 20. November: Eingabefelder im Training (Reps leer mit grauem Wert vom letzten Mal, ✓ übernimmt, Antippen leert das Feld, grüner Rand bei entscheidenden Sätzen, Kopf «Reps ↑N» grün), Regel für selbst erhöhtes Gewicht, Today in der History auf grauer Spalte
+- 20. November: Eingabefelder im Training (Reps leer mit grauem Wert vom letzten Mal, ✓ übernimmt, Antippen leert das Feld, grüner Rand bei entscheidenden Sätzen, Kopf «Reps ↑N» grün), Regel für selbst erhöhtes Gewicht, Today in der History auf grauer Spalte; Wiederholungsbereich klein im Spaltenkopf, grauer Reps-Wert auch für zusätzliche Sätze
 - 19. November (spät): Progressionsblatt neu (Tabelle pro Satz mit Ziel-Reps, Verlauf mit heute), Karte «How progression works» (Blatt und More), Info-Fenster mit Videos zuerst und automatischen YouTube-Titeln
 - 19. November: Food-Einträge mit separater Menge (− / +, Zutatenmengen, Portionen), kcal und Protein automatisch, Datum und Uhrzeit getrennt; Espresso als Standardlebensmittel (Migration 0049 offen); Gym crowd zählt über die ganze Trainingsdauer. Offen auf production: 0047, 0048, 0049
 - 16. November: Progressionsblatt mit Abschnitten Goal (gestrichelt, erreicht voll grün), Today und History (src/components/ProgressionSheet.tsx; WorkoutPage übergibt die abgehakten Sätze)

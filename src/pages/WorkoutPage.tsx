@@ -511,11 +511,8 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
             {name} <span className="text-zinc-400">›</span>
             {extraTag}
           </h2>
-          {(variant || tt === 'weight_reps') && (
-            <p className="text-sm text-zinc-700 tabular-nums dark:text-zinc-300">
-              {[variant, tt === 'weight_reps' ? `${targets.minimum}–${targets.target} reps` : null].filter(Boolean).join(' · ')}
-            </p>
-          )}
+          {/* The rep range sits small in the column head (decision 20 November 2026, variant B) */}
+          {variant && <p className="text-sm text-zinc-700 dark:text-zinc-300">{variant}</p>}
           {originalName && <p className="text-xs text-zinc-500 dark:text-zinc-400">Alternative for {originalName}</p>}
         </button>
         <button
@@ -582,7 +579,13 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
             )}
           </>
         )}
-        <span />
+        {tt === 'weight_reps' ? (
+          <span className="flex justify-center" title={`Rep range ${targets.minimum} to ${targets.target}`}>
+            <span className="rounded-full border border-zinc-300 px-1.5 text-[10px] leading-4 font-semibold whitespace-nowrap text-zinc-500 tabular-nums dark:border-zinc-600 dark:text-zinc-400">
+              {targets.minimum}–{targets.target}
+            </span>
+          </span>
+        ) : <span />}
 
         {sets.map((s) => {
           const warm = s.set_type === 'warmup'
@@ -597,7 +600,7 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
               rec={rec}
               mark={!warm && (marks[workingNo - 1] ?? false)}
               previous={compactPrevious(prev, tt, eff.isUnilateral)}
-              hint={warm ? undefined : hintOf(hintWorking[workingNo - 1])}
+              hint={warm ? undefined : hintOf(hintWorking[workingNo - 1] ?? hintWorking.at(-1))}
               trackingType={tt}
               unilateral={eff.isUnilateral}
               restSeconds={we.rest_s ?? eff.restS}
