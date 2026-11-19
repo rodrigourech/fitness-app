@@ -23,12 +23,13 @@ import { bestBefore, recordsOf, type Best } from '../lib/stats'
 import { belowMinimum, progressionAdvice, type ProgressionAdvice } from '../lib/progression'
 import { repetitionTargets, type RepetitionTargets } from '../lib/training'
 import ProgressionSheet from '../components/ProgressionSheet'
-import { goalState, repsOf, decidingIndexes } from '../lib/goal'
+import { goalState, prefillSource, repsOf, decidingIndexes } from '../lib/goal'
 import { displayWeight, increaseMarks, recommendations, warmUpWeight, type Recommendation } from '../lib/topset'
 import { DEFAULT_TRAINING_SHARES, getTrainingShares, type TrainingShares } from '../lib/settings'
 import {
   addExerciseToWorkout,
   addSet,
+  recentSets,
   applyPace,
   cancelWorkout,
   describeSet,
@@ -73,6 +74,8 @@ interface ExerciseBlock {
   trackingType: string
   sets: WorkoutSet[]
   previous: WorkoutSet[]
+  /** Work sets whose reps show in grey in the empty reps fields: the performance the weights were prefilled from */
+  repsHint: WorkoutSet[]
   links: ExerciseLink[]
   best: Best
   advice: ProgressionAdvice
@@ -81,6 +84,13 @@ interface ExerciseBlock {
   switchTo: string | null
   /** Planned exercise while its alternative is trained */
   originalName: string | null
+}
+
+/** Work sets of the performance the weights come from (own jumps below Min are skipped, decision 19 November 2026). */
+async function repsHintSets(exerciseId: string, workoutId: string, eff: ReturnType<typeof effective> | undefined, targets: RepetitionTargets): Promise<WorkoutSet[]> {
+  if (!eff || eff.trackingType !== 'weight_reps') return []
+  const recent = (await recentSets(exerciseId, workoutId, null, 6)).map((sets) => sets.filter((s) => s.set_type === 'working'))
+  return recent[prefillSource(recent, eff.topSet, eff.isUnilateral, targets)] ?? []
 }
 
 async function loadBlocks(workoutId: string, templateId: string | null): Promise<ExerciseBlock[]> {
@@ -116,6 +126,7 @@ async function loadBlocks(workoutId: string, templateId: string | null): Promise
         trackingType: eff?.trackingType ?? 'weight_reps',
         sets,
         previous: sessions[0]?.sets ?? [],
+        repsHint: await repsHintSets(we.exercise_id, workoutId, eff, targets),
         links: exercise ? await linksFor(exercise) : [],
         best: await bestBefore(we.exercise_id, workoutId),
         advice: eff?.trackingType === 'weight_reps' ? progressionAdvice(sessions, targets, eff.isUnilateral, sets.filter((s) => s.set_type === 'working').length, eff.topSet) : null,
@@ -356,7 +367,7 @@ interface CardProps {
 }
 
 function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle }: CardProps) {
-  const { we, exercise, name, variant, topSet, weightStep, sets, previous, links, best, advice, targets, switchTo, originalName } = block
+  const { we, exercise, name, variant, topSet, weightStep, sets, previous, repsHint, links, best, advice, targets, switchTo, originalName } = block
   const eff = exercise
     ? effective(exercise, byId)
     : { trackingType: 'weight_reps', isUnilateral: false, equipment: null as string | null, floor: null, seat: null, footPosition: null, setupNote: null, focusMuscles: [] as string[], focusCue: null, restS: null }
@@ -462,6 +473,7 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
 
   const prevWorking = previous.filter((s) => s.set_type === 'working')
   const prevWarmup = previous.filter((s) => s.set_type === 'warmup')
+  const hintWorking = repsHint.filter((s) => s.set_type === 'working')
   let workingNo = 0
   let warmupNo = 0
 
@@ -562,11 +574,11 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
             {/* Max reps for the next weight in the column head (decision 9 November 2026, design E2) */}
             {eff.isUnilateral ? (
               <>
-                <span className="text-center">L{tt === 'weight_reps' && <MaxReps n={targets.target} />}</span>
-                <span className="text-center">R{tt === 'weight_reps' && <MaxReps n={targets.target} />}</span>
+                <MaxReps label="L" n={targets.target} />
+                <MaxReps label="R" n={targets.target} />
               </>
             ) : (
-              <span className="text-center whitespace-nowrap">Reps{tt === 'weight_reps' && <MaxReps n={targets.target} />}</span>
+              <MaxReps label="Reps" n={targets.target} />
             )}
           </>
         )}
@@ -585,6 +597,7 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
               rec={rec}
               mark={!warm && (marks[workingNo - 1] ?? false)}
               previous={compactPrevious(prev, tt, eff.isUnilateral)}
+              hint={warm ? undefined : hintOf(hintWorking[workingNo - 1])}
               trackingType={tt}
               unilateral={eff.isUnilateral}
               restSeconds={we.rest_s ?? eff.restS}
@@ -664,13 +677,22 @@ function BelowHint({ show, children }: { show: boolean; children: ReactNode }) {
   )
 }
 
-function MaxReps({ n }: { n: number }) {
+/** Column head «Reps ↑10» in green and bold: Max reps for the next weight (decision 19 November 2026). */
+function MaxReps({ label, n }: { label: string; n: number }) {
   return (
-    <span className="ml-1 font-bold text-emerald-700 dark:text-emerald-400" title={`Max reps ${n}: reached, the weight goes up`}>
-      ↑{n}
+    <span className="text-center font-bold whitespace-nowrap text-emerald-700 dark:text-emerald-400" title={`Max reps ${n}: reached, the weight goes up`}>
+      {label} ↑{n}
     </span>
   )
 }
+
+interface RepsHint { reps: number | null; left: number | null; right: number | null }
+
+function hintOf(s: WorkoutSet | undefined): RepsHint | undefined {
+  return s ? { reps: s.reps, left: s.reps_left, right: s.reps_right } : undefined
+}
+
+const str = (n: number | null | undefined) => (n === null || n === undefined ? undefined : String(n))
 
 type ProgressState = 'up' | 'down' | 'none'
 
@@ -789,12 +811,21 @@ interface SetRowProps {
   good?: boolean
   /** Warm-up reps: hint and the value saved when an empty warm-up set is checked */
   warmUp: { reps: number; hint: string }
-  /** Deciding set (top set, or every work set without one): reps below Min get the «!» hint */
+  /** Deciding set (top set, or every work set without one): reps below Min get the «!» hint, the reps field a green outline */
   deciding?: boolean
+  /** Reps of the same set last time: grey in the empty reps field, taken over by ✓ */
+  hint?: RepsHint
 }
 
-function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, restSeconds, minimum, records, good, warmUp, deciding = false }: SetRowProps) {
+function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, restSeconds, minimum, records, good, warmUp, deciding = false, hint }: SetRowProps) {
   const done = set.completed_at !== null
+  // Short hint when ✓ is tapped on empty reps without a value from last time (decision 19 November 2026)
+  const [needReps, setNeedReps] = useState(false)
+  useEffect(() => {
+    if (!needReps) return
+    const t = setTimeout(() => setNeedReps(false), 2500)
+    return () => clearTimeout(t)
+  }, [needReps])
 
   function numberCommit(field: 'weight' | 'reps' | 'reps_left' | 'reps_right' | 'distance_km', integer: boolean) {
     return (input: string) => {
@@ -830,6 +861,18 @@ function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, res
         ? { ...(set.reps_left === null ? { reps_left: warmUp.reps } : {}), ...(set.reps_right === null ? { reps_right: warmUp.reps } : {}) }
         : set.reps === null ? { reps: warmUp.reps } : {}
       if (Object.keys(patch).length) await updateSet(set, patch)
+    }
+    // Empty reps of a work set take the grey value of last time; without one the set cannot be checked
+    if (set.completed_at === null && set.set_type === 'working' && trackingType === 'weight_reps') {
+      const cur = (await db.workout_set.get(set.id)) ?? set
+      const patch: Partial<WorkoutSet> = unilateral
+        ? { reps_left: cur.reps_left ?? hint?.left ?? null, reps_right: cur.reps_right ?? hint?.right ?? null }
+        : { reps: cur.reps ?? hint?.reps ?? null }
+      if (Object.values(patch).some((v) => v === null)) {
+        setNeedReps(true)
+        return
+      }
+      if (unilateral ? cur.reps_left === null || cur.reps_right === null : cur.reps === null) await updateSet(set, patch)
     }
     const nowDone = await toggleSetDone(set)
     if (nowDone && restSeconds) await startRest(restSeconds)
@@ -888,22 +931,22 @@ function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, res
       {trackingType === 'weight_reps' && (
         <>
           <span className="relative">
-            <Field label="Weight kg" inputMode="decimal" value={formatNumber(set.weight)} onCommit={numberCommit('weight', false)} mark={mark}
+            <Field label="Weight kg" inputMode="decimal" value={formatNumber(set.weight)} onCommit={numberCommit('weight', false)} mark={mark} clearOnFocus
               placeholder={warm && rec?.kind === 'warm' ? (rec.estimate ? `≈ ${rec.kg}` : String(rec.kg)) : undefined} />
             {mark && <span aria-hidden="true" className="pointer-events-none absolute top-0 right-1 text-[11px] font-extrabold text-emerald-600">↑</span>}
           </span>
           {unilateral ? (
             <>
               <BelowHint show={deciding && belowMinimum(set.reps_left, minimum)}>
-                <Field label="Reps left" inputMode="numeric" placeholder={warm ? warmUp.hint : undefined} value={formatNumber(set.reps_left)} onCommit={numberCommit('reps_left', true)} warn={belowMinimum(set.reps_left, minimum)} good={good} />
+                <Field label="Reps left" inputMode="numeric" placeholder={warm ? warmUp.hint : str(hint?.left)} value={formatNumber(set.reps_left)} onCommit={numberCommit('reps_left', true)} warn={belowMinimum(set.reps_left, minimum)} good={good} goal={deciding} clearOnFocus />
               </BelowHint>
               <BelowHint show={deciding && belowMinimum(set.reps_right, minimum)}>
-                <Field label="Reps right" inputMode="numeric" placeholder={warm ? warmUp.hint : undefined} value={formatNumber(set.reps_right)} onCommit={numberCommit('reps_right', true)} warn={belowMinimum(set.reps_right, minimum)} good={good} />
+                <Field label="Reps right" inputMode="numeric" placeholder={warm ? warmUp.hint : str(hint?.right)} value={formatNumber(set.reps_right)} onCommit={numberCommit('reps_right', true)} warn={belowMinimum(set.reps_right, minimum)} good={good} goal={deciding} clearOnFocus />
               </BelowHint>
             </>
           ) : (
             <BelowHint show={deciding && belowMinimum(set.reps, minimum)}>
-              <Field label="Reps" inputMode="numeric" placeholder={warm ? warmUp.hint : undefined} value={formatNumber(set.reps)} onCommit={numberCommit('reps', true)} warn={belowMinimum(set.reps, minimum)} good={good} />
+              <Field label="Reps" inputMode="numeric" placeholder={warm ? warmUp.hint : str(hint?.reps)} value={formatNumber(set.reps)} onCommit={numberCommit('reps', true)} warn={belowMinimum(set.reps, minimum)} good={good} goal={deciding} clearOnFocus />
             </BelowHint>
           )}
         </>
@@ -918,6 +961,11 @@ function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, res
       >
         ✓
       </button>
+      {needReps && (
+        <span role="status" className="col-span-full pt-0.5 text-right text-xs font-medium text-orange-700 dark:text-orange-300">
+          Enter reps first
+        </span>
+      )}
       </div>
     </div>
   )

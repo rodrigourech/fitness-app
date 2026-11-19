@@ -17,6 +17,7 @@ import {
   skipExercise,
   startWorkout,
   toggleSetDone,
+  updateSet,
   unskipExercise,
 } from './workout'
 
@@ -47,18 +48,17 @@ beforeEach(async () => {
 })
 
 describe('startWorkout', () => {
-  it('copies the template, prefills the last weight per set and the target reps', async () => {
+  it('copies the template, prefills the last weight per set and leaves the reps empty', async () => {
     const w = await startWorkout(day2, USER)
     expect(await getActiveWorkout()).toMatchObject({ id: w.id, template_name_snapshot: 'DAY2' })
     const s = await setsOf(w.id)
     // DAY2 history 2 Oct: Lying Leg Curl 35/35/30 kg x 10
     expect(s['Lying Leg Curl (Machine)']!.sets.map((x) => x.weight)).toEqual([35, 35, 30])
-    // Reps 1:1 from the last performance (decision 9 November 2026); a deciding set at Max reps (10, seed 10–10)
-    // starts in the middle of the range because the weight goes up
+    // Reps start empty; the field shows last time's reps in grey (decision 19 November 2026)
     expect(s['Lateral Raise (Cable)']!.sets.map((x) => [x.reps_left, x.reps_right])).toEqual([
-      [10, 10],
-      [10, 8],
-      [7, 8],
+      [null, null],
+      [null, null],
+      [null, null],
     ])
     expect(s['Lateral Raise (Cable)']!.sets.map((x) => x.weight)).toEqual([4.5, 4.5, 4.5])
     // Bicycle: duration 7 min
@@ -134,7 +134,7 @@ describe('finish and cancel', () => {
     await addSet(leg.we)
     let after = (await setsOf(w.id))['Leg Press']!.sets.filter((x) => x.deleted_at === null)
     expect(after).toHaveLength(4)
-    expect(after[3]).toMatchObject({ position: 5, weight: 70, reps: 10 })
+    expect(after[3]).toMatchObject({ position: 5, weight: 70, reps: null })
     await toggleSetDone(after[3]!)
     await removeLastSet(leg.we) // removes the last open set, not the completed one
     after = (await setsOf(w.id))['Leg Press']!.sets.filter((x) => x.deleted_at === null)
@@ -177,6 +177,7 @@ describe('finish and cancel', () => {
     const curl = s['Lying Leg Curl (Machine)']!
     const work = curl.sets.filter((x) => x.set_type === 'working')
     await toggleSetDone(work[0]!)
+    await updateSet(work[1]!, { reps: 10 })
     const open = (await openSets(w.id)).filter((o) => o.exercise === 'Lying Leg Curl (Machine)')
     expect(open.map((o) => o.number)).toEqual(work.slice(1).map((_, i) => i + 2))
     expect(open[0]).toMatchObject({ id: work[1]!.id, weight: work[1]!.weight, filled: true })

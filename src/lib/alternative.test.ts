@@ -64,7 +64,8 @@ describe('alternative exercises', () => {
     expect(curlSets.length).toBe(before)
     // Prefilled from the last Preacher Curl (15 kg in the seed history), two-sided
     expect(curlSets[0]!.weight).toBe(15)
-    expect(curlSets[0]!.reps).not.toBeNull()
+    // Reps start empty (decision 19 November 2026)
+    expect(curlSets[0]!.reps).toBeNull()
     expect(curlSets[0]!.reps_left).toBeNull()
 
     await switchExercise(switched)
@@ -73,7 +74,7 @@ describe('alternative exercises', () => {
     expect(back.original_exercise_id).toBeNull()
     const lateralSets = (await activeSets(we.id)).filter((s) => s.set_type === 'working')
     expect(lateralSets.length).toBe(before)
-    expect(lateralSets[0]!.reps_left).not.toBeNull()
+    expect(lateralSets[0]!.weight).not.toBeNull()
 
     // After a done set the exercise stays
     await toggleSetDone(lateralSets[0]!)

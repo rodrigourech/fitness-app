@@ -1,8 +1,8 @@
 import { db, type Exercise, type TemplateSet, type Workout, type WorkoutExercise, type WorkoutSet } from './db'
-import { decidingIndexes, prefillSource, repsOf } from './goal'
+import { prefillSource } from './goal'
 import { isExtra } from './extra'
 import { saveRows } from './sync'
-import { exerciseTrainingSettings, repetitionTargets, type RepetitionTargets } from './training'
+import { exerciseTrainingSettings, repetitionTargets } from './training'
 
 // Workout logging. A workout copies its template at start; later template edits do not affect it.
 
@@ -171,7 +171,7 @@ export async function startWorkout(templateId: string, userId: string): Promise<
     // Prefill: last performance of this exercise in any workout; else the template targets (decision 15 October 2026)
     const recent = (await recentSets(te.exercise_id, undefined, null, JUMP_LOOKBACK)).map(workingOnly)
     const source = recent[prefillSource(recent, eff.topSet, eff.isUnilateral, targets)] ?? []
-    sets.push(...prefilledSets(we, eff, targets, planned, source, userId, ts))
+    sets.push(...prefilledSets(we, eff, planned, source, userId, ts))
   }
 
   await saveRows('workout', [workout])
@@ -237,50 +237,32 @@ type Planned = Pick<TemplateSet, 'target_weight' | 'target_duration_s' | 'target
 
 /**
  * Sets of a workout exercise at the start: warm-up set W if enabled, then one work set per planned set.
- * Weight and reps 1:1 from the last performance (reps: decision 9 November 2026);
+ * Weight 1:1 from the last performance, reps empty (decision 19 November 2026);
  * without a last performance the planned targets.
  */
 function prefilledSets(
   we: WorkoutExercise,
   eff: ReturnType<typeof effective>,
-  targets: RepetitionTargets,
   planned: Planned[],
   prevWorking: WorkoutSet[],
   userId: string,
   ts: string,
 ): WorkoutSet[] {
   const weightReps = eff.trackingType === 'weight_reps'
-  // Reps start in the middle of the range, rounded down (decision 19 October 2026: not at Max Reps)
-  const startReps = midReps(targets.minimum, targets.target)
   // Warm-up as its own set W before the work sets (decision 18 October 2026)
   const warmUp = weightReps && eff.warmUp
   const sets: WorkoutSet[] = warmUp ? [warmUpSet(we, userId, ts)] : []
-  // Reps start 1:1 from the last performance of the same set (decision Rodrigo, 9 November 2026). Exception: a
-  // deciding set (top set, or all work sets) that reached Max reps means the weight goes up, so it starts in the
-  // middle of the range instead of Max reps at the heavier weight
-  const deciding = new Set(decidingIndexes(prevWorking, eff.topSet))
+  // Reps of work sets start empty (decision Rodrigo, 19 November 2026): the field shows the reps of the same set last
+  // time in grey, and ✓ takes them over. Weight and other values 1:1 from the last performance
   planned.forEach((p, i) => {
-    const sourceIndex = prevWorking[i] ? i : prevWorking.length - 1
-    const source = prevWorking[sourceIndex]
-    const lastReps = source ? repsOf(source, eff.isUnilateral) : null
-    const raised = source !== undefined && deciding.has(sourceIndex) && lastReps !== null && lastReps >= targets.target
-    const repsPatch = !weightReps || !source
-      ? {}
-      : raised
-        ? eff.isUnilateral ? { reps_left: startReps, reps_right: startReps } : { reps: startReps }
-        : eff.isUnilateral
-          ? { reps_left: source.reps_left ?? startReps, reps_right: source.reps_right ?? startReps }
-          : { reps: source.reps ?? startReps }
+    const source = prevWorking[i] ?? prevWorking.at(-1)
     const m: Measure = source
-      ? {
-          ...measureOf(source),
-          ...repsPatch,
-        }
+      ? { ...measureOf(source), ...(weightReps ? { reps: null, reps_left: null, reps_right: null } : {}) }
       : {
           weight: p.target_weight,
-          reps: weightReps && !eff.isUnilateral ? startReps : null,
-          reps_left: weightReps && eff.isUnilateral ? startReps : null,
-          reps_right: weightReps && eff.isUnilateral ? startReps : null,
+          reps: null,
+          reps_left: null,
+          reps_right: null,
           duration_s: p.target_duration_s,
           distance_km: p.target_distance_km,
         }
@@ -355,7 +337,7 @@ export async function switchExercise(we: WorkoutExercise): Promise<void> {
   const prev = recent[prefillSource(recent, eff.topSet, eff.isUnilateral, targets)] ?? []
   if (sets.length) await saveRows('workout_set', sets.map((s) => ({ ...s, deleted_at: ts })))
   await saveRows('workout_exercise', [next])
-  await saveRows('workout_set', prefilledSets(next, eff, targets, planned, prev, current.user_id, ts))
+  await saveRows('workout_set', prefilledSets(next, eff, planned, prev, current.user_id, ts))
 }
 
 /** Middle of the rep range, rounded down: the start value of the reps fields. */

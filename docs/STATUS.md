@@ -14,6 +14,7 @@ Letzte Aktualisierung 5. November 2026
 
 ## Stand
 
+- 20. November: Eingabefelder im Training (Reps leer mit grauem Wert vom letzten Mal, ✓ übernimmt, Antippen leert das Feld, grüner Rand bei entscheidenden Sätzen, Kopf «Reps ↑N» grün), Regel für selbst erhöhtes Gewicht, Today in der History auf grauer Spalte
 - 19. November (spät): Progressionsblatt neu (Tabelle pro Satz mit Ziel-Reps, Verlauf mit heute), Karte «How progression works» (Blatt und More), Info-Fenster mit Videos zuerst und automatischen YouTube-Titeln
 - 19. November: Food-Einträge mit separater Menge (− / +, Zutatenmengen, Portionen), kcal und Protein automatisch, Datum und Uhrzeit getrennt; Espresso als Standardlebensmittel (Migration 0049 offen); Gym crowd zählt über die ganze Trainingsdauer. Offen auf production: 0047, 0048, 0049
 - 16. November: Progressionsblatt mit Abschnitten Goal (gestrichelt, erreicht voll grün), Today und History (src/components/ProgressionSheet.tsx; WorkoutPage übergibt die abgehakten Sätze)
@@ -135,7 +136,6 @@ Der Benutzer hat nach der veröffentlichten Beta ausdrücklich die Übernahme in
 - GitHub Actions auf Node-24-Versionen aktualisieren
 - Ausführungsanleitung pro Übung (Rodrigo, 19. November 2026): für jede Übung kompakte Schritte auf Deutsch, nummeriert im Stil «1)», «2)», «3)», «4)», wie man die Ausführung sauber macht. Anzeige beim Info-Knopf «i» zusammen mit Setup und den YouTube-Videos (Entwurf «Uebung_Ausfuehrung_Info»: A im bestehenden Info-Fenster oder B als eigenes Blatt von unten). Neues Feld an der Übung (z. B. exercise.instructions, Migration); Texte vor dem Eintragen Rodrigo zur Durchsicht vorlegen
 - Gym crowd: Zeitraum wählbar (3 Monate, 1 Jahr, All), Standard 3 Monate (Vorschlag 16. November, noch nicht entschieden)
-- Offene Aufträge vom 19. November: Eingabefelder nach Vorgabe (Reps leer mit grauem Platzhalter, ✓ übernimmt, Feld beim Antippen leeren, grüner Rand bei entscheidenden Sätzen, Spaltenkopf «Reps ↑N» grün fett); Regel selbst erhöhtes Gewicht ist umgesetzt (19. November). Today-Balken in der Progressions-History neu visualisieren (Rodrigo: Umrandung nicht ideal)
 
 ## Weitere Punkte aus dem ursprünglichen Handover
 

@@ -193,6 +193,10 @@ function HistoryChart({ bars, minimum, target, neutral }: { bars: HistoryBar[]; 
         </g>
       ))}
       <text x={0} y={12} fontSize="9.5" className="fill-zinc-400 dark:fill-zinc-500">reps</text>
+      {/* Today on a grey column over the whole height (decision 19 November 2026, variant A in grey, no outline) */}
+      {bars.map((b, i) => b.date === 'today' && (
+        <rect key="today" x={left + i * bw + 3} y={4} width={bw - 6} height={H - 4} rx={10} className="fill-zinc-100 dark:fill-zinc-800/80" />
+      ))}
       {bars.map((b, i) => {
         const cx = left + i * bw + bw / 2
         const w = Math.min(30, bw * 0.66)
@@ -201,7 +205,7 @@ function HistoryChart({ bars, minimum, target, neutral }: { bars: HistoryBar[]; 
         if (b.reps === null) {
           return (
             <g key={i}>
-              {isToday && <rect x={cx - w / 2} y={y(target)} width={w} height={H - bottom - y(target)} rx={5} className="fill-none stroke-zinc-400 dark:stroke-zinc-600" strokeDasharray="3 3" />}
+              {isToday && <rect x={cx - w / 2} y={y(target)} width={w} height={H - bottom - y(target)} rx={5} className="fill-white stroke-zinc-400 dark:fill-zinc-900 dark:stroke-zinc-500" strokeDasharray="3 3" />}
               <text x={cx} y={isToday ? (y(target) + H - bottom) / 2 + 3 : H - bottom - 4} textAnchor="middle" fontSize="10" className="fill-zinc-400 dark:fill-zinc-500">{isToday ? 'open' : '–'}</text>
               <text x={cx} y={H - 6} textAnchor="middle" fontSize="10" className={isToday ? 'fill-zinc-900 font-bold dark:fill-zinc-100' : 'fill-zinc-400 dark:fill-zinc-500'}>{label}</text>
             </g>
@@ -213,13 +217,11 @@ function HistoryChart({ bars, minimum, target, neutral }: { bars: HistoryBar[]; 
         const chip = Math.max(30, kgText.length * 5.6 + 8)
         return (
           <g key={i}>
-            <rect x={cx - w / 2} y={y(b.reps)} width={w} height={H - bottom - y(b.reps)} rx={5} className={fill} strokeDasharray={neutral ? '3 3' : undefined}
-              strokeWidth={isToday && !neutral ? 0 : undefined} />
-            {isToday && <rect x={cx - w / 2 - 2} y={y(b.reps) - 2} width={w + 4} height={H - bottom - y(b.reps) + 2} rx={6} className="fill-none stroke-zinc-900 dark:stroke-zinc-100" strokeWidth={1.5} />}
+            <rect x={cx - w / 2} y={y(b.reps)} width={w} height={H - bottom - y(b.reps)} rx={5} className={fill} strokeDasharray={neutral ? '3 3' : undefined} />
             <text x={cx} y={y(b.reps) + 13} textAnchor="middle" fontSize="11" fontWeight="800" className={neutral ? 'fill-orange-700 dark:fill-orange-300' : 'fill-white'}>{b.reps}</text>
             {kgText && (
               <g>
-                <rect x={cx - chip / 2} y={y(b.reps) - 19} width={chip} height={15} rx={4} className="fill-zinc-100 dark:fill-zinc-800" />
+                <rect x={cx - chip / 2} y={y(b.reps) - 19} width={chip} height={15} rx={4} className={isToday ? 'fill-white dark:fill-zinc-950' : 'fill-zinc-100 dark:fill-zinc-800'} />
                 <text x={cx} y={y(b.reps) - 8} textAnchor="middle" fontSize="9.5" fontWeight="700" className="fill-zinc-700 dark:fill-zinc-200">{kgText}</text>
               </g>
             )}
