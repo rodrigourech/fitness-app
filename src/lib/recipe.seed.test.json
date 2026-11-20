@@ -1,0 +1,869 @@
+[
+ {
+  "id": "c5a0f6d2-0002-4f00-8000-000000000001",
+  "name": "Türkische Pasta mit Skyr",
+  "category": "meal",
+  "protein_type": "beef",
+  "portions": 1,
+  "prep_min": 25,
+  "meal_prep": false,
+  "items": [
+   {
+    "id": "i1",
+    "name": "Rindshack (Denner)",
+    "food_item_id": "6dd50bc6-0741-43f3-8a4e-85518128a28c",
+    "qty": 250,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 515,
+    "protein_g": 50.0,
+    "source": "staple"
+   },
+   {
+    "id": "i2",
+    "name": "Pasta, roh",
+    "food_item_id": "c5a0f6d1-0001-4f00-8000-000000000007",
+    "qty": 70,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 249,
+    "protein_g": 8.8,
+    "source": "staple"
+   },
+   {
+    "id": "i3",
+    "name": "Skyr Nature (Denner)",
+    "food_item_id": "24f2e19e-3e0a-4e8b-a5bd-c9822b7f3fb9",
+    "qty": 170,
+    "unit": "g",
+    "hint": {
+     "n": 1,
+     "label": "Becher"
+    },
+    "to_taste": false,
+    "kcal": 100,
+    "protein_g": 18.7,
+    "source": "staple"
+   },
+   {
+    "id": "i4",
+    "name": "Zwiebel",
+    "food_item_id": "c5a0f6d1-0001-4f00-8000-00000000000d",
+    "qty": 60,
+    "unit": "g",
+    "hint": {
+     "n": 1,
+     "label": "kleine"
+    },
+    "to_taste": false,
+    "kcal": 24,
+    "protein_g": 0.7,
+    "source": "staple"
+   },
+   {
+    "id": "i5",
+    "name": "Cherrytomaten",
+    "food_item_id": null,
+    "qty": 250,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 45,
+    "protein_g": 2,
+    "source": "estimate"
+   },
+   {
+    "id": "i6",
+    "name": "Knoblauch",
+    "food_item_id": null,
+    "qty": 8,
+    "unit": "g",
+    "hint": {
+     "n": 1.5,
+     "label": "Zehen"
+    },
+    "to_taste": false,
+    "kcal": 10,
+    "protein_g": 0.5,
+    "source": "estimate"
+   },
+   {
+    "id": "i7",
+    "name": "Limette",
+    "food_item_id": null,
+    "qty": null,
+    "unit": null,
+    "hint": null,
+    "to_taste": true,
+    "kcal": 0,
+    "protein_g": 0,
+    "source": "estimate"
+   },
+   {
+    "id": "i8",
+    "name": "Zwiebelpulver, Salz, Pfeffer",
+    "food_item_id": null,
+    "qty": null,
+    "unit": null,
+    "hint": null,
+    "to_taste": true,
+    "kcal": 0,
+    "protein_g": 0,
+    "source": "estimate"
+   }
+  ],
+  "steps": [
+   {
+    "text": "Pasta {i2} in gesalzenem Wasser kochen, etwas Pastawasser beiseitestellen.",
+    "timer_s": 600,
+    "items": [
+     "i2"
+    ]
+   },
+   {
+    "text": "Hackfleisch {i1} mit Knoblauch, Zwiebelpulver, Salz und Pfeffer würzen.",
+    "timer_s": null,
+    "items": [
+     "i1",
+     "i6",
+     "i8"
+    ]
+   },
+   {
+    "text": "Ohne Öl in heisser Pfanne scharf anbraten, dann herausnehmen.",
+    "timer_s": 360,
+    "items": [
+     "i1"
+    ]
+   },
+   {
+    "text": "Zwiebel {i4} im Restfett anbraten.",
+    "timer_s": null,
+    "items": [
+     "i4"
+    ]
+   },
+   {
+    "text": "In einer Bowl Skyr {i3} mit ½ Knoblauchzehe, Limette, Salz und Pfeffer mischen.",
+    "timer_s": null,
+    "items": [
+     "i3",
+     "i7"
+    ]
+   },
+   {
+    "text": "Gekochte Pasta in die Bowl geben, bei Bedarf mit Pastawasser die Konsistenz anpassen.",
+    "timer_s": null,
+    "items": [
+     "i2"
+    ]
+   },
+   {
+    "text": "Hackfleisch zurück zu den Zwiebeln, kurz aufwärmen, in die Bowl geben.",
+    "timer_s": null,
+    "items": [
+     "i1"
+    ]
+   },
+   {
+    "text": "Cherrytomaten {i5} vierteln und darübergeben, nochmals salzen, nach Wunsch Limette.",
+    "timer_s": null,
+    "items": [
+     "i5",
+     "i7"
+    ]
+   }
+  ],
+  "notes": null
+ },
+ {
+  "id": "c5a0f6d2-0002-4f00-8000-000000000002",
+  "name": "Ofen-Pouletschenkel mit Kartoffeln und Bohnen",
+  "category": "meal",
+  "protein_type": "chicken",
+  "portions": 3,
+  "prep_min": 45,
+  "meal_prep": true,
+  "items": [
+   {
+    "id": "i1",
+    "name": "Pouletoberschenkel gewürzt (Denner), essbar",
+    "food_item_id": "89b6bc92-ddc8-4df6-9131-1289f715ed20",
+    "qty": 825,
+    "unit": "g",
+    "hint": {
+     "n": 1030,
+     "label": "g mit Knochen"
+    },
+    "to_taste": false,
+    "kcal": 1361,
+    "protein_g": 148.5,
+    "source": "staple"
+   },
+   {
+    "id": "i2",
+    "name": "Kartoffeln",
+    "food_item_id": null,
+    "qty": 450,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 347,
+    "protein_g": 9,
+    "source": "estimate"
+   },
+   {
+    "id": "i3",
+    "name": "Reis, roh",
+    "food_item_id": "c5a0f6d1-0001-4f00-8000-000000000005",
+    "qty": 50,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 175,
+    "protein_g": 3.5,
+    "source": "staple"
+   },
+   {
+    "id": "i4",
+    "name": "Grüne Bohnen, gefroren",
+    "food_item_id": null,
+    "qty": 600,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 180,
+    "protein_g": 12,
+    "source": "estimate"
+   },
+   {
+    "id": "i5",
+    "name": "Bouillon zum Dämpfen",
+    "food_item_id": null,
+    "qty": 400,
+    "unit": "ml",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 0,
+    "protein_g": 0,
+    "source": "estimate"
+   }
+  ],
+  "steps": [
+   {
+    "text": "Kartoffeln {i2} würfeln, 10 min bei 200 Grad Umluft vorbacken.",
+    "timer_s": 600,
+    "items": [
+     "i2"
+    ]
+   },
+   {
+    "text": "Schenkel {i1} ohne Öl dazu, zusammen 35 bis 40 min; Kartoffeln nach 20 min wenden. Fertig, wenn am Knochen klarer Saft austritt.",
+    "timer_s": 2100,
+    "items": [
+     "i1"
+    ]
+   },
+   {
+    "text": "Reis {i3} mit der doppelten Menge Wasser kochen.",
+    "timer_s": null,
+    "items": [
+     "i3"
+    ]
+   },
+   {
+    "text": "Bohnen {i4} mit Bouillon {i5} auf Steam rund 15 min garen, nach der Hälfte umrühren.",
+    "timer_s": 900,
+    "items": [
+     "i4",
+     "i5"
+    ]
+   },
+   {
+    "text": "Ausgetretenes Fett abschöpfen, Saft darunter nach Wunsch verwenden.",
+    "timer_s": null,
+    "items": []
+   },
+   {
+    "text": "Fleisch vom Knochen lösen und auf die Boxen verteilen.",
+    "timer_s": null,
+    "items": []
+   }
+  ],
+  "notes": "Reis ist die Variante für eine Portion, Kartoffeln für zwei."
+ },
+ {
+  "id": "c5a0f6d2-0002-4f00-8000-000000000003",
+  "name": "Schweinsgeschnetzeltes mit Reis und Broccoli",
+  "category": "meal",
+  "protein_type": "pork",
+  "portions": 3,
+  "prep_min": null,
+  "meal_prep": true,
+  "items": [
+   {
+    "id": "i1",
+    "name": "Schweinsgeschnetzeltes (Coop)",
+    "food_item_id": null,
+    "qty": 594,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 743,
+    "protein_g": 133.7,
+    "source": "estimate"
+   },
+   {
+    "id": "i2",
+    "name": "Reis, roh",
+    "food_item_id": "c5a0f6d1-0001-4f00-8000-000000000005",
+    "qty": 210,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 735,
+    "protein_g": 14.7,
+    "source": "staple"
+   },
+   {
+    "id": "i3",
+    "name": "Broccoli",
+    "food_item_id": null,
+    "qty": 430,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 146,
+    "protein_g": 12,
+    "source": "estimate"
+   },
+   {
+    "id": "i4",
+    "name": "Zwiebel",
+    "food_item_id": "c5a0f6d1-0001-4f00-8000-00000000000d",
+    "qty": 100,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 40,
+    "protein_g": 1.2,
+    "source": "staple"
+   },
+   {
+    "id": "i5",
+    "name": "Sojasauce, Butter, Knoblauch, Sesamöl, Sonnenblumenöl",
+    "food_item_id": null,
+    "qty": null,
+    "unit": null,
+    "hint": null,
+    "to_taste": false,
+    "kcal": 88,
+    "protein_g": 3.4,
+    "source": "estimate"
+   }
+  ],
+  "steps": [],
+  "notes": "Mengen für Sauce und Öl sind in der Summe enthalten."
+ },
+ {
+  "id": "c5a0f6d2-0002-4f00-8000-000000000004",
+  "name": "Rindshack mit Reis und Bohnen",
+  "category": "meal",
+  "protein_type": "beef",
+  "portions": 1,
+  "prep_min": 15,
+  "meal_prep": false,
+  "items": [
+   {
+    "id": "i1",
+    "name": "Rindshack (Migros)",
+    "food_item_id": "b85e03d9-e0ea-4e75-a618-38283969e2e4",
+    "qty": 200,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 412,
+    "protein_g": 40.0,
+    "source": "staple"
+   },
+   {
+    "id": "i2",
+    "name": "Reis, roh",
+    "food_item_id": "c5a0f6d1-0001-4f00-8000-000000000005",
+    "qty": 70,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 245,
+    "protein_g": 4.9,
+    "source": "staple"
+   },
+   {
+    "id": "i3",
+    "name": "Grüne Bohnen, gefroren",
+    "food_item_id": null,
+    "qty": 200,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 60,
+    "protein_g": 4,
+    "source": "estimate"
+   }
+  ],
+  "steps": [
+   {
+    "text": "Reis {i2} kochen.",
+    "timer_s": null,
+    "items": [
+     "i2"
+    ]
+   },
+   {
+    "text": "Hackfleisch {i1} ohne Öl anbraten.",
+    "timer_s": null,
+    "items": [
+     "i1"
+    ]
+   },
+   {
+    "text": "Bohnen {i3} gefroren dazugeben oder separat 6 bis 8 min kochen.",
+    "timer_s": 420,
+    "items": [
+     "i3"
+    ]
+   }
+  ],
+  "notes": null
+ },
+ {
+  "id": "c5a0f6d2-0002-4f00-8000-000000000005",
+  "name": "Rindshack mit Tomaten, Reis und Quark",
+  "category": "meal",
+  "protein_type": "beef",
+  "portions": 1,
+  "prep_min": null,
+  "meal_prep": false,
+  "items": [
+   {
+    "id": "i1",
+    "name": "Rindshack bio (Coop)",
+    "food_item_id": "c5a0f6d1-0001-4f00-8000-000000000003",
+    "qty": 200,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 340,
+    "protein_g": 40.0,
+    "source": "staple"
+   },
+   {
+    "id": "i2",
+    "name": "Tomaten",
+    "food_item_id": null,
+    "qty": 350,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 69,
+    "protein_g": 3.8,
+    "source": "estimate"
+   },
+   {
+    "id": "i3",
+    "name": "Reis, roh",
+    "food_item_id": "c5a0f6d1-0001-4f00-8000-000000000005",
+    "qty": 50,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 175,
+    "protein_g": 3.5,
+    "source": "staple"
+   },
+   {
+    "id": "i4",
+    "name": "Magerquark",
+    "food_item_id": "894ae620-132b-48cf-bb0a-72340fbd2cae",
+    "qty": 70,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 43,
+    "protein_g": 7.7,
+    "source": "staple"
+   }
+  ],
+  "steps": [],
+  "notes": "Menge Hackfleisch geschätzt."
+ },
+ {
+  "id": "c5a0f6d2-0002-4f00-8000-000000000006",
+  "name": "Chicken Tacos",
+  "category": "meal",
+  "protein_type": "chicken",
+  "portions": 3,
+  "prep_min": null,
+  "meal_prep": false,
+  "items": [
+   {
+    "id": "i1",
+    "name": "Pouletgehacktes",
+    "food_item_id": "c5a0f6d1-0001-4f00-8000-000000000004",
+    "qty": 612,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 704,
+    "protein_g": 122.4,
+    "source": "staple"
+   },
+   {
+    "id": "i2",
+    "name": "Mini Tortillas",
+    "food_item_id": "092ce3ee-b4d9-4f85-970c-cb5ab3847f36",
+    "qty": 16,
+    "unit": "piece",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 1312,
+    "protein_g": 40.0,
+    "source": "staple"
+   },
+   {
+    "id": "i3",
+    "name": "Skyr",
+    "food_item_id": "e6f6fe41-b64a-44b6-adf4-ac146f2b5a5d",
+    "qty": 175,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 102,
+    "protein_g": 19.3,
+    "source": "staple"
+   },
+   {
+    "id": "i4",
+    "name": "Guacamole aus Avocado und 3 grossen Tomaten",
+    "food_item_id": null,
+    "qty": 330,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 330,
+    "protein_g": 6.6,
+    "source": "estimate"
+   },
+   {
+    "id": "i5",
+    "name": "Eingelegte rote Zwiebeln (Weissweinessig)",
+    "food_item_id": null,
+    "qty": 225,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 10,
+    "protein_g": 0.5,
+    "source": "estimate"
+   },
+   {
+    "id": "i6",
+    "name": "Sonnenblumenöl",
+    "food_item_id": "c5a0f6d1-0001-4f00-8000-000000000009",
+    "qty": 1.5,
+    "unit": "piece",
+    "hint": {
+     "n": 1.5,
+     "label": "TL"
+    },
+    "to_taste": false,
+    "kcal": 68,
+    "protein_g": 0,
+    "source": "staple"
+   }
+  ],
+  "steps": [
+   {
+    "text": "Hackfleisch {i1} mit Gewürzen in Öl {i6} anbraten.",
+    "timer_s": null,
+    "items": [
+     "i1",
+     "i6"
+    ]
+   },
+   {
+    "text": "Skyr {i3} mit Knoblauch, Limette und Salz zum Dip rühren.",
+    "timer_s": null,
+    "items": [
+     "i3"
+    ]
+   },
+   {
+    "text": "Tortillas {i2} mit Guacamole {i4}, Hackfleisch, Zwiebeln {i5} und Skyr füllen.",
+    "timer_s": null,
+    "items": [
+     "i2",
+     "i4",
+     "i5"
+    ]
+   }
+  ],
+  "notes": null
+ },
+ {
+  "id": "c5a0f6d2-0002-4f00-8000-000000000007",
+  "name": "Beef Tacos",
+  "category": "meal",
+  "protein_type": "beef",
+  "portions": 1,
+  "prep_min": null,
+  "meal_prep": false,
+  "items": [
+   {
+    "id": "i1",
+    "name": "Mini Tortillas",
+    "food_item_id": "092ce3ee-b4d9-4f85-970c-cb5ab3847f36",
+    "qty": 3,
+    "unit": "piece",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 246,
+    "protein_g": 7.5,
+    "source": "staple"
+   },
+   {
+    "id": "i2",
+    "name": "Rindshack (Migros)",
+    "food_item_id": "b85e03d9-e0ea-4e75-a618-38283969e2e4",
+    "qty": 200,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 412,
+    "protein_g": 40.0,
+    "source": "staple"
+   },
+   {
+    "id": "i3",
+    "name": "Guacamole",
+    "food_item_id": null,
+    "qty": 100,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 117,
+    "protein_g": 1.8,
+    "source": "estimate"
+   },
+   {
+    "id": "i4",
+    "name": "Eingelegte Zwiebeln",
+    "food_item_id": null,
+    "qty": 50,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 3,
+    "protein_g": 0.1,
+    "source": "estimate"
+   },
+   {
+    "id": "i5",
+    "name": "Skyr",
+    "food_item_id": "e6f6fe41-b64a-44b6-adf4-ac146f2b5a5d",
+    "qty": 30,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 17,
+    "protein_g": 3.3,
+    "source": "staple"
+   }
+  ],
+  "steps": [
+   {
+    "text": "Hackfleisch {i2} zuerst allein scharf anbraten, dann die Zwiebeln im Fett glasig braten.",
+    "timer_s": null,
+    "items": [
+     "i2",
+     "i4"
+    ]
+   },
+   {
+    "text": "Tortillas {i1} mit Guacamole {i3}, Hackfleisch, Zwiebeln und Skyr {i5} füllen.",
+    "timer_s": null,
+    "items": [
+     "i1",
+     "i3",
+     "i5"
+    ]
+   }
+  ],
+  "notes": null
+ },
+ {
+  "id": "c5a0f6d2-0002-4f00-8000-000000000008",
+  "name": "Flammkuchen mit Speck",
+  "category": "meal",
+  "protein_type": "pork",
+  "portions": 1,
+  "prep_min": null,
+  "meal_prep": false,
+  "items": [
+   {
+    "id": "i1",
+    "name": "Flammkuchenteig (Anna's Best)",
+    "food_item_id": null,
+    "qty": 200,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 567,
+    "protein_g": 14,
+    "source": "estimate"
+   },
+   {
+    "id": "i2",
+    "name": "Speck (Migros)",
+    "food_item_id": null,
+    "qty": 60,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 180,
+    "protein_g": 9,
+    "source": "estimate"
+   },
+   {
+    "id": "i3",
+    "name": "Crème fraîche (Valflora)",
+    "food_item_id": null,
+    "qty": 55,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 182,
+    "protein_g": 1.4,
+    "source": "estimate"
+   },
+   {
+    "id": "i4",
+    "name": "Zwiebel",
+    "food_item_id": "c5a0f6d1-0001-4f00-8000-00000000000d",
+    "qty": 100,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 40,
+    "protein_g": 1.2,
+    "source": "staple"
+   }
+  ],
+  "steps": [],
+  "notes": null
+ },
+ {
+  "id": "c5a0f6d2-0002-4f00-8000-000000000009",
+  "name": "Skyr-Protein-Bowl",
+  "category": "snack",
+  "protein_type": null,
+  "portions": 1,
+  "prep_min": 5,
+  "meal_prep": false,
+  "items": [
+   {
+    "id": "i1",
+    "name": "Skyr",
+    "food_item_id": "e6f6fe41-b64a-44b6-adf4-ac146f2b5a5d",
+    "qty": 200,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 116,
+    "protein_g": 22.0,
+    "source": "staple"
+   },
+   {
+    "id": "i2",
+    "name": "ESN Whey",
+    "food_item_id": "c5a0f6d1-0001-4f00-8000-00000000000a",
+    "qty": 1,
+    "unit": "serving",
+    "hint": {
+     "n": 1.5,
+     "label": "Scoops"
+    },
+    "to_taste": false,
+    "kcal": 167,
+    "protein_g": 34.5,
+    "source": "staple"
+   },
+   {
+    "id": "i3",
+    "name": "Wasser",
+    "food_item_id": null,
+    "qty": null,
+    "unit": null,
+    "hint": null,
+    "to_taste": true,
+    "kcal": 0,
+    "protein_g": 0,
+    "source": "estimate"
+   }
+  ],
+  "steps": [
+   {
+    "text": "Skyr {i1} und Whey {i2} mit etwas Wasser glatt rühren.",
+    "timer_s": null,
+    "items": [
+     "i1",
+     "i2",
+     "i3"
+    ]
+   }
+  ],
+  "notes": null
+ },
+ {
+  "id": "c5a0f6d2-0002-4f00-8000-00000000000a",
+  "name": "Toast mit Tomate",
+  "category": "snack",
+  "protein_type": null,
+  "portions": 1,
+  "prep_min": 5,
+  "meal_prep": false,
+  "items": [
+   {
+    "id": "i1",
+    "name": "Toast hell (Denner)",
+    "food_item_id": null,
+    "qty": 31,
+    "unit": "g",
+    "hint": {
+     "n": 1,
+     "label": "Scheibe"
+    },
+    "to_taste": false,
+    "kcal": 89,
+    "protein_g": 2.7,
+    "source": "label"
+   },
+   {
+    "id": "i2",
+    "name": "Roma-Tomate",
+    "food_item_id": null,
+    "qty": 100,
+    "unit": "g",
+    "hint": null,
+    "to_taste": false,
+    "kcal": 20,
+    "protein_g": 1,
+    "source": "estimate"
+   }
+  ],
+  "steps": [],
+  "notes": null
+ }
+]

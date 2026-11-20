@@ -211,6 +211,88 @@ export interface FoodEntry extends SyncColumns {
   source: 'app' | 'claude' | 'auto'
 }
 
+// --- recipes and kitchen (migration 0052, decision 19 November 2026) ---------------------------------
+
+export type RecipeCategory = 'meal' | 'dessert' | 'snack'
+export type ProteinType = 'beef' | 'chicken' | 'pork' | 'fish' | 'veggie' | 'mixed'
+
+/** Ingredient of a recipe; values for the whole recipe at its base portions. */
+export interface RecipeItem {
+  /** Local id within the recipe, referenced by steps («i1») */
+  id: string
+  name: string
+  food_item_id: string | null
+  /** Amount in unit for the base portions; null for «nach Geschmack» */
+  qty: number | null
+  unit: 'g' | 'ml' | 'piece' | 'serving' | null
+  /** Grey count before the weight, scales too: {n: 1, label: 'Becher'} gives «1 Becher · 170 g» */
+  hint: { n: number; label: string } | null
+  to_taste: boolean
+  kcal: number
+  protein_g: number
+  source: 'staple' | 'label' | 'estimate'
+}
+
+export interface RecipeStep {
+  /** Text with placeholders {item id} for the scaled amounts */
+  text: string
+  timer_s: number | null
+  items: string[]
+}
+
+export interface Recipe extends SyncColumns {
+  name: string
+  lang: string
+  category: RecipeCategory
+  protein_type: ProteinType | null
+  portions: number
+  prep_min: number | null
+  meal_prep: boolean
+  keeps_days: number
+  notes: string | null
+  items: RecipeItem[]
+  steps: RecipeStep[]
+}
+
+/** Cooked portions without a day; values and items per portion, frozen when cooked. */
+export interface FridgeItem extends SyncColumns {
+  recipe_id: string | null
+  title: string
+  portions: number
+  kcal: number
+  protein_g: number
+  items: FoodEntryItem[]
+  cooked_at: string
+  /** Local day YYYY-MM-DD */
+  eat_by: string
+}
+
+export type StockLocation = 'fridge' | 'freezer' | 'shelf'
+
+/** Stock item; tracked false = present yes/no only (oil, spices, sauces). */
+export interface InventoryItem extends SyncColumns {
+  food_item_id: string | null
+  name: string
+  location: StockLocation
+  unit: 'g' | 'ml' | 'piece' | null
+  qty_initial: number | null
+  qty_left: number | null
+  tracked: boolean
+  best_before: string | null
+  opened_at: string | null
+  last_used_at: string | null
+  note: string | null
+}
+
+export type StockReason = 'purchase' | 'meal' | 'recipe' | 'used_up' | 'discard' | 'correction'
+
+export interface InventoryMove extends SyncColumns {
+  item_id: string
+  delta: number
+  reason: StockReason
+  food_entry_id: string | null
+}
+
 export interface CatalogExercise {
   id: string
   name: string
@@ -235,6 +317,10 @@ export const SYNC_TABLES = [
   'body_photo',
   'food_item',
   'food_entry',
+  'recipe',
+  'fridge_item',
+  'inventory_item',
+  'inventory_move',
 ] as const
 export type SyncTable = (typeof SYNC_TABLES)[number]
 
@@ -273,6 +359,10 @@ export const db = new Dexie(databaseName) as Dexie & {
   body_photo: EntityTable<BodyPhoto, 'id'>
   food_item: EntityTable<FoodItem, 'id'>
   food_entry: EntityTable<FoodEntry, 'id'>
+  recipe: EntityTable<Recipe, 'id'>
+  fridge_item: EntityTable<FridgeItem, 'id'>
+  inventory_item: EntityTable<InventoryItem, 'id'>
+  inventory_move: EntityTable<InventoryMove, 'id'>
   photo_blob: EntityTable<PhotoBlob, 'id'>
   keystore: EntityTable<KeyEntry, 'id'>
   outbox: EntityTable<OutboxEntry, 'seq'>
@@ -312,6 +402,14 @@ db.version(3).stores({
 db.version(4).stores({
   food_item: 'id, name',
   food_entry: 'id, eaten_at',
+})
+
+// Version 5: recipes, fridge and stock (migration 0052)
+db.version(5).stores({
+  recipe: 'id, name',
+  fridge_item: 'id, eat_by',
+  inventory_item: 'id, food_item_id',
+  inventory_move: 'id, item_id',
 })
 
 export async function getMeta(key: string): Promise<string | undefined> {
