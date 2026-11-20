@@ -14,6 +14,7 @@ Letzte Aktualisierung 5. November 2026
 
 ## Stand
 
+- 20. November (Abend): Navigation Variante B mit Umschalter Design 1 (Home · Training · Food · Body · More; Training mit Plans, Stats, History, Exercises; Food mit Today, Recipes, Kitchen und Day | Week; Zielgewicht in Body). 238 Tests, Build, 390 px hell und dunkel sowie Laptop geprüft
 - 20. November (Tag): Rezepte, Kochmodus, Kühlschrank und Kitchen-Vorrat in App und Food-Connector (Migration 0052 auf production); Mockups aus dem Food-Chat noch ausstehend, Abgleich folgt; Rodrigo muss `neon deploy` für foodmcp ausführen
 - 20. November (nachts): nur ein Top Set, Back-off-Sätze mit Rec. kg vorbelegt, Progressionsblatt nur mit Ziel, Today ohne graue Spalte
 - 20. November (spät): Gewichtsstufen Cable Curl und Chest-Supported Row (0050), Ausführungsanleitung im Info-Fenster (0051), Gym crowd mit Zeitraum. Migrationen 0047 bis 0051 am 20. November auf production ausgeführt, Schema-Cache aktualisiert

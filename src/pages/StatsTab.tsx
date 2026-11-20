@@ -12,8 +12,9 @@ import { DEFAULT_WEEKLY_GOAL, getGoalWeight, getWeeklyGoal, saveGoalWeight, save
 import { formatDuration, paceSeconds } from '../lib/workout'
 import { ChangeChips, ReportView } from './ReportPage'
 
-// Stats as one overview (decision 1 November 2026): goal weight with forecast, progression of the current plan,
-// training summary, latest reports and the gym crowd (collapsed). Two and three columns on wide screens.
+// Stats as one overview (decision 1 November 2026): progression of the current plan, training summary, latest reports
+// and the gym crowd (collapsed). Two and three columns on wide screens. Since 20 November 2026 Stats is a section of
+// Training; the goal weight card with the forecast lives in Body (navigation variant B).
 
 const DAY = 86_400_000
 
@@ -65,7 +66,6 @@ export default function StatsTab({ userId }: { userId: string }) {
   )
   return (
     <div className="grid gap-4 lg:grid-cols-3 lg:items-start">
-      <GoalWeightCard userId={userId} className="lg:col-span-3" />
       <ProgressionCard now={now} className="lg:col-span-3" />
       <TrainingCard userId={userId} now={now} />
       <ReportList limit={3} onOpen={setOpen} onAll={() => setAllReports(true)} className="lg:col-span-2" />
@@ -95,7 +95,7 @@ function addDays(date: string, days: number): Date {
   return new Date(Date.parse(`${date}T12:00:00`) + days * DAY)
 }
 
-function GoalWeightCard({ userId, className }: { userId: string; className?: string }) {
+export function GoalWeightCard({ userId, className }: { userId: string; className?: string }) {
   const series = useLiveQuery(bodyWeightSeries, [])
   const goal = useLiveQuery(getGoalWeight, [])
   const [editing, setEditing] = useState(false)

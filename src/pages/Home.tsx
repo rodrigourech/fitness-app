@@ -8,6 +8,7 @@ import ThemeToggle from '../components/ThemeToggle'
 import BodyTab, { PassphraseSheet } from './BodyTab'
 import Sheet from '../components/Sheet'
 import AppIcon from '../components/AppIcon'
+import SegmentTabs from '../components/SegmentTabs'
 import { DragHandle, MoveButtons } from '../components/ReorderParts'
 import { photoKeyState } from '../lib/photos'
 import ExercisesTab from './ExercisesTab'
@@ -50,13 +51,19 @@ interface TemplateCard {
   archivedAt: string | null
 }
 
-type Tab = 'home' | 'templates' | 'exercises' | 'history' | 'stats' | 'body' | 'food'
-// Food in the middle and highlighted, used daily (decision 1 November 2026)
-const TABS: Tab[] = ['home', 'templates', 'food', 'stats', 'body']
-// Laptop sidebar: also Exercises and History directly (decision 3 November 2026)
-const DESKTOP_TABS: Tab[] = ['exercises', 'history']
-// The tab shows the training templates; in the UI they are called workouts (decision 5 October 2026)
-const TAB_LABEL: Record<Tab, string> = { home: 'Home', templates: 'Workouts', exercises: 'Exercises', history: 'History', stats: 'Stats', body: 'Body', food: 'Food' }
+// Navigation variant B (decision 20 November 2026): Home · Training · Food · Body · More. Training holds the plans
+// (training templates), Stats, History and Exercises behind one switch, Stats before History; More keeps only settings.
+type Tab = 'home' | 'training' | 'food' | 'body'
+const TABS: Tab[] = ['home', 'training', 'food', 'body']
+const TAB_LABEL: Record<Tab, string> = { home: 'Home', training: 'Training', food: 'Food', body: 'Body' }
+const TAB_ICON = { home: 'home', training: 'workout', food: 'food', body: 'body' } as const
+type TrainingView = 'plans' | 'stats' | 'history' | 'exercises'
+const TRAINING_VIEWS = [
+  { key: 'plans', label: 'Plans', icon: 'plans' },
+  { key: 'stats', label: 'Stats', icon: 'stats' },
+  { key: 'history', label: 'History', icon: 'clock' },
+  { key: 'exercises', label: 'Exercises', icon: 'list' },
+] as const
 
 const dateFormat = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'long' })
 
@@ -92,6 +99,7 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
   const cards = useLiveQuery(loadTemplates, [])
   const [sheet, setSheet] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('home')
+  const [view, setView] = useState<TrainingView>('plans')
   const [account, setAccount] = useState(false)
   const [info, setInfo] = useState(false)
   const [training, setTraining] = useState(false)
@@ -111,7 +119,11 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
     else if (target === 'info') setInfo(true)
     else if (target === 'account') setAccount(true)
     else if (target === 'photos') setPhotos(true)
-    else setTab(target)
+    else if (target === 'body') setTab('body')
+    else {
+      setTab('training')
+      setView(target === 'templates' ? 'plans' : target)
+    }
   }
   const [editing, setEditing] = useState<string | null>(null)
   const [trash, setTrash] = useState(false)
@@ -139,29 +151,29 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
       <UpdateBar placement="nav" />
       <nav className="home-navigation" aria-label="Main navigation">
         <span className="home-nav-brand"><span aria-hidden="true" className="inline-block h-2.5 w-2.5 rounded-full bg-accent" />Fitness App</span>
-        {[...TABS, ...DESKTOP_TABS].map((t) => (
-          <button
-            key={t}
-            className={DESKTOP_TABS.includes(t) ? 'home-nav-desktop' : undefined}
-            aria-current={tab === t ? 'page' : undefined}
-            onClick={() => setTab(t)}
-          >
-            <span className="home-nav-icon"><AppIcon name={{ home: 'home', templates: 'workout', stats: 'stats', body: 'body', exercises: 'workout', history: 'history', food: 'food' }[t]} /></span>
+        {TABS.map((t) => (
+          <button key={t} aria-current={tab === t ? 'page' : undefined} onClick={() => setTab(t)}>
+            <span className="home-nav-icon"><AppIcon name={TAB_ICON[t]} /></span>
             {TAB_LABEL[t]}
           </button>
         ))}
         <span className="home-nav-desktop home-nav-gap" aria-hidden="true" />
-        <button onClick={() => setMore(true)} aria-expanded={more} aria-current={!wide && (tab === 'exercises' || tab === 'history') ? 'page' : undefined}><span className="home-nav-icon"><AppIcon name="more" /></span>More</button>
+        <button onClick={() => setMore(true)} aria-expanded={more}><span className="home-nav-icon"><AppIcon name="more" /></span>More</button>
       </nav>
-      {tab !== 'home' && tab !== 'food' && <h1 className="mb-4 text-2xl font-semibold tracking-tight">{TAB_LABEL[tab]}</h1>}
+      {(tab === 'training' || tab === 'body') && <h1 className="mb-3 text-2xl font-semibold tracking-tight">{TAB_LABEL[tab]}</h1>}
+      {tab === 'training' && (
+        <div className={`mb-4 ${wide ? 'max-w-lg' : ''}`}>
+          <SegmentTabs label="Training" items={[...TRAINING_VIEWS]} value={view} onChange={setView} />
+        </div>
+      )}
 
-      {tab === 'exercises' ? (
+      {tab === 'training' && view === 'exercises' ? (
         <ExercisesTab userId={user.id} />
-      ) : tab === 'history' ? (
+      ) : tab === 'training' && view === 'history' ? (
         <HistoryTab />
       ) : tab === 'food' ? (
         <FoodTab userId={user.id} />
-      ) : tab === 'stats' ? (
+      ) : tab === 'training' && view === 'stats' ? (
         <StatsTab userId={user.id} />
       ) : tab === 'body' ? (
         <BodyTab userId={user.id} />
@@ -251,8 +263,6 @@ export default function Home({ user, onSignedOut, running = false, onResume }: P
       ) : <ChangePasswordSheet onClose={() => setAccount(false)} />)}
       {more && <Sheet title="More" onClose={() => setMore(false)}>
         <div className="home-more-links">
-          <button onClick={() => open('exercises')}><AppIcon name="workout" />Exercises</button>
-          <button onClick={() => open('history')}><AppIcon name="history" />History</button>
           <button onClick={() => open('photos')}><AppIcon name="photos" />Photo passphrase</button>
           <button onClick={() => open('trash')}><AppIcon name="trash" />Trash</button>
           <button onClick={() => { setMore(false); setTraining(true) }}><AppIcon name="stats" />Training settings</button>

@@ -33,15 +33,24 @@ import { consumeItems } from '../lib/kitchen'
 import { recipeFromEntry, saveRecipe } from '../lib/recipe'
 import RecipesView from './food/RecipesView'
 import KitchenView, { FridgeSection } from './food/KitchenView'
+import SegmentTabs from '../components/SegmentTabs'
 
-// Food tab, variant B (decision 1 November 2026): two numbers for the day, then Day (timeline), Week and Staples.
+// Food tab (decision 1 November 2026, sections since 20 November 2026): two numbers for the day, the day as a timeline,
+// the week, recipes and the kitchen with fridge, stock and staples.
 // Entries from the Food connector carry the badge «Claude», automatic daily entries the label «daily». Nutrition stays
 // inside this tab: need and deficit goal are set by hand under Targets (decision 2 November 2026) and nothing here feeds
 // the weight forecast. A past day with only automatic entries is «not filled in» and does not count. Meal prep plans
 // every portion on its own day.
 
-type View = 'today' | 'week' | 'recipes' | 'kitchen' | 'staples'
-const VIEW_LABEL: Record<View, string> = { today: 'Day', week: 'Week', recipes: 'Recipes', kitchen: 'Kitchen', staples: 'Staples' }
+// Navigation variant B (decision 20 November 2026): the switch Today · Recipes · Kitchen sits directly under the title;
+// goals, kcal and protein belong to Today only. The week is a Day | Week toggle inside Today on the phone and its own
+// column on the laptop; staples are reached from Kitchen.
+type Section = 'today' | 'recipes' | 'kitchen'
+const SECTIONS = [
+  { key: 'today', label: 'Today', icon: 'sun' },
+  { key: 'recipes', label: 'Recipes', icon: 'book' },
+  { key: 'kitchen', label: 'Kitchen', icon: 'fridge' },
+] as const
 type SheetState = { kind: 'entry'; entry?: FoodEntry } | { kind: 'staples' } | { kind: 'item'; item?: FoodItem } | { kind: 'targets' } | null
 
 const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -68,7 +77,9 @@ function num(n: number): string {
 export default function FoodTab({ userId }: { userId: string }) {
   const data = useLiveQuery(loadFood, [])
   const targets = useLiveQuery(getNutrition, [])
-  const [view, setView] = useState<View>('today')
+  const [section, setSection] = useState<Section>('today')
+  const [week, setWeek] = useState(false)
+  const [staples, setStaples] = useState(false)
   const [today] = useState(() => localDay(new Date()))
   const [day, setDay] = useState(today)
   const [sheet, setSheet] = useState<SheetState>(null)
@@ -79,58 +90,32 @@ export default function FoodTab({ userId }: { userId: string }) {
   const list = days.get(day) ?? []
   const totals = totalsOf(list)
   const counted = day >= today || isFilled(list)
-  // On the laptop the week has its own column, the switch only offers Day and Staples
-  const shown: View = wide && view === 'week' ? 'today' : view
-  const weekView = <WeekView entries={data.entries} day={day} today={today} targets={targets} onOpenDay={(d) => { setDay(d); setView('today') }} />
+  const weekView = <WeekView entries={data.entries} day={day} today={today} targets={targets} onOpenDay={(d) => { setDay(d); setWeek(false) }} />
 
   const dayColumn = (
     <>
       <KcalCard label={`kcal ${day === today ? 'today' : day === addDaysKey(today, -1) ? 'yesterday' : dayTitle(day, today)}`} eaten={totals.kcal} targets={targets} counted={counted} />
       <ProteinRow eaten={totals.protein} minimum={targets.proteinG} />
-
-      {/* Day · Week · Recipes · Kitchen (decision 19 November 2026); staples are reached from Kitchen */}
-      <div role="tablist" aria-label="Food" className={`grid ${wide ? 'grid-cols-3' : 'grid-cols-4'} gap-1 rounded-xl bg-zinc-200/70 p-1 dark:bg-zinc-900`}>
-        {(wide ? (['today', 'recipes', 'kitchen'] as const) : (['today', 'week', 'recipes', 'kitchen'] as const)).map((v) => (
-          <button key={v} role="tab" aria-selected={shown === v || (v === 'kitchen' && shown === 'staples')} onClick={() => setView(v)}
-            className={`rounded-md py-1.5 text-sm font-semibold ${shown === v || (v === 'kitchen' && shown === 'staples') ? 'bg-white shadow-sm dark:bg-zinc-700' : 'text-zinc-500 dark:text-zinc-400'}`}>
-            {VIEW_LABEL[v]}
-          </button>
-        ))}
+      <div className="flex items-center justify-between">
+        <button aria-label="Previous day" onClick={() => setDay(addDaysKey(day, -1))} className="rounded-lg px-3 py-1.5 text-lg">‹</button>
+        <span className="text-sm font-semibold">{dayTitle(day, today)}</span>
+        <button aria-label="Next day" disabled={day >= addDaysKey(today, PLAN_DAYS)} onClick={() => setDay(addDaysKey(day, 1))} className="rounded-lg px-3 py-1.5 text-lg disabled:opacity-30">›</button>
       </div>
-
-      {shown === 'today' && (
-        <>
-          <div className="flex items-center justify-between">
-            <button aria-label="Previous day" onClick={() => setDay(addDaysKey(day, -1))} className="rounded-lg px-3 py-1.5 text-lg">‹</button>
-            <span className="text-sm font-semibold">{dayTitle(day, today)}</span>
-            <button aria-label="Next day" disabled={day >= addDaysKey(today, PLAN_DAYS)} onClick={() => setDay(addDaysKey(day, 1))} className="rounded-lg px-3 py-1.5 text-lg disabled:opacity-30">›</button>
-          </div>
-          {list.length > 0 && !counted && (
-            <p className="rounded-xl bg-orange-50 px-3 py-2.5 text-sm text-orange-700 dark:bg-orange-950/50 dark:text-orange-300">
-              <b>Not filled in.</b> Only the daily entries are logged, so this day does not count in the week and the averages.
-            </p>
-          )}
-          {day === today && <FridgeSection userId={userId} today={today} />}
-          {list.length === 0 ? (
-            <p className="card p-4 text-sm text-zinc-500 dark:text-zinc-400">Nothing logged. Tell Claude what you ate, or add it here.</p>
-          ) : (
-            <ol>{list.map((e, i) => <TimelineEntry key={e.id} entry={e} last={i === list.length - 1} onOpen={() => setSheet({ kind: 'entry', entry: e })} />)}</ol>
-          )}
-          <div className="grid grid-cols-2 gap-2">
-            <button onClick={() => setSheet({ kind: 'entry' })} className="rounded-xl bg-accent py-3 text-sm font-semibold text-accent-fg">+ Add entry</button>
-            <button onClick={() => setSheet({ kind: 'staples' })} className="rounded-xl border border-zinc-200 bg-white py-3 text-sm font-semibold dark:border-zinc-700 dark:bg-zinc-900">Add from staples</button>
-          </div>
-        </>
+      {list.length > 0 && !counted && (
+        <p className="rounded-xl bg-orange-50 px-3 py-2.5 text-sm text-orange-700 dark:bg-orange-950/50 dark:text-orange-300">
+          <b>Not filled in.</b> Only the daily entries are logged, so this day does not count in the week and the averages.
+        </p>
       )}
-      {!wide && view === 'week' && weekView}
-      {shown === 'recipes' && <RecipesView userId={userId} />}
-      {shown === 'kitchen' && <KitchenView userId={userId} today={today} onStaples={() => setView('staples')} />}
-      {shown === 'staples' && (
-        <>
-          <button onClick={() => setView('kitchen')} className="self-start text-sm font-semibold text-accent">‹ Kitchen</button>
-          <StaplesView items={data.items} onOpen={(item) => setSheet({ kind: 'item', item })} />
-        </>
+      {day === today && <FridgeSection userId={userId} today={today} />}
+      {list.length === 0 ? (
+        <p className="card p-4 text-sm text-zinc-500 dark:text-zinc-400">Nothing logged. Tell Claude what you ate, or add it here.</p>
+      ) : (
+        <ol>{list.map((e, i) => <TimelineEntry key={e.id} entry={e} last={i === list.length - 1} onOpen={() => setSheet({ kind: 'entry', entry: e })} />)}</ol>
       )}
+      <div className="grid grid-cols-2 gap-2">
+        <button onClick={() => setSheet({ kind: 'entry' })} className="rounded-xl bg-accent py-3 text-sm font-semibold text-accent-fg">+ Add entry</button>
+        <button onClick={() => setSheet({ kind: 'staples' })} className="rounded-xl border border-zinc-200 bg-white py-3 text-sm font-semibold dark:border-zinc-700 dark:bg-zinc-900">Add from staples</button>
+      </div>
     </>
   )
 
@@ -148,16 +133,42 @@ export default function FoodTab({ userId }: { userId: string }) {
           </button>
         </span>
       </div>
-      <DailyGoals targets={targets} />
-      {wide ? (
-        // Laptop: day on the left, the week always visible on the right (decision 3 November 2026)
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start gap-6">
-          <div className="flex flex-col gap-3">
-            {dayColumn}
-          </div>
-          <section aria-label="Week" className="flex flex-col gap-3">{weekView}</section>
-        </div>
-      ) : dayColumn}
+      <div className={wide ? 'max-w-md' : undefined}>
+        <SegmentTabs label="Food" items={[...SECTIONS]} value={section} onChange={(k) => { setSection(k); setStaples(false) }} />
+      </div>
+
+      {section === 'today' && (
+        <>
+          <DailyGoals targets={targets} />
+          {wide ? (
+            // Laptop: day on the left, the week always visible on the right (decision 3 November 2026)
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start gap-6">
+              <div className="flex flex-col gap-3">{dayColumn}</div>
+              <section aria-label="Week" className="flex flex-col gap-3">{weekView}</section>
+            </div>
+          ) : (
+            <>
+              <div role="radiogroup" aria-label="Day or week" className="flex self-end rounded-full bg-zinc-200/80 p-0.5 text-xs font-semibold dark:bg-zinc-900">
+                {([false, true] as const).map((w) => (
+                  <button key={String(w)} role="radio" aria-checked={week === w} onClick={() => setWeek(w)}
+                    className={`rounded-full px-3 py-1 ${week === w ? 'bg-white text-accent-ink shadow-sm dark:bg-zinc-700' : 'text-zinc-500 dark:text-zinc-400'}`}>
+                    {w ? 'Week' : 'Day'}
+                  </button>
+                ))}
+              </div>
+              {week ? weekView : dayColumn}
+            </>
+          )}
+        </>
+      )}
+      {section === 'recipes' && <RecipesView userId={userId} />}
+      {section === 'kitchen' && !staples && <KitchenView userId={userId} today={today} onStaples={() => setStaples(true)} />}
+      {section === 'kitchen' && staples && (
+        <>
+          <button onClick={() => setStaples(false)} className="self-start text-sm font-semibold text-accent">‹ Kitchen</button>
+          <StaplesView items={data.items} onOpen={(item) => setSheet({ kind: 'item', item })} />
+        </>
+      )}
 
       {sheet?.kind === 'entry' && <EntrySheet userId={userId} day={day} entry={sheet.entry} staples={data.items} onClose={() => setSheet(null)} />}
       {sheet?.kind === 'staples' && <StaplesSheet userId={userId} day={day} today={today} items={data.items} onClose={() => setSheet(null)} />}
@@ -187,7 +198,7 @@ function DailyGoals({ targets }: { targets: NutritionTargets }) {
     <section aria-label="Daily goals">
       <div className="mb-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400">Daily goals</div>
       <div className="grid grid-cols-3 gap-2">
-        {tile('Calories', num(targets.needKcal - targets.deficitKcal), 'kcal', 'border-blue-100 bg-blue-50 text-blue-700 dark:border-blue-950 dark:bg-blue-950/50 dark:text-blue-300')}
+        {tile('Calories', num(targets.needKcal - targets.deficitKcal), 'kcal', 'border-blue-100 bg-blue-50 text-blue-700 dark:border-blue-950 dark:bg-blue-950/50')}
         {tile('Deficit', `≥ ${num(targets.deficitKcal)}`, 'kcal', 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-400')}
         {tile('Protein', `≥ ${targets.proteinG}`, 'g', 'border-emerald-100 bg-emerald-50 text-emerald-700 dark:border-emerald-950 dark:bg-emerald-950/50 dark:text-emerald-300')}
       </div>
@@ -221,7 +232,7 @@ function KcalCard({ label, eaten, targets, counted }: { label: string; eaten: nu
     <section className="card p-4">
       <div className="text-sm font-semibold text-zinc-600 dark:text-zinc-300">{label}</div>
       <div className="mt-2 grid grid-cols-2 gap-2">
-        {stat('Eaten', num(eaten), overNeed ? 'text-red-700 dark:text-red-400' : 'text-blue-700 dark:text-blue-300', 'text-left')}
+        {stat('Eaten', num(eaten), overNeed ? 'text-red-700 dark:text-red-400' : 'text-blue-700', 'text-left')}
         {stat('Need', num(need), 'text-zinc-500 dark:text-zinc-400', 'text-right')}
       </div>
       <div className="relative mt-3 h-3" role="img" aria-label={`${num(eaten)} kcal eaten, goal ${num(goal)}, need ${num(need)}`}>

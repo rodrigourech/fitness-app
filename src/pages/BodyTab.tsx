@@ -20,6 +20,7 @@ import {
 import { offerUndo } from '../lib/undo'
 import { parseNumber } from '../lib/workout'
 import { isBetaSandbox } from '../lib/environment'
+import { GoalWeightCard } from './StatsTab'
 
 const dateFormat = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
 const CONDITIONS = Object.keys(CONDITION_LABEL) as BodyCondition[]
@@ -55,6 +56,9 @@ export default function BodyTab({ userId }: { userId: string }) {
 
   return (
     // Laptop: summary, photos and new entry on the left, the list on the right (decision 3 November 2026)
+    <>
+    {/* Goal weight with forecast, moved here from Stats (navigation variant B, 20 November 2026) */}
+    <GoalWeightCard userId={userId} className="mb-4" />
     <div className="lg:grid lg:grid-cols-[minmax(0,22rem)_minmax(0,40rem)] lg:items-start lg:gap-6">
       <div className="lg:sticky lg:top-6">
       {latest && (
@@ -186,6 +190,7 @@ export default function BodyTab({ userId }: { userId: string }) {
         <p className="text-zinc-500">No measurements yet.</p>
       )}
     </div>
+    </>
   )
 }
 
