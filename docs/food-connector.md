@@ -1,6 +1,6 @@
 # **Food-Connector**
 
-Stand 1. November 2026. Claude erfasst Mahlzeiten über einen eigenen kleinen MCP-Server (Neon Function `foodmcp`, Code in `functions/foodmcp.ts`). Er darf nur die Tabellen `food_item` und `food_entry` lesen und schreiben.
+Stand 1. November 2026. Claude erfasst Mahlzeiten über einen eigenen kleinen MCP-Server (Neon Function `foodmcp`, Code in `functions/foodmcp.ts`). Er darf nur die Tabellen `food_item` und `food_entry` sowie seit Migration 0052 `recipe`, `fridge_item`, `inventory_item` und `inventory_move` lesen und schreiben.
 
 ## **Ablauf in Claude**
 
@@ -52,3 +52,13 @@ Die Maske (Artifact mit Connector-Zugriff) folgt, sobald der Connector läuft, d
 - preview_meal nimmt `portions` [{eaten_at, category}], ein Element pro gekochter Portion; confirm_meal legt pro Portion einen Eintrag an. Ohne Angabe fragt Claude nach, Vorgabe erste Portion jetzt, weitere am Folgetag zum Mittagessen
 - Kategorien zusätzlich dessert und drinks (Migration 0032 muss vorher laufen)
 - Nach Änderungen an functions/foodmcp.ts `neon deploy` ausführen; die URL bleibt gleich
+
+## **Rezepte, Kühlschrank und Vorrat (20. November 2026, Version 1.2.0)**
+
+- Rezepte: `list_recipes` (Filter Kategorie, Proteinart), `get_recipe`, `save_recipe` (Zutaten wie bei `preview_meal`, Mengenhinweis `hint_n`/`hint_label`, `to_taste`; Schritte mit Platzhaltern `{i1}` für skalierte Mengen), `delete_recipe` nur nach Bestätigung
+- Kochen: `log_recipe` mit `portions_cooked` und pro Portion `{eaten_at, category}` oder `category: "fridge"`; Vorschau wie bei Mahlzeiten, gespeichert mit `confirm_meal`. Geplante Portionen werden Einträge an ihrem Tag, die übrigen landen im Kühlschrank (zählen erst beim Essen, essen bis Kochtag plus `keeps_days`)
+- Kühlschrank: `list_fridge`, `eat_from_fridge` (Vorschau, dann `confirm_meal`, Portion −1, kein Vorratsabzug), `discard_fridge_item` nur nach Bestätigung
+- Vorrat: `preview_stock_add` und `confirm_stock_add` (Kassenzettel, Foto oder Text; Packungen über `package_g` des Standardlebensmittels; Öl, Gewürze, Saucen mit `tracked: false`; ohne Datum Standardfrist für Frisches), `list_stock` (Filter Ort, bald fällig), `adjust_stock` (Korrektur, Used up, Discard)
+- `confirm_meal` zieht die Standardlebensmittel vom Vorrat ab (ältester Bestand zuerst, nie unter null, fehlt der Artikel kein Abzug) und meldet den Rest; ein Rezept einmal für alle gekochten Portionen
+- Nach dieser Änderung `neon deploy` ausführen; die URL bleibt gleich
+
