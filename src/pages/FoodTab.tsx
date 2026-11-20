@@ -29,6 +29,10 @@ import {
 import { MONTHS } from '../lib/forecast'
 import { entryTotal, formatQuantity, itemsLine, matchesItems, parseAmount, perUnitText, quantityTag, scaleItem, stepOf, unitLabel } from '../lib/foodAmount'
 import { getNutrition, saveNutrition, type NutritionTargets } from '../lib/settings'
+import { consumeItems } from '../lib/kitchen'
+import { recipeFromEntry, saveRecipe } from '../lib/recipe'
+import RecipesView from './food/RecipesView'
+import KitchenView, { FridgeSection } from './food/KitchenView'
 
 // Food tab, variant B (decision 1 November 2026): two numbers for the day, then Day (timeline), Week and Staples.
 // Entries from the Food connector carry the badge «Claude», automatic daily entries the label «daily». Nutrition stays
@@ -36,7 +40,8 @@ import { getNutrition, saveNutrition, type NutritionTargets } from '../lib/setti
 // the weight forecast. A past day with only automatic entries is «not filled in» and does not count. Meal prep plans
 // every portion on its own day.
 
-type View = 'today' | 'week' | 'staples'
+type View = 'today' | 'week' | 'recipes' | 'kitchen' | 'staples'
+const VIEW_LABEL: Record<View, string> = { today: 'Day', week: 'Week', recipes: 'Recipes', kitchen: 'Kitchen', staples: 'Staples' }
 type SheetState = { kind: 'entry'; entry?: FoodEntry } | { kind: 'staples' } | { kind: 'item'; item?: FoodItem } | { kind: 'targets' } | null
 
 const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -83,11 +88,12 @@ export default function FoodTab({ userId }: { userId: string }) {
       <KcalCard label={`kcal ${day === today ? 'today' : day === addDaysKey(today, -1) ? 'yesterday' : dayTitle(day, today)}`} eaten={totals.kcal} targets={targets} counted={counted} />
       <ProteinRow eaten={totals.protein} minimum={targets.proteinG} />
 
-      <div role="tablist" aria-label="Food" className={`grid ${wide ? 'grid-cols-2' : 'grid-cols-3'} gap-1 rounded-xl bg-zinc-200/70 p-1 dark:bg-zinc-900`}>
-        {(wide ? (['today', 'staples'] as const) : (['today', 'week', 'staples'] as const)).map((v) => (
-          <button key={v} role="tab" aria-selected={shown === v} onClick={() => setView(v)}
-            className={`rounded-md py-1.5 text-sm font-semibold ${shown === v ? 'bg-white shadow-sm dark:bg-zinc-700' : 'text-zinc-500 dark:text-zinc-400'}`}>
-            {v === 'today' ? 'Day' : v === 'week' ? 'Week' : 'Staples'}
+      {/* Day · Week · Recipes · Kitchen (decision 19 November 2026); staples are reached from Kitchen */}
+      <div role="tablist" aria-label="Food" className={`grid ${wide ? 'grid-cols-3' : 'grid-cols-4'} gap-1 rounded-xl bg-zinc-200/70 p-1 dark:bg-zinc-900`}>
+        {(wide ? (['today', 'recipes', 'kitchen'] as const) : (['today', 'week', 'recipes', 'kitchen'] as const)).map((v) => (
+          <button key={v} role="tab" aria-selected={shown === v || (v === 'kitchen' && shown === 'staples')} onClick={() => setView(v)}
+            className={`rounded-md py-1.5 text-sm font-semibold ${shown === v || (v === 'kitchen' && shown === 'staples') ? 'bg-white shadow-sm dark:bg-zinc-700' : 'text-zinc-500 dark:text-zinc-400'}`}>
+            {VIEW_LABEL[v]}
           </button>
         ))}
       </div>
@@ -104,6 +110,7 @@ export default function FoodTab({ userId }: { userId: string }) {
               <b>Not filled in.</b> Only the daily entries are logged, so this day does not count in the week and the averages.
             </p>
           )}
+          {day === today && <FridgeSection userId={userId} today={today} />}
           {list.length === 0 ? (
             <p className="card p-4 text-sm text-zinc-500 dark:text-zinc-400">Nothing logged. Tell Claude what you ate, or add it here.</p>
           ) : (
@@ -116,7 +123,14 @@ export default function FoodTab({ userId }: { userId: string }) {
         </>
       )}
       {!wide && view === 'week' && weekView}
-      {shown === 'staples' && <StaplesView items={data.items} onOpen={(item) => setSheet({ kind: 'item', item })} />}
+      {shown === 'recipes' && <RecipesView userId={userId} />}
+      {shown === 'kitchen' && <KitchenView userId={userId} today={today} onStaples={() => setView('staples')} />}
+      {shown === 'staples' && (
+        <>
+          <button onClick={() => setView('kitchen')} className="self-start text-sm font-semibold text-accent">‹ Kitchen</button>
+          <StaplesView items={data.items} onOpen={(item) => setSheet({ kind: 'item', item })} />
+        </>
+      )}
     </>
   )
 
@@ -531,8 +545,16 @@ function EntrySheet({ userId, day, entry, staples, onClose }: { userId: string; 
     if (!title.trim()) setTitle(staple.name)
     setAdding('')
   }
+  // A new entry takes its staples off the kitchen stock (decision 19 November 2026); edits do not take again
   const save = () => void saveFoodEntry(userId, { eatenAt: new Date(`${date}T${clock}`).toISOString(), category, title, kcal: k, protein: p, items,
-    detail, portionsCooked: cooked, portionsEaten: cooked && cooked > 1 ? eaten : entry?.portions_eaten }, entry).then(onClose)
+    detail, portionsCooked: cooked, portionsEaten: cooked && cooked > 1 ? eaten : entry?.portions_eaten }, entry)
+    .then(() => (entry ? undefined : consumeItems(userId, items, 'meal', null)))
+    .then(onClose)
+  const [savedRecipe, setSavedRecipe] = useState(false)
+  const saveAsRecipe = () => {
+    if (!entry) return
+    void saveRecipe(recipeFromEntry(userId, entry)).then(() => setSavedRecipe(true))
+  }
 
   return (
     <Sheet title={entry ? 'Edit entry' : 'Add entry'} onClose={onClose}>
@@ -626,6 +648,11 @@ function EntrySheet({ userId, day, entry, staples, onClose }: { userId: string; 
         </div>
         <div className="mt-1 flex gap-2">
           {entry && <button onClick={() => void deleteFoodEntry(entry).then(onClose)} className="rounded-lg px-3 py-2 text-sm font-semibold text-red-700 dark:text-red-400">Delete</button>}
+          {entry && entry.items.length > 0 && (
+            <button disabled={savedRecipe} onClick={saveAsRecipe} className="rounded-lg px-3 py-2 text-sm font-semibold text-accent disabled:text-emerald-700 dark:disabled:text-emerald-400">
+              {savedRecipe ? 'Saved as recipe' : 'Save as recipe'}
+            </button>
+          )}
           <button disabled={!valid} onClick={save} className="ml-auto rounded-lg bg-accent px-5 py-2 text-sm font-semibold text-accent-fg disabled:opacity-40">Save</button>
         </div>
       </div>
@@ -667,7 +694,8 @@ function StaplesSheet({ userId, day, today, items, onClose }: { userId: string; 
   const cooked = slots.length
   const setCooked = (n: number) => setPlan(n > plan.length ? [...plan, ...defaultPlan(first.day, first.category, n).slice(plan.length)] : plan.slice(0, n))
   const setSlot = (i: number, slot: PortionSlot) => (i === 0 ? setFirst(slot) : setPlan(plan.map((p, j) => (j === i ? slot : p))))
-  const save = () => void saveFoodEntries(userId, drafts).then(onClose)
+  // Staples come off the kitchen stock once for everything cooked
+  const save = () => void saveFoodEntries(userId, drafts).then(() => consumeItems(userId, drafts[0]?.items ?? [], 'meal', null)).then(onClose)
   const days = [...new Set([day, ...Array.from({ length: PLAN_DAYS + 3 }, (_, i) => addDaysKey(today, i - 2))])].sort()
   return (
     <Sheet title="Add from staples" onClose={onClose}>
