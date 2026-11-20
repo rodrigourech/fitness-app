@@ -15,7 +15,7 @@ Letzte Aktualisierung 5. November 2026
 ## Stand
 
 - 20. November (nachts): nur ein Top Set, Back-off-Sätze mit Rec. kg vorbelegt, Progressionsblatt nur mit Ziel, Today ohne graue Spalte
-- 20. November (spät): Gewichtsstufen Cable Curl und Chest-Supported Row (0050), Ausführungsanleitung im Info-Fenster (0051), Gym crowd mit Zeitraum. Offen auf production: 0047 bis 0051, nach 0051 Schema-Cache aktualisieren
+- 20. November (spät): Gewichtsstufen Cable Curl und Chest-Supported Row (0050), Ausführungsanleitung im Info-Fenster (0051), Gym crowd mit Zeitraum. Migrationen 0047 bis 0051 am 20. November auf production ausgeführt, Schema-Cache aktualisiert
 - 20. November: Eingabefelder im Training (Reps leer mit grauem Wert vom letzten Mal, ✓ übernimmt, Antippen leert das Feld, grüner Rand bei entscheidenden Sätzen, Kopf «Reps ↑N» grün), Regel für selbst erhöhtes Gewicht, Today in der History auf grauer Spalte; Wiederholungsbereich klein rechts vom Namen, Kopf ohne › und ⌃ (Tipp in den Kopf klappt zu), grauer Reps-Wert auch für zusätzliche Sätze
 - 19. November (spät): Progressionsblatt neu (Tabelle pro Satz mit Ziel-Reps, Verlauf mit heute), Karte «How progression works» (Blatt und More), Info-Fenster mit Videos zuerst und automatischen YouTube-Titeln
 - 19. November: Food-Einträge mit separater Menge (− / +, Zutatenmengen, Portionen), kcal und Protein automatisch, Datum und Uhrzeit getrennt; Espresso als Standardlebensmittel (Migration 0049 offen); Gym crowd zählt über die ganze Trainingsdauer. Offen auf production: 0047, 0048, 0049
