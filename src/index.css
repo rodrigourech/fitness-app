@@ -17,6 +17,14 @@ body,
   min-height: 100%;
 }
 
+/* iOS 26 Home Screen app: with viewport-fit=cover and a black-translucent status bar the viewport of a short page
+   is shorter than the screen by the status bar height, so the bottom navigation floats above a strip of background
+   (WebKit bug 301108). A page at least as tall as the screen gets the full viewport; min() avoids extra scrolling
+   when the status bar is opaque. Fix from frappe-ui PR 1284. */
+@media (display-mode: standalone) {
+  html { min-height: min(100lvh, calc(100% + env(safe-area-inset-top))); }
+}
+
 body {
   @apply antialiased;
   background: var(--page);
