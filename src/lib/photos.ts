@@ -150,13 +150,14 @@ export async function lockPhotos(): Promise<void> {
 
 // --- image processing ------------------------------------------------------------------
 
-async function shrink(file: Blob): Promise<{ blob: Blob; width: number; height: number }> {
+/** Shrinks to maxEdge and re-encodes as JPEG, which drops all metadata (EXIF, GPS). Also used for food photos. */
+export async function shrink(file: Blob, maxEdge = MAX_EDGE): Promise<{ blob: Blob; width: number; height: number }> {
   const url = URL.createObjectURL(file)
   try {
     const img = new Image()
     img.src = url
     await img.decode()
-    const scale = Math.min(1, MAX_EDGE / Math.max(img.naturalWidth, img.naturalHeight))
+    const scale = Math.min(1, maxEdge / Math.max(img.naturalWidth, img.naturalHeight))
     const width = Math.round(img.naturalWidth * scale)
     const height = Math.round(img.naturalHeight * scale)
     const canvas = document.createElement('canvas')
@@ -191,7 +192,8 @@ async function upload(id: string, data: ArrayBuffer): Promise<void> {
   if (!res.ok) throw new Error(`Upload failed (HTTP ${res.status})`)
 }
 
-async function download(id: string): Promise<ArrayBuffer> {
+/** Bytes of an object in the private bucket (encrypted progress photo or plain food photo). */
+export async function download(id: string): Promise<ArrayBuffer> {
   const res = await fetch(`${PROXY}/photo/download`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -236,7 +238,7 @@ export async function addPhoto(userId: string, measuredOn: string, file: Blob, p
 
 let uploading: Promise<void> | null = null
 
-/** Uploads photos taken offline. Safe to call often. */
+/** Uploads photos taken offline (progress and food photos share the local blob store). Safe to call often. */
 export function uploadPendingPhotos(): Promise<void> {
   if (isBetaSandbox) return Promise.resolve()
   uploading ??= (async () => {

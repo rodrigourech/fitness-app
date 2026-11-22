@@ -156,6 +156,13 @@ export async function purgeExpired(now = Date.now()): Promise<number> {
     await saveRows('body_photo', expired.map((p) => ({ ...p, purged_at: ts })))
     await queuePhotoObjectDeletes(expired.map((p) => p.id))
   }
+  // Food photos (migration 0053): same 30 days, then the object in the bucket is deleted
+  const food = await db.food_photo.filter((p) => p.deleted_at !== null && !p.purged_at && Date.parse(p.deleted_at) <= cutoff).toArray()
+  if (food.length) {
+    const ts = new Date(now).toISOString()
+    await saveRows('food_photo', food.map((p) => ({ ...p, purged_at: ts })))
+    await queuePhotoObjectDeletes(food.map((p) => p.id))
+  }
   await deletePendingPhotoObjects()
-  return expired.length
+  return expired.length + food.length
 }

@@ -302,6 +302,21 @@ export interface CatalogExercise {
   secondary_muscles: string[]
 }
 
+/** Photo of a recipe (kind dish) or of a product in the staples (pack, label); migration 0053. The JPEG lies
+ * unencrypted in the private bucket under <user_id>/<id>; the bytes are cached in photo_blob. */
+export interface FoodPhoto extends SyncColumns {
+  recipe_id: string | null
+  food_item_id: string | null
+  kind: 'dish' | 'pack' | 'label'
+  is_cover: boolean
+  taken_on: string | null
+  mime: string
+  width: number | null
+  height: number | null
+  bytes: number | null
+  purged_at?: string | null
+}
+
 /** Tables that are synchronised with Neon, in dependency order (parents first). */
 export const SYNC_TABLES = [
   'exercise',
@@ -321,6 +336,7 @@ export const SYNC_TABLES = [
   'fridge_item',
   'inventory_item',
   'inventory_move',
+  'food_photo',
 ] as const
 export type SyncTable = (typeof SYNC_TABLES)[number]
 
@@ -363,6 +379,7 @@ export const db = new Dexie(databaseName) as Dexie & {
   fridge_item: EntityTable<FridgeItem, 'id'>
   inventory_item: EntityTable<InventoryItem, 'id'>
   inventory_move: EntityTable<InventoryMove, 'id'>
+  food_photo: EntityTable<FoodPhoto, 'id'>
   photo_blob: EntityTable<PhotoBlob, 'id'>
   keystore: EntityTable<KeyEntry, 'id'>
   outbox: EntityTable<OutboxEntry, 'seq'>
@@ -410,6 +427,11 @@ db.version(5).stores({
   fridge_item: 'id, eat_by',
   inventory_item: 'id, food_item_id',
   inventory_move: 'id, item_id',
+})
+
+// Version 6: photos of recipes and products (migration 0053)
+db.version(6).stores({
+  food_photo: 'id, recipe_id, food_item_id',
 })
 
 export async function getMeta(key: string): Promise<string | undefined> {

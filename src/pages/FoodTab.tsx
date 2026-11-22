@@ -34,6 +34,11 @@ import { recipeFromEntry, saveRecipe } from '../lib/recipe'
 import RecipesView from './food/RecipesView'
 import KitchenView, { FridgeSection } from './food/KitchenView'
 import SegmentTabs from '../components/SegmentTabs'
+import { FoodPhotoImg, ProductPhotos } from '../components/FoodPhotos'
+import { favourites, oneUnit, quickAdd, quickAddRecipe, searchFood } from '../lib/quickAdd'
+import { perPortion } from '../lib/recipe'
+import { offerUndo } from '../lib/undo'
+import { db, type FoodPhoto, type Recipe } from '../lib/db'
 
 // Food tab (decision 1 November 2026, sections since 20 November 2026): two numbers for the day, the day as a timeline,
 // the week, recipes and the kitchen with fridge, stock and staples.
@@ -51,7 +56,7 @@ const SECTIONS = [
   { key: 'recipes', label: 'Recipes', icon: 'book' },
   { key: 'kitchen', label: 'Kitchen', icon: 'fridge' },
 ] as const
-type SheetState = { kind: 'entry'; entry?: FoodEntry } | { kind: 'staples' } | { kind: 'item'; item?: FoodItem } | { kind: 'targets' } | null
+type SheetState = { kind: 'entry'; entry?: FoodEntry } | { kind: 'staples'; preset?: string } | { kind: 'item'; item?: FoodItem; name?: string } | { kind: 'targets' } | null
 
 const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const DOT: Partial<Record<FoodCategory, string>> = { cheat: 'bg-orange-500', dessert: 'bg-pink-600', drinks: 'bg-amber-600' }
@@ -112,10 +117,11 @@ export default function FoodTab({ userId }: { userId: string }) {
       ) : (
         <ol>{list.map((e, i) => <TimelineEntry key={e.id} entry={e} last={i === list.length - 1} onOpen={() => setSheet({ kind: 'entry', entry: e })} />)}</ol>
       )}
-      <div className="grid grid-cols-2 gap-2">
-        <button onClick={() => setSheet({ kind: 'entry' })} className="rounded-xl bg-accent py-3 text-sm font-semibold text-accent-fg">+ Add entry</button>
-        <button onClick={() => setSheet({ kind: 'staples' })} className="rounded-xl border border-zinc-200 bg-white py-3 text-sm font-semibold dark:border-zinc-700 dark:bg-zinc-900">Add from staples</button>
-      </div>
+      <QuickAdd userId={userId} day={day} today={today} items={data.items} entries={data.entries}
+        onOpenItem={(item) => setSheet({ kind: 'staples', preset: item.id })}
+        onNewProduct={(name) => setSheet({ kind: 'item', name })}
+        onFreeEntry={() => setSheet({ kind: 'entry' })}
+        onAllStaples={() => setSheet({ kind: 'staples' })} />
     </>
   )
 
@@ -171,8 +177,8 @@ export default function FoodTab({ userId }: { userId: string }) {
       )}
 
       {sheet?.kind === 'entry' && <EntrySheet userId={userId} day={day} entry={sheet.entry} staples={data.items} onClose={() => setSheet(null)} />}
-      {sheet?.kind === 'staples' && <StaplesSheet userId={userId} day={day} today={today} items={data.items} onClose={() => setSheet(null)} />}
-      {sheet?.kind === 'item' && <ItemSheet userId={userId} item={sheet.item} onClose={() => setSheet(null)} />}
+      {sheet?.kind === 'staples' && <StaplesSheet userId={userId} day={day} today={today} items={data.items} preset={sheet.preset} onClose={() => setSheet(null)} />}
+      {sheet?.kind === 'item' && <ItemSheet userId={userId} item={sheet.item} initialName={sheet.name} onClose={() => setSheet(null)} />}
       {sheet?.kind === 'targets' && <TargetsSheet userId={userId} targets={targets} today={today} onClose={() => setSheet(null)} />}
     </div>
   )
@@ -684,10 +690,13 @@ function Stepper({ value, onChange, onStep, label }: { value: string; onChange: 
   )
 }
 
-function StaplesSheet({ userId, day, today, items, onClose }: { userId: string; day: string; today: string; items: FoodItem[]; onClose: () => void }) {
+function StaplesSheet({ userId, day, today, items: all, preset, onClose }: { userId: string; day: string; today: string; items: FoodItem[]; preset?: string; onClose: () => void }) {
   const [now] = useState(() => new Date())
   const [first, setFirst] = useState<PortionSlot>(() => ({ day, category: day === today ? categoryAt(now) : 'lunch' }))
-  const [amounts, setAmounts] = useState<Record<string, string>>({})
+  // Opened from a favourite or a search hit: that staple first with one unit filled in
+  const presetItem = all.find((i) => i.id === preset)
+  const [amounts, setAmounts] = useState<Record<string, string>>(() => (presetItem ? { [presetItem.id]: String(oneUnit(presetItem)) } : {}))
+  const items = presetItem ? [presetItem, ...all.filter((i) => i.id !== presetItem.id)] : all
   const [plan, setPlan] = useState<PortionSlot[]>(() => defaultPlan(day, first.category, 1))
   const chosen = items.flatMap((i) => {
     const q = Number((amounts[i.id] ?? '').replace(',', '.'))
@@ -774,8 +783,8 @@ function StaplesSheet({ userId, day, today, items, onClose }: { userId: string; 
 
 const select = 'rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-xs dark:border-zinc-700'
 
-function ItemSheet({ userId, item, onClose }: { userId: string; item?: FoodItem; onClose: () => void }) {
-  const [name, setName] = useState(item?.name ?? '')
+function ItemSheet({ userId, item, initialName, onClose }: { userId: string; item?: FoodItem; initialName?: string; onClose: () => void }) {
+  const [name, setName] = useState(item?.name ?? initialName ?? '')
   const [store, setStore] = useState(item?.store ?? '')
   const [basis, setBasis] = useState<FoodItem['basis']>(item?.basis ?? '100g')
   const [kcal, setKcal] = useState(item ? String(item.kcal) : '')
@@ -790,6 +799,8 @@ function ItemSheet({ userId, item, onClose }: { userId: string; item?: FoodItem;
   return (
     <Sheet title={item ? 'Edit staple' : 'Add staple'} onClose={onClose}>
       <div className="flex flex-col gap-3">
+        {/* Package and nutrition label photos (decision 22 November 2026), possible once the staple is saved */}
+        {item ? <ProductPhotos userId={userId} foodItemId={item.id} name={item.name} /> : <p className="text-xs text-zinc-500 dark:text-zinc-400">Photos of the package and the nutrition label can be added after saving.</p>}
         <Label text="Name"><input value={name} onChange={(e) => setName(e.target.value)} className={input} /></Label>
         <Label text="Store"><input value={store} onChange={(e) => setStore(e.target.value)} placeholder="optional" className={input} /></Label>
         <div className="grid grid-cols-3 gap-1 rounded-lg bg-zinc-100 p-1 text-xs dark:bg-zinc-800">
@@ -812,5 +823,105 @@ function ItemSheet({ userId, item, onClose }: { userId: string; item?: FoodItem;
         </div>
       </div>
     </Sheet>
+  )
+}
+
+/** Search with «+» for a new product, favourites below (decision 22 November 2026, variant B). «+» on a row adds one
+ * unit at once with undo, the name opens the amount sheet. Recipes in the search log one portion. */
+function QuickAdd({ userId, day, today, items, entries, onOpenItem, onNewProduct, onFreeEntry, onAllStaples }: {
+  userId: string
+  day: string
+  today: string
+  items: FoodItem[]
+  entries: FoodEntry[]
+  onOpenItem: (item: FoodItem) => void
+  onNewProduct: (name: string) => void
+  onFreeEntry: () => void
+  onAllStaples: () => void
+}) {
+  const [query, setQuery] = useState('')
+  const recipes = useLiveQuery(() => db.recipe.toArray(), []) ?? []
+  const packs = useLiveQuery(async () => {
+    const map = new Map<string, FoodPhoto>()
+    for (const p of await db.food_photo.toArray()) if (p.kind === 'pack' && p.food_item_id && p.deleted_at === null && !map.has(p.food_item_id)) map.set(p.food_item_id, p)
+    return map
+  }, [])
+  const fav = favourites(entries, items, today)
+  const hits = searchFood(query, items, recipes)
+  const searching = query.trim() !== ''
+
+  const add = async (item: FoodItem) => {
+    const undo = await quickAdd(userId, item, day)
+    offerUndo(`Added ${item.name.split(',')[0]} · ${basisText(item)}`, item.id, undo)
+  }
+  const addRecipe = async (r: Recipe) => {
+    await quickAddRecipe(userId, r, day)
+    offerUndo(`Logged 1 portion · ${r.name}`, r.id)
+    setQuery('')
+  }
+  const row = (item: FoodItem) => (
+    <li key={item.id} className="flex items-center gap-3 px-3 py-2.5">
+      {packs?.get(item.id) && <FoodPhotoImg photo={packs.get(item.id)!} alt="" className="h-9 w-9 shrink-0 rounded-lg" />}
+      <button onClick={() => onOpenItem(item)} className="min-w-0 flex-1 text-left">
+        <span className="block truncate text-sm font-semibold">{item.name}</span>
+        <span className="block text-xs text-zinc-500 dark:text-zinc-400">{basisText(item)}{item.store ? ` · ${item.store}` : ''}</span>
+      </button>
+      <button onClick={() => void add(item)} aria-label={`Add ${item.name}`} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-xl text-accent-ink">+</button>
+    </li>
+  )
+
+  return (
+    <section aria-label="Add food" className="flex flex-col gap-2">
+      <div className="flex gap-2">
+        <label className="flex h-12 min-w-0 flex-1 items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3 focus-within:border-accent dark:border-zinc-700 dark:bg-zinc-900">
+          <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] shrink-0 text-zinc-500" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+          <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search food or recipe" aria-label="Search food or recipe"
+            className="min-w-0 flex-1 bg-transparent text-base outline-none" />
+        </label>
+        <button onClick={() => onNewProduct(query.trim())} aria-label="New product" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent text-2xl font-light text-accent-fg">+</button>
+      </div>
+      {searching ? (
+        <div className="card overflow-hidden">
+          {hits.items.length > 0 && <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">{hits.items.slice(0, 8).map(row)}</ul>}
+          {hits.recipes.length > 0 && (
+            <>
+              <div className="px-3 pt-2.5 text-[11px] font-semibold tracking-wide text-zinc-500 uppercase">Recipes</div>
+              <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                {hits.recipes.slice(0, 5).map((r) => {
+                  const p = perPortion(r)
+                  return (
+                    <li key={r.id} className="flex items-center gap-3 px-3 py-2.5">
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold">{r.name}</span>
+                        <span className="block text-xs text-zinc-500 dark:text-zinc-400">1 portion · {num(p.kcal)} kcal · {Math.round(p.protein)} g</span>
+                      </span>
+                      <button onClick={() => void addRecipe(r)} aria-label={`Log 1 portion of ${r.name}`} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-xl text-accent-ink">+</button>
+                    </li>
+                  )
+                })}
+              </ul>
+            </>
+          )}
+          <button onClick={() => onNewProduct(query.trim())} className="flex w-full items-center gap-3 border-t border-zinc-100 px-3 py-3 text-left text-sm font-semibold text-accent dark:border-zinc-800">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-soft text-xl text-accent-ink">+</span>
+            New product «{query.trim()}»
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-baseline justify-between px-0.5 pt-1">
+            <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Favourites</h3>
+            <span className="text-xs text-zinc-400">most added, {60} days</span>
+          </div>
+          {fav.length > 0
+            ? <ul className="card divide-y divide-zinc-100 overflow-hidden dark:divide-zinc-800">{fav.map(row)}</ul>
+            : <p className="card p-3 text-sm text-zinc-500 dark:text-zinc-400">Staples you add often appear here.</p>}
+          <div className="flex justify-between px-0.5 text-sm">
+            <button onClick={onAllStaples} className="font-semibold text-accent">Several staples</button>
+            <button onClick={onFreeEntry} className="font-semibold text-accent">Free entry</button>
+          </div>
+        </>
+      )}
+    </section>
   )
 }

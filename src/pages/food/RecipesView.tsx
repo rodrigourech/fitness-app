@@ -26,6 +26,9 @@ import {
 } from '../../lib/recipe'
 import { offerUndo } from '../../lib/undo'
 import CookMode from './CookMode'
+import { AddPhotoButton, FoodPhotoImg, RecipePhotos } from '../../components/FoodPhotos'
+import { recipeCovers } from '../../lib/foodPhotos'
+import type { FoodPhoto } from '../../lib/db'
 
 // Recipes in the Food tab (decision Rodrigo 19 November 2026, spec «Feature Rezepte, Kochmodus und Kitchen», sections
 // 3 to 6): list with tabs Meals, Desserts, Snacks and protein chips, detail with portion stepper where the amounts are
@@ -54,6 +57,7 @@ export function ProteinDot({ type, size = 12 }: { type: ProteinType | null; size
 export default function RecipesView({ userId }: { userId: string }) {
   const recipes = useLiveQuery(() => db.recipe.toArray(), [])
   const staples = useLiveQuery(() => db.food_item.toArray(), [])
+  const covers = useLiveQuery(() => recipeCovers(), [])
   const [category, setCategory] = useState<RecipeCategory>('meal')
   const [protein, setProtein] = useState<ProteinType | 'all'>('all')
   const [query, setQuery] = useState('')
@@ -106,7 +110,7 @@ export default function RecipesView({ userId }: { userId: string }) {
         <p className="card p-4 text-sm text-zinc-500 dark:text-zinc-400">{query || protein !== 'all' ? 'No recipe matches.' : 'No recipes yet.'}</p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {shown.map((r) => <RecipeCard key={r.id} recipe={r} onOpen={() => setOpen(r.id)} onDelete={() => setConfirmDelete(r)} />)}
+          {shown.map((r) => <RecipeCard key={r.id} recipe={r} cover={covers?.get(r.id)} onOpen={() => setOpen(r.id)} onDelete={() => setConfirmDelete(r)} />)}
         </ul>
       )}
 
@@ -127,7 +131,7 @@ export default function RecipesView({ userId }: { userId: string }) {
   )
 }
 
-function RecipeCard({ recipe: r, onOpen, onDelete }: { recipe: Recipe; onOpen: () => void; onDelete: () => void }) {
+function RecipeCard({ recipe: r, cover, onOpen, onDelete }: { recipe: Recipe; cover?: FoodPhoto; onOpen: () => void; onDelete: () => void }) {
   const swipe = useSwipeX((dir) => dir === 'left' && onDelete(), { left: true, right: false })
   const p = perPortion(r)
   return (
@@ -135,7 +139,13 @@ function RecipeCard({ recipe: r, onOpen, onDelete }: { recipe: Recipe; onOpen: (
       {swipe.dx !== 0 && <div aria-hidden="true" className="absolute inset-0 flex items-center justify-end rounded-2xl bg-red-600 px-5 text-sm font-semibold text-white">Delete</div>}
       <button onClick={onOpen} className="card relative flex w-full items-center gap-3 p-3 text-left"
         style={swipe.dx ? { transform: `translateX(${swipe.dx}px)` } : { transition: 'transform 150ms ease-out' }}>
-        {r.category === 'meal' && <ProteinDot type={r.protein_type} />}
+        {/* Cover photo (decision 22 November 2026) with the protein colour as a dot; without photo only the dot */}
+        {cover ? (
+          <span className="relative shrink-0">
+            <FoodPhotoImg photo={cover} alt="" className="h-12 w-12 rounded-xl" />
+            {r.category === 'meal' && <span className="absolute -right-1 -bottom-1 rounded-full border-2 border-white dark:border-zinc-900"><ProteinDot type={r.protein_type} size={10} /></span>}
+          </span>
+        ) : r.category === 'meal' && <ProteinDot type={r.protein_type} />}
         <span className="min-w-0 flex-1">
           <span className="block truncate font-semibold">{r.name || 'Untitled'}</span>
           <span className="block text-sm text-zinc-500 dark:text-zinc-400">
@@ -204,11 +214,18 @@ function RecipeDetail({ userId, recipe: r, onClose, onEdit, onDelete }: { userId
     setDone(`${portions} ${portions === 1 ? 'portion' : 'portions'} in the fridge.`)
   }
 
-  if (cooking) return <CookMode recipe={r} portions={portions} onClose={() => setCooking(false)} onDone={() => { setCooking(false); setPlan(true) }} />
+  const photoButton = (
+    <AddPhotoButton userId={userId} target={{ recipeId: r.id }} kind="dish"
+      className="flex items-center justify-center rounded-xl border border-zinc-200 py-3 text-sm font-semibold dark:border-zinc-700">
+      Add a photo of the dish
+    </AddPhotoButton>
+  )
+  if (cooking) return <CookMode recipe={r} portions={portions} photo={photoButton} onClose={() => setCooking(false)} onDone={() => { setCooking(false); setPlan(true) }} />
   if (plan) return <PlanSheet userId={userId} recipe={r} portions={portions} onClose={() => setPlan(false)} onSaved={(t) => { setPlan(false); setDone(t) }} />
 
   return (
     <Sheet title={r.name || 'Recipe'} onClose={onClose}>
+      <RecipePhotos userId={userId} recipeId={r.id} name={r.name} />
       <div className="-mt-1 flex flex-wrap gap-1.5">
         <Badge>{RECIPE_CATEGORY_LABEL[r.category].replace(/s$/, '')}</Badge>
         {r.category === 'meal' && r.protein_type && <Badge><ProteinDot type={r.protein_type} size={8} />{PROTEIN_LABEL[r.protein_type]}</Badge>}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Recipe } from '../../lib/db'
 import { itemAmount, stepParts } from '../../lib/recipe'
 
@@ -30,7 +30,8 @@ interface Timer {
   endsAt: number
 }
 
-export default function CookMode({ recipe: r, portions, onClose, onDone }: { recipe: Recipe; portions: number; onClose: () => void; onDone: () => void }) {
+// On the last step (and below the list) a button adds a photo of the dish (decision 22 November 2026).
+export default function CookMode({ recipe: r, portions, photo, onClose, onDone }: { recipe: Recipe; portions: number; photo?: ReactNode; onClose: () => void; onDone: () => void }) {
   const factor = portions / (r.portions > 0 ? r.portions : 1)
   const [view, setView] = useState<'steps' | 'list'>(loadView)
   const [index, setIndex] = useState(0)
@@ -177,6 +178,7 @@ export default function CookMode({ recipe: r, portions, onClose, onDone }: { rec
               </div>
             )}
           </div>
+          {index === total - 1 && photo && <div className="flex flex-col pt-3">{photo}</div>}
           <div className="grid grid-cols-2 gap-2 pt-3">
             <button disabled={index === 0} onClick={() => go(index - 1)} className="rounded-xl border border-zinc-200 py-3 text-sm font-semibold disabled:opacity-30 dark:border-zinc-700">Back</button>
             {index < total - 1
@@ -200,6 +202,7 @@ export default function CookMode({ recipe: r, portions, onClose, onDone }: { rec
               </li>
             ))}
           </ol>
+          {photo && <div className="mt-3 flex flex-col">{photo}</div>}
           <button onClick={onDone} className="mt-3 rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-white">Done · Log or plan {portions}</button>
         </div>
       )}

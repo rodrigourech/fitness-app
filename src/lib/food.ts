@@ -166,8 +166,10 @@ export function mealPrepDrafts(meal: { title: string; detail: string; items: Foo
   }))
 }
 
-export async function saveFoodEntries(userId: string, drafts: EntryDraft[]): Promise<void> {
-  await saveRows('food_entry', drafts.map((d) => entryRow(userId, d)))
+export async function saveFoodEntries(userId: string, drafts: EntryDraft[]): Promise<FoodEntry[]> {
+  const rows = drafts.map((d) => entryRow(userId, d))
+  await saveRows('food_entry', rows)
+  return rows
 }
 
 export async function saveFoodEntry(userId: string, draft: EntryDraft, existing?: FoodEntry): Promise<void> {
