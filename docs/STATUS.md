@@ -14,6 +14,7 @@ Letzte Aktualisierung 5. November 2026
 
 ## Stand
 
+- 22. November (Abend): Vorrat aus dem Einkauf vom 21. November nachgetragen (15 Artikel, 12 Bewegungen) und den Burger vom Mittag abgezogen; Artikel ohne bekannte Packungsgrösse nur als vorhanden (tracked = false). Direkt auf production, auf Wunsch von Rodrigo. Ursache der Lücke: Food-Connector 1.2.0 noch nicht deployt
 - 22. November: Fotos für Rezepte (mehrere, mit Titelbild) und Standardlebensmittel (Packung, Nährwerte), Suche mit Favoriten in Food Today (Variante B), Rezept «Burger mit Ofenkartoffeln». Migration 0053 auf production, Schema-Cache aktualisiert. 244 Tests, Build, 390 px hell und dunkel geprüft. Fotos aus Desktop\Food durch Claude über die App hochgeladen (Burger, Ofen-Pouletschenkel 2 Fotos, Türkische Pasta, Chicken Tacos; alle synchronisiert)
 - 21. November: untere Leiste auf dem iPhone (iOS 26, WebKit-Fehler 301108) mit html min-height im Standalone-Modus korrigiert, auf dem Gerät noch zu bestätigen
 - 20. November (Abend): Navigation Variante B mit Umschalter Design 1 (Home · Training · Food · Body · More; Training mit Plans, Stats, History, Exercises; Food mit Today, Recipes, Kitchen und Day | Week; Zielgewicht in Body). 238 Tests, Build, 390 px hell und dunkel sowie Laptop geprüft
