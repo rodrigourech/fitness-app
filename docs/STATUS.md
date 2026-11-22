@@ -14,6 +14,8 @@ Letzte Aktualisierung 5. November 2026
 
 ## Stand
 
+- 22. November: Fotos für Rezepte (mehrere, mit Titelbild) und Standardlebensmittel (Packung, Nährwerte), Suche mit Favoriten in Food Today (Variante B), Rezept «Burger mit Ofenkartoffeln». Migration 0053 auf production, Schema-Cache aktualisiert. 244 Tests, Build, 390 px hell und dunkel geprüft. Offen: Rodrigos Fotos den Rezepten zuordnen
+- 21. November: untere Leiste auf dem iPhone (iOS 26, WebKit-Fehler 301108) mit html min-height im Standalone-Modus korrigiert, auf dem Gerät noch zu bestätigen
 - 20. November (Abend): Navigation Variante B mit Umschalter Design 1 (Home · Training · Food · Body · More; Training mit Plans, Stats, History, Exercises; Food mit Today, Recipes, Kitchen und Day | Week; Zielgewicht in Body). 238 Tests, Build, 390 px hell und dunkel sowie Laptop geprüft
 - 20. November (Tag): Rezepte, Kochmodus, Kühlschrank und Kitchen-Vorrat in App und Food-Connector (Migration 0052 auf production); Mockups aus dem Food-Chat noch ausstehend, Abgleich folgt; Rodrigo muss `neon deploy` für foodmcp ausführen
 - 20. November (nachts): nur ein Top Set, Back-off-Sätze mit Rec. kg vorbelegt, Progressionsblatt nur mit Ziel, Today ohne graue Spalte

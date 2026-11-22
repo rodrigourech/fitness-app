@@ -139,13 +139,17 @@ function RecipeCard({ recipe: r, cover, onOpen, onDelete }: { recipe: Recipe; co
       {swipe.dx !== 0 && <div aria-hidden="true" className="absolute inset-0 flex items-center justify-end rounded-2xl bg-red-600 px-5 text-sm font-semibold text-white">Delete</div>}
       <button onClick={onOpen} className="card relative flex w-full items-center gap-3 p-3 text-left"
         style={swipe.dx ? { transform: `translateX(${swipe.dx}px)` } : { transition: 'transform 150ms ease-out' }}>
-        {/* Cover photo (decision 22 November 2026) with the protein colour as a dot; without photo only the dot */}
+        {/* Cover photo (decision 22 November 2026) with the protein colour as a dot; without photo a grey tile with the dot */}
         {cover ? (
           <span className="relative shrink-0">
             <FoodPhotoImg photo={cover} alt="" className="h-12 w-12 rounded-xl" />
             {r.category === 'meal' && <span className="absolute -right-1 -bottom-1 rounded-full border-2 border-white dark:border-zinc-900"><ProteinDot type={r.protein_type} size={10} /></span>}
           </span>
-        ) : r.category === 'meal' && <ProteinDot type={r.protein_type} />}
+        ) : (
+          <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800">
+            {r.category === 'meal' ? <ProteinDot type={r.protein_type} /> : null}
+          </span>
+        )}
         <span className="min-w-0 flex-1">
           <span className="block truncate font-semibold">{r.name || 'Untitled'}</span>
           <span className="block text-sm text-zinc-500 dark:text-zinc-400">
