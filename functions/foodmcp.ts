@@ -8,8 +8,9 @@
 // - A meal is stored only in two steps: preview_meal computes the values (staples on the server, never by Claude)
 //   and returns a signed preview; confirm_meal stores exactly that preview after the user said yes.
 //
-// Tools: list_staples, add_staple, preview_meal, confirm_meal, get_day, delete_entry,
-//   recipes (decision 19 November 2026): list_recipes, get_recipe, save_recipe, delete_recipe, log_recipe,
+// Tools: list_staples, add_staple, delete_staple, preview_meal (with replaces_entry_id), confirm_meal, get_day, delete_entry,
+//   recipes (decision 19 November 2026, preview and confirm since 22 November 2026): list_recipes, get_recipe,
+//   preview_recipe, confirm_recipe, delete_recipe, log_recipe,
 //   fridge: list_fridge, eat_from_fridge, discard_fridge_item, stock: preview_stock_add, confirm_stock_add, list_stock,
 //   adjust_stock. Logging a recipe or a fridge portion goes through the same preview and confirm_meal.
 
@@ -20,6 +21,7 @@ export interface FoodEnv {
 }
 
 export type Sql = (query: string, params?: unknown[]) => Promise<Record<string, unknown>[]>
+type Args = Record<string, unknown>
 
 const TZ = 'Europe/Zurich'
 /** Protein minimum when the app setting cannot be read (decision 15 November 2026: 160 g, about 1.9 g/kg) */
@@ -38,7 +40,9 @@ Fixed procedure, never skip a step:
 3. Call preview_meal and show its text to the user unchanged.
 4. Store only after the user confirms (ja, ok, passt): call confirm_meal with the preview token. On a change request, call preview_meal again.
 Never invent values for staples, never store without a preview and a confirmation. Only kcal and protein are tracked.
-Recipes: list_recipes and get_recipe show the saved recipes (contents in German). To cook one, ask how many portions and, per portion, the day and meal or «fridge» (not planned yet), then log_recipe, show the preview unchanged and confirm_meal after «ja». Fridge portions count only when eaten: list_fridge, then eat_from_fridge (preview, confirm_meal). save_recipe stores a new or changed recipe; delete_recipe and discard_fridge_item only after the user confirmed in the chat.
+Correcting a stored meal: preview_meal with replaces_entry_id (id from get_day); confirm_meal then replaces the old entry in one step. Never delete and add separately.
+Recipes (contents in German, the app UI stays English): list_recipes and get_recipe show the saved recipes. A new or changed recipe: preview_recipe (staples by id, other ingredients with kcal and protein for the whole amount and source estimate or label; steps reference ingredients as {i1}, {i2} in the given order), show the text unchanged, confirm_recipe after «ja». The server computes the values per portion.
+Eating a recipe: log_recipe with recipe_id, portions_eaten (default 1) and optionally scale (e.g. 1.2 for 20 % more of everything), category and eaten_at; show the preview unchanged, confirm_meal after «ja». Cooking several portions: log_recipe with portions_cooked and one schedule element per portion (day and meal, or «fridge» when not planned yet). Fridge portions count only when eaten: list_fridge, then eat_from_fridge (preview, confirm_meal). delete_recipe, delete_staple and discard_fridge_item only after the user confirmed in the chat.
 Stock (kitchen): for a purchase (receipt, product photo or text) map the products to staples (new products: add_staple first), ignore non-food, then preview_stock_add, show the preview and confirm_stock_add after «ja». Saving a meal takes the staples off the stock automatically (oldest first) and reports what is left; cooking a recipe takes them once for all portions. adjust_stock corrects an amount or marks an item used up or discarded (after confirmation).`
 
 // --- helpers ------------------------------------------------------------------------------------
@@ -109,7 +113,7 @@ export async function signPreview(key: string, payload: PreviewPayload): Promise
 
 export async function verifyPreview(key: string, token: string): Promise<PreviewPayload | null> {
   const p = await verifyToken<PreviewPayload & { kind?: string }>(key, token)
-  return p && p.kind !== 'stock' ? p : null
+  return p && p.kind === undefined ? p : null
 }
 
 // --- database ---------------------------------------------------------------------------------------
@@ -213,6 +217,8 @@ export interface PreviewPayload {
   fridge?: { portions: number; eatBy: string; items: PreviewItem[] } | null
   fridgeItemId?: string | null
   stock?: 'meal' | 'recipe' | 'none'
+  /** Correction (decision 22 November 2026): this entry is replaced in the same step */
+  replaces?: string | null
 }
 
 /** Values of one ingredient; staples from the stored values, others from the given estimate. Throws a message for Claude. */
@@ -383,20 +389,40 @@ export function recipeText(r: RecipeRow): string {
   return lines.join('\n')
 }
 
+/** Fixed preview of a new or changed recipe (decision 22 November 2026). */
+export function recipePreviewText(r: RecipeRow, isNew: boolean): string {
+  const p = perPortion(r)
+  const total = { kcal: r.items.reduce((s, i) => s + Number(i.kcal), 0), protein: r.items.reduce((s, i) => s + Number(i.protein_g), 0) }
+  const lines = [
+    `Rezept      ${r.name}${isNew ? '' : ' (Änderung)'}`,
+    `Art         ${RECIPE_CATEGORY_DE[r.category]}${r.protein_type ? ` · ${PROTEIN_DE[r.protein_type] ?? r.protein_type}` : ''} · ${r.portions} ${r.portions === 1 ? 'Portion' : 'Portionen'}${r.prep_min ? ` · ${r.prep_min} min` : ''}`,
+    `${pad('Zutat', 28)}${pad('Menge', 20)}${lpad('kcal', 6)}${lpad('Protein', 9)}  Quelle`,
+    ...r.items.map((i) => `${pad(i.name, 28)}${pad(`${i.hint && !i.to_taste ? `${i.hint.n} ${i.hint.label} · ` : ''}${scaledAmount(i, 1)}`, 20)}${lpad(i.to_taste ? '' : num(Number(i.kcal)), 6)}${lpad(i.to_taste ? '' : `${round1(Number(i.protein_g))} g`, 9)}  ${i.to_taste ? '' : SOURCE_DE[i.source]}`),
+    `Total             ${num(total.kcal)} kcal · ${Math.round(total.protein)} g Protein`,
+    `Pro Portion       ${num(p.kcal)} kcal · ${Math.round(p.protein)} g Protein`,
+    ...(r.steps.length ? ['Schritte', ...r.steps.map((st, n) => `${n + 1}. ${st.text.replace(/\{([a-z0-9]+)\}/gi, (_, id: string) => { const it = r.items.find((x) => x.id === id); return it ? scaledAmount(it, 1) : '' })}${st.timer_s ? ` (Timer ${Math.round(st.timer_s / 60)} min)` : ''}`)] : []),
+    'Speichern? (ja / ändern)',
+  ]
+  return '```\n' + lines.join('\n') + '\n```'
+}
+
 function dayPlus(day: string, n: number): string {
   return new Date(Date.parse(`${day}T12:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10)
 }
 
 /** Preview of a cooked recipe: entries for planned portions, the rest into the fridge; stock taken once on confirm. */
-export function recipePreview(r: RecipeRow, args: { portions_cooked?: number; schedule?: { eaten_at?: string; category?: string }[] }, now: Date): PreviewPayload {
-  const schedule = Array.isArray(args.schedule) ? args.schedule : []
+export function recipePreview(r: RecipeRow, args: { portions_cooked?: number; portions_eaten?: number; scale?: number; category?: string; eaten_at?: string; schedule?: { eaten_at?: string; category?: string }[] }, now: Date): PreviewPayload {
+  const scale = args.scale === undefined ? 1 : Number(args.scale)
+  if (!(scale > 0 && scale <= 5)) throw new Error('scale must be between 0 and 5 (1 = as in the recipe).')
+  if (!Array.isArray(args.schedule) || args.schedule.length === 0) return recipeMealPreview(r, args, scale, now)
+  const schedule = args.schedule
   const cooked = Math.round(Number(args.portions_cooked ?? schedule.length ?? 1)) || 1
   if (cooked > MAX_PORTIONS) throw new Error(`At most ${MAX_PORTIONS} portions.`)
   if (schedule.length !== cooked) {
     if (cooked === 1 && schedule.length === 0) schedule.push({})
     else throw new Error(`schedule needs one element per cooked portion (${cooked}): {eaten_at, category} or category "fridge".`)
   }
-  const f = cooked / (r.portions > 0 ? r.portions : 1)
+  const f = (cooked * scale) / (r.portions > 0 ? r.portions : 1)
   const items: PreviewItem[] = r.items.filter((i) => !i.to_taste || Number(i.kcal) > 0).map((i) => ({
     name: i.name, food_item_id: i.food_item_id, amount: scaledAmount(i, f), kcal: Math.round(Number(i.kcal) * f), protein_g: round1(Number(i.protein_g) * f), source: i.source,
   }))
@@ -409,9 +435,10 @@ export function recipePreview(r: RecipeRow, args: { portions_cooked?: number; sc
     return { eatenAt: at(x.eaten_at), category }
   })
   const fridgeCount = cooked - eaten.length
+  const per = scale / (r.portions > 0 ? r.portions : 1)
   const perItems: PreviewItem[] = r.items.filter((i) => !i.to_taste || Number(i.kcal) > 0).map((i) => ({
-    name: i.name, food_item_id: i.food_item_id, amount: scaledAmount(i, 1 / (r.portions > 0 ? r.portions : 1)),
-    kcal: Math.round(Number(i.kcal) / r.portions), protein_g: round1(Number(i.protein_g) / r.portions), source: i.source,
+    name: i.name, food_item_id: i.food_item_id, amount: scaledAmount(i, per),
+    kcal: Math.round(Number(i.kcal) * per), protein_g: round1(Number(i.protein_g) * per), source: i.source,
   }))
   return {
     createdAt: now.getTime(), eatenAt: eaten[0]?.eatenAt ?? now.toISOString(), category: eaten[0]?.category ?? 'dinner', title: r.name,
@@ -419,6 +446,65 @@ export function recipePreview(r: RecipeRow, args: { portions_cooked?: number; sc
     cooked, eaten: 1, schedule: eaten, kcal: Math.round(totalKcal / cooked), protein: round1(totalProtein / cooked),
     recipeId: r.id, fridge: fridgeCount > 0 ? { portions: fridgeCount, eatBy: dayPlus(zurichDay(now), r.keeps_days), items: perItems } : null, fridgeItemId: null, stock: 'recipe',
   }
+}
+
+/** Eating a recipe (decision 22 November 2026): portions_eaten of the recipe, optionally scaled, as one entry. */
+function recipeMealPreview(r: RecipeRow, args: { portions_eaten?: number; category?: string; eaten_at?: string }, scale: number, now: Date): PreviewPayload {
+  const eaten = args.portions_eaten === undefined ? 1 : Number(args.portions_eaten)
+  if (!(eaten > 0 && eaten <= MAX_PORTIONS)) throw new Error(`portions_eaten must be between 0 and ${MAX_PORTIONS}.`)
+  const category = (args.category ?? 'lunch') as Category
+  if (!CATEGORIES.includes(category)) throw new Error(`category must be one of ${CATEGORIES.join(', ')}.`)
+  const f = (eaten * scale) / (r.portions > 0 ? r.portions : 1)
+  const items: PreviewItem[] = r.items.filter((i) => !i.to_taste || Number(i.kcal) > 0).map((i) => ({
+    name: i.name, food_item_id: i.food_item_id, amount: scaledAmount(i, f), kcal: Math.round(Number(i.kcal) * f), protein_g: round1(Number(i.protein_g) * f), source: i.source,
+  }))
+  const totalKcal = items.reduce((s, i) => s + i.kcal, 0)
+  const totalProtein = round1(items.reduce((s, i) => s + i.protein_g, 0))
+  const eatenAt = args.eaten_at && !Number.isNaN(Date.parse(args.eaten_at)) ? new Date(args.eaten_at).toISOString() : now.toISOString()
+  const portions = `${round1(eaten)} ${eaten === 1 ? 'Portion' : 'Portionen'}${scale !== 1 ? ` × ${round1(scale)}` : ''}`
+  return {
+    createdAt: now.getTime(), eatenAt, category, title: r.name, detail: [portions, ...items.slice(0, 4).map((i) => `${i.name.split(',')[0]} ${i.amount}`)].join(' · '),
+    items, totalKcal, totalProtein, cooked: null, eaten: null, schedule: null, kcal: totalKcal, protein: totalProtein, recipeId: r.id, fridge: null, fridgeItemId: null, stock: 'recipe',
+  }
+}
+
+/** Recipe from the tool arguments (preview_recipe); values from staples on the server, others from the given estimate. */
+export function buildRecipe(args: Args, list: Staple[]): Omit<RecipeRow, 'id'> {
+  const nameArg = String(args.name ?? '').trim()
+  const category = args.category as RecipeRow['category']
+  const portions = Number(args.portions)
+  if (!nameArg || !['meal', 'dessert', 'snack'].includes(category) || !(portions > 0)) throw new Error('name, category (meal, dessert, snack) and portions are required.')
+  const raw = Array.isArray(args.items) ? (args.items as (ItemInput & { hint_n?: number; hint_label?: string; unit_hint?: string; to_taste?: boolean })[]) : []
+  if (raw.length === 0) throw new Error('At least one ingredient is required.')
+  const items: RecipeItemRow[] = raw.map((i, n) => {
+    const hintText = typeof i.unit_hint === 'string' ? /^\s*(\d+(?:[.,]\d+)?)\s+(.+)$/.exec(i.unit_hint) : null
+    const hint = i.hint_n && i.hint_label ? { n: Number(i.hint_n), label: String(i.hint_label) } : hintText ? { n: Number(hintText[1]!.replace(',', '.')), label: hintText[2]!.trim() } : null
+    if (i.to_taste && !(Number(i.quantity) > 0)) {
+      if (!i.name?.trim()) throw new Error(`Ingredient ${n + 1}: name is required.`)
+      return { id: `i${n + 1}`, name: i.name.trim(), food_item_id: null, qty: null, unit: null, hint: null, to_taste: true, kcal: 0, protein_g: 0, source: 'estimate' }
+    }
+    const v = itemValues(i, list)
+    const s = i.staple_id ? list.find((x) => x.id === i.staple_id) : undefined
+    const grams = /^([\d.]+) (g|ml)$/.exec(v.amount)
+    const qty = grams ? Number(grams[1]) : Number(i.quantity)
+    const unit: RecipeItemRow['unit'] = grams ? (grams[2] as 'g' | 'ml') : s?.basis === 'serving' || i.unit === 'serving' ? 'serving' : 'piece'
+    return { id: `i${n + 1}`, name: i.name?.trim() || v.name, food_item_id: v.food_item_id, qty, unit, hint, to_taste: Boolean(i.to_taste), kcal: v.kcal, protein_g: v.protein_g, source: v.source }
+  })
+  const steps = (Array.isArray(args.steps) ? (args.steps as ({ text?: string; timer_s?: number } | string)[]) : [])
+    .map((x) => (typeof x === 'string' ? { text: x } : x)).filter((x) => x.text).map((x) => ({
+      text: String(x.text), timer_s: Number(x.timer_s) > 0 ? Math.round(Number(x.timer_s)) : null, items: [...String(x.text).matchAll(/\{(i\d+)\}/g)].map((m) => m[1]!) }))
+  for (const st of steps) for (const ref of st.items) if (!items.some((i) => i.id === ref)) throw new Error(`Step «${st.text.slice(0, 40)}» refers to {${ref}}, but there are only ${items.length} ingredients.`)
+  const protein = category === 'meal' ? (['beef', 'chicken', 'pork', 'fish', 'veggie', 'mixed'].includes(String(args.protein_type)) ? String(args.protein_type) : 'mixed') : null
+  return { name: nameArg, category, protein_type: protein, portions, prep_min: Number(args.prep_min) > 0 ? Math.round(Number(args.prep_min)) : null, meal_prep: Boolean(args.meal_prep ?? portions > 1),
+    keeps_days: Number(args.keeps_days) > 0 ? Math.min(30, Math.round(Number(args.keeps_days))) : 3, notes: typeof args.notes === 'string' && args.notes.trim() ? args.notes.trim() : null, items, steps }
+}
+
+export interface RecipePayload {
+  createdAt: number
+  kind: 'recipe'
+  id: string
+  isNew: boolean
+  recipe: Omit<RecipeRow, 'id'>
 }
 
 /** Stock units of an item amount: «250 g», «2 Stück», «2 ×»; servings are not counted. */
@@ -431,7 +517,7 @@ export function stockNeed(amount: string): { qty: number; unit: 'g' | 'ml' | 'pi
 }
 
 /** Takes the staples of the items off the stock, oldest first, never below zero; returns «… übrig» lines. */
-async function takeStock(sql: Sql, user: string, items: PreviewItem[], reason: 'meal' | 'recipe', now: Date): Promise<string[]> {
+async function takeStock(sql: Sql, user: string, items: PreviewItem[], reason: 'meal' | 'recipe', now: Date, entryId: string | null = null): Promise<string[]> {
   const ts = now.toISOString()
   const notes: string[] = []
   for (const it of items) {
@@ -450,7 +536,7 @@ async function takeStock(sql: Sql, user: string, items: PreviewItem[], reason: '
       const take = Math.min(rest, have)
       if (take > 0) {
         await sql('update public.inventory_item set qty_left = $2, last_used_at = $3, updated_at = $3 where id = $1', [r.id, round1(have - take), ts])
-        await sql('insert into public.inventory_move (id, user_id, item_id, delta, reason, created_at, updated_at) values ($1,$2,$3,$4,$5,$6,$6)', [crypto.randomUUID(), user, r.id, -take, reason, ts])
+        await sql('insert into public.inventory_move (id, user_id, item_id, delta, reason, food_entry_id, created_at, updated_at) values ($1,$2,$3,$4,$5,$6,$7,$7)', [crypto.randomUUID(), user, r.id, -take, reason, entryId, ts])
       }
       rest -= take
       left += have - take
@@ -458,6 +544,18 @@ async function takeStock(sql: Sql, user: string, items: PreviewItem[], reason: '
     notes.push(`${String(rows[0]!.name)}: ${round1(left)} ${need.unit === 'piece' ? 'Stück' : need.unit} übrig`)
   }
   return notes
+}
+
+/** Gives back what an entry took from the stock (its meal and recipe moves), for a replaced entry. */
+async function returnStock(sql: Sql, user: string, entryId: string, now: Date): Promise<void> {
+  const ts = now.toISOString()
+  const moves = await sql("select item_id, delta from public.inventory_move where user_id = $1 and food_entry_id = $2 and reason in ('meal', 'recipe') and deleted_at is null", [user, entryId])
+  for (const m of moves) {
+    const back = -Number(m.delta)
+    if (!(back > 0)) continue
+    await sql('update public.inventory_item set qty_left = qty_left + $2, deleted_at = null, updated_at = $3 where id = $1 and tracked', [m.item_id, back, ts])
+    await sql('insert into public.inventory_move (id, user_id, item_id, delta, reason, food_entry_id, created_at, updated_at) values ($1,$2,$3,$4,$5,$6,$7,$7)', [crypto.randomUUID(), user, m.item_id, back, 'correction', entryId, ts])
+  }
 }
 
 const SHELF: [RegExp, number][] = [
@@ -544,6 +642,11 @@ export const TOOLS = [
     },
   },
   {
+    name: 'delete_staple',
+    description: 'Removes a staple (only after the user confirmed). Refused while a saved recipe uses it; logged meals keep their values.',
+    inputSchema: { type: 'object', properties: { id: { type: 'string' } }, required: ['id'] },
+  },
+  {
     name: 'preview_meal',
     description: 'Computes a meal and returns the fixed preview text and a preview token. Nothing is stored. Show the text unchanged and ask for confirmation.',
     inputSchema: {
@@ -553,6 +656,7 @@ export const TOOLS = [
         eaten_at: { type: 'string', description: 'ISO time with offset; default now' },
         title: { type: 'string' },
         items: { type: 'array', items: itemSchema },
+        replaces_entry_id: { type: 'string', description: 'Correction: id of the stored entry (get_day) that this meal replaces; «Heute danach» is computed without it' },
         portions_cooked: { type: 'number', description: 'Only without portions: cooked portions, eaten now = portions_eaten' },
         portions_eaten: { type: 'number' },
         portions: {
@@ -573,31 +677,33 @@ export const TOOLS = [
   },
   { name: 'get_recipe', description: 'A recipe with ingredients, amounts and steps (German).', inputSchema: { type: 'object', properties: { id: { type: 'string' } }, required: ['id'] } },
   {
-    name: 'save_recipe',
-    description: 'Creates a recipe or, with id, replaces it. Ingredients like preview_meal (staples by id, others with estimate for the whole amount) for the given portions; to_taste for salt, spices. Steps may reference ingredient amounts as {i1}, {i2} (ingredients are numbered i1, i2, … in the given order). Contents in German.',
+    name: 'preview_recipe',
+    description: 'Computes a new recipe or, with id, a changed one and returns the fixed recipe text with values per portion and a preview token. Nothing is stored; show the text unchanged and call confirm_recipe after the user confirmed. Ingredients like preview_meal (staples by id, others with kcal and protein for the whole amount) for the given portions; to_taste for salt and spices. Steps reference ingredient amounts as {i1}, {i2} (ingredients numbered in the given order). Contents in German.',
     inputSchema: {
       type: 'object',
       properties: {
-        id: { type: 'string' }, name: { type: 'string' }, category: { type: 'string', enum: ['meal', 'dessert', 'snack'] },
+        id: { type: 'string', description: 'Only to change a saved recipe' }, name: { type: 'string' }, category: { type: 'string', enum: ['meal', 'dessert', 'snack'] },
         protein_type: { type: 'string', enum: ['beef', 'chicken', 'pork', 'fish', 'veggie', 'mixed'], description: 'Required for meal' },
         portions: { type: 'number' }, prep_min: { type: 'number' }, meal_prep: { type: 'boolean' }, keeps_days: { type: 'number', description: 'Days in the fridge, default 3' }, notes: { type: 'string' },
-        items: { type: 'array', items: { ...itemSchema, properties: { ...itemSchema.properties, hint_n: { type: 'number', description: 'Grey count before the weight, e.g. 1 for «1 Becher»' }, hint_label: { type: 'string' }, to_taste: { type: 'boolean' } }, required: [] } },
+        items: { type: 'array', items: { ...itemSchema, properties: { ...itemSchema.properties, unit_hint: { type: 'string', description: 'Grey count before the weight, e.g. «2 EL», «1 Becher», «3 Scheiben»' }, to_taste: { type: 'boolean' } }, required: [] } },
         steps: { type: 'array', items: { type: 'object', properties: { text: { type: 'string' }, timer_s: { type: 'number' } }, required: ['text'] } },
       },
       required: ['name', 'category', 'portions', 'items'],
     },
   },
+  { name: 'confirm_recipe', description: 'Stores a previewed recipe (new or changed) after the user confirmed it.', inputSchema: { type: 'object', properties: { preview_token: { type: 'string' } }, required: ['preview_token'] } },
   { name: 'delete_recipe', description: 'Moves a recipe to the trash (only after the user confirmed). Logged meals stay.', inputSchema: { type: 'object', properties: { id: { type: 'string' } }, required: ['id'] } },
   {
     name: 'log_recipe',
-    description: 'Preview of a cooked recipe: one schedule element per cooked portion with eaten_at and category, or category "fridge" for portions not planned yet (they count only when eaten). Store with confirm_meal after the user confirmed. Stock is taken once for all portions.',
+    description: 'Preview of a recipe as a meal; store with confirm_meal after the user confirmed. Eating: portions_eaten (default 1), optional scale (1.2 = 20 % more of everything), category and eaten_at; one entry. Cooking several portions: portions_cooked and one schedule element per portion with eaten_at and category, or category "fridge" for portions not planned yet (they count only when eaten). Stock is taken once.',
     inputSchema: {
       type: 'object',
       properties: {
-        recipe_id: { type: 'string' }, portions_cooked: { type: 'number' },
+        recipe_id: { type: 'string' }, portions_eaten: { type: 'number' }, scale: { type: 'number', description: 'Factor on all amounts, default 1' },
+        category: { type: 'string', enum: [...CATEGORIES] }, eaten_at: { type: 'string', description: 'ISO time with offset; default now' }, portions_cooked: { type: 'number' },
         schedule: { type: 'array', items: { type: 'object', properties: { eaten_at: { type: 'string', description: 'ISO time with offset' }, category: { type: 'string', enum: [...CATEGORIES, 'fridge'] } }, required: ['category'] } },
       },
-      required: ['recipe_id', 'portions_cooked', 'schedule'],
+      required: ['recipe_id'],
     },
   },
   { name: 'list_fridge', description: 'Cooked portions in the fridge with eat-by date.', inputSchema: { type: 'object', properties: {} } },
@@ -637,8 +743,6 @@ export const TOOLS = [
   },
 ]
 
-type Args = Record<string, unknown>
-
 export async function callTool(name: string, args: Args, ctx: { sql: Sql; user: string; key: string; now: Date }): Promise<{ text: string; data?: unknown }> {
   const { sql, user, key, now } = ctx
   switch (name) {
@@ -666,10 +770,26 @@ export async function callTool(name: string, args: Args, ctx: { sql: Sql; user: 
         [id, user, nameArg, store, basis, kcal, protein, opt(args.piece_g), opt(args.package_g), 'Etikett', ts])
       return { text: `Gespeichert: ${nameArg} (${id})`, data: { id } }
     }
+    case 'delete_staple': {
+      const id = String(args.id ?? '')
+      if (!UUID.test(id)) throw new Error('Invalid id.')
+      const used = await sql('select name from public.recipe where user_id = $1 and deleted_at is null and items @> $2::jsonb order by name', [user, JSON.stringify([{ food_item_id: id }])])
+      if (used.length) throw new Error(`Not removed: used in ${used.map((r) => `«${r.name}»`).join(', ')}. Change those recipes first.`)
+      const rows = await sql('update public.food_item set deleted_at = $3, updated_at = $3 where id = $1 and user_id = $2 and deleted_at is null returning name', [id, user, now.toISOString()])
+      return { text: rows.length ? `Entfernt: ${rows[0]!.name}` : 'Standardlebensmittel nicht gefunden.' }
+    }
     case 'preview_meal': {
       const p = buildPreview(args as Parameters<typeof buildPreview>[0], await staples(sql, user), now)
       const day = zurichDay(new Date(p.eatenAt))
-      const before = await dayTotals(sql, user, day)
+      const replaces = typeof args.replaces_entry_id === 'string' && args.replaces_entry_id ? args.replaces_entry_id : null
+      let before = await dayTotals(sql, user, day)
+      if (replaces) {
+        if (!UUID.test(replaces)) throw new Error('Invalid replaces_entry_id.')
+        const old = await sql('select id, eaten_at, kcal, protein_g from public.food_entry where id = $1 and user_id = $2 and deleted_at is null', [replaces, user])
+        if (!old.length) throw new Error('Entry to replace not found; call get_day.')
+        p.replaces = replaces
+        if (zurichDay(new Date(String(old[0]!.eaten_at))) === day) before = { ...before, kcal: before.kcal - Number(old[0]!.kcal), protein: before.protein - Number(old[0]!.protein_g) }
+      }
       const token = await signPreview(key, p)
       return { text: `${previewText(p, before)}\n\npreview_token: ${token}`, data: { preview_token: token, kcal: p.kcal, protein_g: p.protein } }
     }
@@ -684,11 +804,20 @@ export async function callTool(name: string, args: Args, ctx: { sql: Sql; user: 
         const dup = await sql('select id from public.food_entry where user_id = $1 and deleted_at is null and eaten_at = $2 and title = $3 and kcal = $4', [user, e.eatenAt, p.title, p.kcal])
         if (dup.length) continue
         const entryId = crypto.randomUUID()
+        const values = [entryId, user, e.eatenAt, e.category, p.title, e.detail, JSON.stringify(p.items), p.kcal, p.protein, e.cooked, e.eaten, 'claude', ts]
+        if (p.replaces && firstEntry === null) {
+          // Correction: the old entry goes to the trash in the same statement as the new one is stored (atomic)
+          await sql(
+            'with old as (update public.food_entry set deleted_at = $13, updated_at = $13 where id = $14 and user_id = $2 and deleted_at is null returning id) insert into public.food_entry (id, user_id, eaten_at, category, title, detail, items, kcal, protein_g, portions_cooked, portions_eaten, source, created_at, updated_at) values ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10,$11,$12,$13,$13)',
+            [...values, p.replaces],
+          )
+        } else {
+          await sql(
+            'insert into public.food_entry (id, user_id, eaten_at, category, title, detail, items, kcal, protein_g, portions_cooked, portions_eaten, source, created_at, updated_at) values ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10,$11,$12,$13,$13)',
+            values,
+          )
+        }
         firstEntry ??= entryId
-        await sql(
-          'insert into public.food_entry (id, user_id, eaten_at, category, title, detail, items, kcal, protein_g, portions_cooked, portions_eaten, source, created_at, updated_at) values ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10,$11,$12,$13,$13)',
-          [entryId, user, e.eatenAt, e.category, p.title, e.detail, JSON.stringify(p.items), p.kcal, p.protein, e.cooked, e.eaten, 'claude', ts],
-        )
         added++
       }
       // Fridge portions of a cooked recipe (once per preview)
@@ -707,14 +836,14 @@ export async function callTool(name: string, args: Args, ctx: { sql: Sql; user: 
       if (p.fridgeItemId && added > 0) {
         await sql('update public.fridge_item set portions = greatest(portions - 1, 0), deleted_at = case when portions <= 1 then $3::timestamptz else deleted_at end, updated_at = $3 where id = $1 and user_id = $2', [p.fridgeItemId, user, ts])
       }
-      const stockNotes = (p.stock ?? 'meal') === 'none' ? [] : await takeStock(sql, user, p.items, p.stock === 'recipe' ? 'recipe' : 'meal', now)
+      if (p.replaces && added > 0) await returnStock(sql, user, p.replaces, now)
+      const stockNotes = (p.stock ?? 'meal') === 'none' ? [] : await takeStock(sql, user, p.items, p.stock === 'recipe' ? 'recipe' : 'meal', now, firstEntry)
       const tail = [fridgeAdded ? `In den Kühlschrank: ${fridgeAdded} ${fridgeAdded === 1 ? 'Portion' : 'Portionen'}, essen bis ${p.fridge!.eatBy}.` : null, stockNotes.length ? `Vorrat: ${stockNotes.join(', ')}.` : null].filter(Boolean).join('\n')
       if (added === 0) return { text: tail }
       const t = await dayTotals(sql, user, zurichDay(new Date(p.eatenAt)))
-      void firstEntry
       const head = p.schedule && p.schedule.length > 1
         ? `Eingetragen: ${p.schedule.length} Portionen à ${num(p.kcal)} kcal · ${Math.round(p.protein)} g Protein (${p.schedule.map((s) => `${CATEGORY_DE[s.category]} ${zurichLabel(new Date(s.eatenAt)).split(' · ')[0]}`).join(', ')}).`
-        : `Eingetragen als ${CATEGORY_DE[p.category]}: ${num(p.kcal)} kcal · ${Math.round(p.protein)} g Protein.`
+        : `${p.replaces ? 'Ersetzt' : 'Eingetragen'} als ${CATEGORY_DE[p.category]}: ${num(p.kcal)} kcal · ${Math.round(p.protein)} g Protein.`
       return { text: `${head}\nHeute total ${num(t.kcal)} kcal · ${Math.round(t.protein)} g Protein (Ziel ≥ ${await proteinTarget(sql, user)} g).${tail ? `\n${tail}` : ''}` }
     }
     case 'get_day': {
@@ -738,41 +867,36 @@ export async function callTool(name: string, args: Args, ctx: { sql: Sql; user: 
       const r = await recipeById(sql, user, String(args.id ?? ''))
       return { text: r ? recipeText(r) : 'Rezept nicht gefunden.' }
     }
-    case 'save_recipe': {
-      const nameArg = String(args.name ?? '').trim()
-      const category = args.category as RecipeRow['category']
-      const portions = Number(args.portions)
-      if (!nameArg || !['meal', 'dessert', 'snack'].includes(category) || !(portions > 0)) throw new Error('name, category and portions are required.')
-      const list = await staples(sql, user)
-      const raw = Array.isArray(args.items) ? (args.items as (ItemInput & { hint_n?: number; hint_label?: string; to_taste?: boolean })[]) : []
-      if (raw.length === 0) throw new Error('At least one ingredient is required.')
-      const items: RecipeItemRow[] = raw.map((i, n) => {
-        const hint = i.hint_n && i.hint_label ? { n: Number(i.hint_n), label: String(i.hint_label) } : null
-        if (i.to_taste && !(Number(i.quantity) > 0)) return { id: `i${n + 1}`, name: String(i.name ?? ''), food_item_id: null, qty: null, unit: null, hint: null, to_taste: true, kcal: 0, protein_g: 0, source: 'estimate' }
-        const v = itemValues(i, list)
-        const s = i.staple_id ? list.find((x) => x.id === i.staple_id) : undefined
-        const grams = /^([\d.]+) (g|ml)$/.exec(v.amount)
-        const qty = grams ? Number(grams[1]) : Number(i.quantity)
-        const unit: RecipeItemRow['unit'] = grams ? (grams[2] as 'g' | 'ml') : s?.basis === 'serving' || i.unit === 'serving' ? 'serving' : 'piece'
-        return { id: `i${n + 1}`, name: i.name?.trim() || v.name, food_item_id: v.food_item_id, qty, unit, hint, to_taste: Boolean(i.to_taste), kcal: v.kcal, protein_g: v.protein_g, source: v.source }
-      })
-      const steps = (Array.isArray(args.steps) ? (args.steps as { text?: string; timer_s?: number }[]) : []).filter((x) => x.text).map((x) => ({
-        text: String(x.text), timer_s: Number(x.timer_s) > 0 ? Math.round(Number(x.timer_s)) : null, items: [...String(x.text).matchAll(/\{(i\d+)\}/g)].map((m) => m[1]!) }))
-      const protein = category === 'meal' ? (['beef', 'chicken', 'pork', 'fish', 'veggie', 'mixed'].includes(String(args.protein_type)) ? String(args.protein_type) : 'mixed') : null
-      const ts = now.toISOString()
-      const values = [nameArg, category, protein, portions, Number(args.prep_min) > 0 ? Math.round(Number(args.prep_min)) : null, Boolean(args.meal_prep ?? portions > 1),
-        Number(args.keeps_days) > 0 ? Math.min(30, Math.round(Number(args.keeps_days))) : 3, typeof args.notes === 'string' && args.notes.trim() ? args.notes.trim() : null,
-        JSON.stringify(items), JSON.stringify(steps), ts]
-      let id = typeof args.id === 'string' && UUID.test(args.id) ? args.id : null
-      if (id) {
-        const rows = await sql('update public.recipe set name = $3, category = $4, protein_type = $5, portions = $6, prep_min = $7, meal_prep = $8, keeps_days = $9, notes = $10, items = $11::jsonb, steps = $12::jsonb, updated_at = $13 where id = $1 and user_id = $2 and deleted_at is null returning id', [id, user, ...values])
-        if (!rows.length) throw new Error('Recipe not found.')
-      } else {
-        id = crypto.randomUUID()
-        await sql('insert into public.recipe (id, user_id, name, category, protein_type, portions, prep_min, meal_prep, keeps_days, notes, items, steps, created_at, updated_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12::jsonb,$13,$13)', [id, user, ...values])
+    case 'preview_recipe': {
+      const recipe = buildRecipe(args, await staples(sql, user))
+      let id: string = crypto.randomUUID()
+      let isNew = true
+      if (typeof args.id === 'string' && args.id) {
+        const old = await recipeById(sql, user, args.id)
+        if (!old) throw new Error('Recipe not found; call list_recipes.')
+        id = old.id
+        isNew = false
       }
-      const saved = await recipeById(sql, user, id)
-      return { text: `Gespeichert:\n${saved ? recipeText(saved) : nameArg}`, data: { id } }
+      const payload: RecipePayload = { createdAt: now.getTime(), kind: 'recipe', id, isNew, recipe }
+      const token = await signToken(key, payload)
+      return { text: `${recipePreviewText({ id, ...recipe }, isNew)}\n\npreview_token: ${token}`, data: { preview_token: token } }
+    }
+    case 'confirm_recipe': {
+      const p = await verifyToken<RecipePayload>(key, String(args.preview_token ?? ''))
+      if (!p || p.kind !== 'recipe') throw new Error('Invalid or expired preview; call preview_recipe again.')
+      const r = p.recipe
+      const ts = now.toISOString()
+      const values = [r.name, r.category, r.protein_type, r.portions, r.prep_min, r.meal_prep, r.keeps_days, r.notes, JSON.stringify(r.items), JSON.stringify(r.steps), ts]
+      if (p.isNew) {
+        // The id is fixed in the preview, so a preview confirmed twice is stored once
+        const rows = await sql('insert into public.recipe (id, user_id, name, category, protein_type, portions, prep_min, meal_prep, keeps_days, notes, items, steps, created_at, updated_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12::jsonb,$13,$13) on conflict (id) do nothing returning id', [p.id, user, ...values])
+        if (!rows.length) return { text: 'Bereits gespeichert.' }
+      } else {
+        const rows = await sql('update public.recipe set name = $3, category = $4, protein_type = $5, portions = $6, prep_min = $7, meal_prep = $8, keeps_days = $9, notes = $10, items = $11::jsonb, steps = $12::jsonb, updated_at = $13 where id = $1 and user_id = $2 and deleted_at is null returning id', [p.id, user, ...values])
+        if (!rows.length) throw new Error('Recipe not found.')
+      }
+      const pp = perPortion({ id: p.id, ...r })
+      return { text: `${p.isNew ? 'Gespeichert' : 'Geändert'}: ${r.name} (${p.id}) · pro Portion ${num(pp.kcal)} kcal · ${Math.round(pp.protein)} g Protein. In der App unter Food › Recipes.`, data: { id: p.id } }
     }
     case 'delete_recipe': {
       const id = String(args.id ?? '')
@@ -892,7 +1016,7 @@ async function answer(msg: RpcRequest, env: FoodEnv, sql: Sql, now: Date): Promi
       return rpc(msg.id, {
         protocolVersion: typeof msg.params?.protocolVersion === 'string' ? msg.params.protocolVersion : '2025-06-18',
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: 'fitness-food', version: '1.2.0' },
+        serverInfo: { name: 'fitness-food', version: '1.3.0' },
         instructions: INSTRUCTIONS,
       })
     case 'ping':

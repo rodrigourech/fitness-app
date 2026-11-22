@@ -40,6 +40,8 @@ Ablauf immer gleich:
 4. Rufe preview_meal auf und zeige die Vorschau unverändert.
 5. Speichere erst nach meiner Bestätigung mit confirm_meal. Bei Änderungswünschen eine neue Vorschau.
 Cheat Meals (McDonald's, Döner usw.) als Kategorie cheat mit geschätzten Werten.
+Korrektur eines gespeicherten Eintrags: preview_meal mit replaces_entry_id, nie löschen und neu anlegen.
+Rezepte: anlegen oder ändern mit preview_recipe, Vorschau unverändert zeigen, erst nach «ja» confirm_recipe. Ein Rezept essen mit log_recipe (Portionen, bei Bedarf Skalierung), dann confirm_meal nach «ja». Rezeptinhalte deutsch.
 Nur kcal und Protein. Keine Ernährungsratschläge, ausser ich frage danach.
 ```
 
@@ -55,10 +57,35 @@ Die Maske (Artifact mit Connector-Zugriff) folgt, sobald der Connector läuft, d
 
 ## **Rezepte, Kühlschrank und Vorrat (20. November 2026, Version 1.2.0)**
 
-- Rezepte: `list_recipes` (Filter Kategorie, Proteinart), `get_recipe`, `save_recipe` (Zutaten wie bei `preview_meal`, Mengenhinweis `hint_n`/`hint_label`, `to_taste`; Schritte mit Platzhaltern `{i1}` für skalierte Mengen), `delete_recipe` nur nach Bestätigung
+- Rezepte: `list_recipes` (Filter Kategorie, Proteinart), `get_recipe`, `delete_recipe` nur nach Bestätigung; Speichern seit Version 1.3.0 mit Vorschau (siehe unten)
 - Kochen: `log_recipe` mit `portions_cooked` und pro Portion `{eaten_at, category}` oder `category: "fridge"`; Vorschau wie bei Mahlzeiten, gespeichert mit `confirm_meal`. Geplante Portionen werden Einträge an ihrem Tag, die übrigen landen im Kühlschrank (zählen erst beim Essen, essen bis Kochtag plus `keeps_days`)
 - Kühlschrank: `list_fridge`, `eat_from_fridge` (Vorschau, dann `confirm_meal`, Portion −1, kein Vorratsabzug), `discard_fridge_item` nur nach Bestätigung
 - Vorrat: `preview_stock_add` und `confirm_stock_add` (Kassenzettel, Foto oder Text; Packungen über `package_g` des Standardlebensmittels; Öl, Gewürze, Saucen mit `tracked: false`; ohne Datum Standardfrist für Frisches), `list_stock` (Filter Ort, bald fällig), `adjust_stock` (Korrektur, Used up, Discard)
 - `confirm_meal` zieht die Standardlebensmittel vom Vorrat ab (ältester Bestand zuerst, nie unter null, fehlt der Artikel kein Abzug) und meldet den Rest; ein Rezept einmal für alle gekochten Portionen
 - Nach dieser Änderung `neon deploy` ausführen; die URL bleibt gleich
+
+## **Rezept-Werkzeuge (22. November 2026, Version 1.3.0)**
+
+Auftrag Rodrigo vom 22. November 2026. Version 1.2.0 hatte die Rezept-Werkzeuge schon, war aber nie deployt; 1.3.0 ersetzt `save_recipe` durch Vorschau und Bestätigung und ergänzt den Rest.
+
+| Werkzeug | Zweck |
+|---|---|
+| `list_recipes` | Rezepte mit id, Titel, Kategorie, Proteinart, Portionen, kcal und Protein pro Portion |
+| `get_recipe` | Ein Rezept mit Zutaten (Menge, Mengenhinweis, Standardlebensmittel oder Schätzung) und Schritten |
+| `preview_recipe` | Neues oder (mit `id`) geändertes Rezept berechnen, fester Text mit Werten pro Portion, nichts gespeichert, gibt `preview_token` |
+| `confirm_recipe` | Rezept nach «ja» speichern (neu oder Änderung); zweimal bestätigt wird einmal gespeichert |
+| `delete_recipe` | Rezept in den Papierkorb (nur nach Bestätigung) |
+| `log_recipe` | Rezept als Mahlzeit vorschauen: `portions_eaten` (Standard 1), optional `scale` (1.2 = 20 % mehr von allem), `category`, `eaten_at`; für mehrere gekochte Portionen weiterhin `portions_cooked` und `schedule`. Gespeichert mit `confirm_meal` |
+| `delete_staple` | Standardlebensmittel entfernen (nur nach Bestätigung); abgelehnt, solange ein Rezept es verwendet, mit Namen der Rezepte |
+
+- Zutaten wie bei `preview_meal`: Standardlebensmittel über `staple_id` (Werte rechnet der Server), sonst Name mit kcal und Protein für die ganze Menge und Quelle `estimate` oder `label`; `unit_hint` als Text («2 EL», «1 Becher», «3 Scheiben»), `to_taste` für Salz und Gewürze
+- Schritte mit Platzhaltern `{i1}`, `{i2}` in der Reihenfolge der Zutaten; ein Platzhalter ohne Zutat wird abgelehnt
+- Rezeptinhalte deutsch, App-Oberfläche englisch
+- `preview_meal` mit `replaces_entry_id` (id aus `get_day`): «Heute danach» rechnet ohne den alten Eintrag; `confirm_meal` legt den neuen Eintrag an und verschiebt den alten in derselben SQL-Anweisung in den Papierkorb, der Vorratsabzug des alten Eintrags wird zurückgebucht
+- Vorratsabzüge des Connectors tragen jetzt die id des Eintrags (`inventory_move.food_entry_id`), wie die der App
+- Rezept-Token und Mahlzeit-Token sind getrennt: `confirm_meal` nimmt keinen Rezept-Token an und umgekehrt
+- Migration 0054: Seed-Rezepte 11 «Crispy Chicken Bowl (Airfryer)» (692 kcal, 77 g) und 12 «Rührei mit Cottage Cheese und Knäckebrot» (552 kcal, 45 g); die gleichnamigen Standardlebensmittel sind entfernt. Am 22. November auf production ausgeführt
+- 14 Funktionstests in functions/foodmcp.test.ts (vorher 10)
+
+**Für Rodrigo**: im Ordner der App `neon deploy` ausführen (die URL bleibt gleich), danach in claude.ai einen neuen Chat «Food Tracking» starten, damit Claude die neuen Werkzeuge sieht.
 
