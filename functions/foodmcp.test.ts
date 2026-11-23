@@ -130,7 +130,8 @@ describe('food connector', () => {
     expect((await call({ jsonrpc: '2.0', method: 'notifications/initialized' }, sql)).status).toBe(202)
     const tools = await call({ jsonrpc: '2.0', id: 2, method: 'tools/list' }, sql)
     expect(tools.json.result.tools.map((t: { name: string }) => t.name)).toEqual(['list_staples', 'add_staple', 'delete_staple', 'preview_meal', 'confirm_meal', 'get_day', 'delete_entry',
-      'list_recipes', 'get_recipe', 'preview_recipe', 'confirm_recipe', 'delete_recipe', 'log_recipe', 'list_fridge', 'eat_from_fridge', 'discard_fridge_item', 'preview_stock_add', 'confirm_stock_add', 'list_stock', 'adjust_stock'])
+      'list_recipes', 'get_recipe', 'preview_recipe', 'confirm_recipe', 'delete_recipe', 'log_recipe', 'list_fridge', 'eat_from_fridge', 'discard_fridge_item', 'preview_stock_add', 'confirm_stock_add', 'list_stock', 'adjust_stock',
+      'list_workouts', 'get_workout', 'exercise_history', 'list_templates', 'list_exercises', 'weekly_volume', 'body_weight', 'get_targets'])
     const preview = await call({ jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'preview_meal', arguments: { category: 'lunch', items: [{ staple_id: RICE.id, quantity: 75, unit: 'g' }] } } }, sql)
     expect(entries).toHaveLength(0)
     const text: string = preview.json.result.content[0].text
