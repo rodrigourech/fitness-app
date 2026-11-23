@@ -9,7 +9,7 @@ Stand 5. November 2026.
 - 1 bis 2 Wiederholungen in Reserve, kein Muskelversagen
 - Fokus Oberkörper, Beinvolumen bewusst tief (etwa 3 Sätze pro Woche und Muskel)
 - Seit 1. Nov 2026 Lateral Raise (Machine) statt Cable in Main Day A und Main Day B; Cable bleibt als Alternative
-- Mehr Volumen für Brust und Arme (Nov 2026): Butterfly in Main Day A und Cable Curl in Main Day B je 3 × 8–12, 90 s; Brust und Bizeps damit 9 Sätze pro Woche. Bei Zeitmangel im Training überspringen statt eigener Workouts
+- Mehr Volumen für Brust und Arme (Nov 2026): Cable Curl in Full Body B 3 × 8–12, 90 s, und in Full Body A eine Zusatzübung für die Brust (bis 23. Nov Butterfly, seither Push-Up); Brust und Bizeps damit 9 Sätze pro Woche. Bei Zeitmangel im Training überspringen statt eigener Workouts
 - Reihenfolge nach Stockwerk mit genau einem Wechsel (23. Nov 2026): Full Body A Lat Pulldown, Leg Press, Lateral Raise (unten), dann Incline Chest Press, Chest-Supported Row, Push-Up, Triceps Pushdown V-Grip (seit 9. Nov 2026 wieder Standard, Straight Bar als Alternative), Preacher Curl (oben); Full Body B Seated Row, Seated Leg Curl, Lateral Raise (unten), dann Chest Press, Seated Dip, Preacher Curl, Cable Curl, Close-Grip Push-Up (oben)
 - Bonus Day vorerst gestrichen und archiviert (Nov 2026), wiederherstellbar
 - Seit 23. Nov 2026: Butterfly aus Full Body A gestrichen (mag er nicht), dafür Push-Up 3 × 8–15 nach Chest-Supported Row; Full Body B neu am Ende Close-Grip Push-Up 2 × 8–15; Push-up-Griffe bestellt, bis dahin normale Liegestütze (Deficit Push-Up als Alternative). Brust bleibt bei 9 Sätzen pro Woche, Trizeps direkt 8
