@@ -112,4 +112,4 @@ Auftrag Rodrigo vom 23. November 2026. Im Coaching-Chat liest Claude Trainings, 
 - Sätze pro Muskelgruppe nach der Definition in docs/00_handover.md (Abschnitt Analytics-Definitionen); die App zeigt diese Zählung derzeit nicht als eigene Ansicht
 - Kreatin steht seit 23. November in `nutrition_targets` (Feld creatine), deshalb keine eigene Einstellung
 
-**Für Rodrigo**: Migration 0062 im Neon SQL Editor ausführen, danach im Ordner der App `neon deploy` (die URL bleibt gleich). In claude.ai die Projekt-Anweisung aus context/projekt-instruktionen.md übernehmen und einen neuen Coaching-Chat starten, damit Claude die neuen Werkzeuge sieht.
+Migration 0062 und die Projekt-Anweisung in claude.ai sind am 23. November nachgeführt. **Für Rodrigo**: im Ordner der App `neon deploy` (die URL bleibt gleich), danach einen neuen Coaching-Chat starten, damit Claude die neuen Werkzeuge sieht.
