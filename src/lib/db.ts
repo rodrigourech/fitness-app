@@ -442,8 +442,4 @@ export async function setMeta(key: string, value: string): Promise<void> {
   await db.meta.put({ key, value })
 }
 
-/** Display name of an exercise; variants are shown as "Parent – Variant". */
-export function displayName(exercise: Exercise, byId: Map<string, Exercise>): string {
-  const parent = exercise.parent_id ? byId.get(exercise.parent_id) : undefined
-  return parent ? `${parent.name} – ${exercise.name}` : exercise.name
-}
+export { displayName } from './core/exercise'

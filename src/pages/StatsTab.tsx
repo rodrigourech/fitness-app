@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Heatmap, Sparkline } from '../components/Charts'
 import Popover from '../components/Popover'
 import { CROWD_LABEL, CROWD_SLOTS, WEEKDAYS, crowdGrid, loadAnalytics, weeklyGoal, type AnalyticsData } from '../lib/analytics'
-import { bodyWeightSeries, todayLocal, type BodyWeightPoint } from '../lib/body'
+import { bodyWeightSeries, todayLocal, trendWeighIns, type BodyWeightPoint } from '../lib/body'
 import { MONTHS, dayOffset, goalProgress, roughDate, weightForecast, type Forecast } from '../lib/forecast'
 import { loadPlanProgress, type PlanProgressRow, type ProgressStatus } from '../lib/planProgress'
 import { formatMinutes, formatTopSet, workoutReports, type WorkoutReport } from '../lib/report'
@@ -85,12 +85,6 @@ const CHART_RANGES: { key: ChartRange; label: string; days: number | null }[] = 
 ]
 
 /** Weigh-ins that count for the trend: morning fasted or without a condition. */
-function trendPoints(series: BodyWeightPoint[]) {
-  return series
-    .filter((p) => p.entry.condition === null || p.entry.condition === 'morning_fasted')
-    .map((p) => ({ date: p.entry.measured_on, kg: p.entry.weight_kg }))
-}
-
 function addDays(date: string, days: number): Date {
   return new Date(Date.parse(`${date}T12:00:00`) + days * DAY)
 }
@@ -111,7 +105,7 @@ export function GoalWeightCard({ userId, className }: { userId: string; classNam
   )
 
   const now = latest.avg7
-  const forecast = weightForecast(trendPoints(series), today, goal)
+  const forecast = weightForecast(trendWeighIns(series), today, goal)
   const editor = editing && <GoalWeightEditor value={goal ?? Math.round(now)} onSave={(kg) => void saveGoalWeight(userId, kg).then(() => setEditing(false))} onCancel={() => setEditing(false)} />
   const editButton = (
     <button onClick={() => setEditing(true)} className="ml-2 rounded-lg border border-zinc-200 px-2 py-0.5 align-middle text-sm font-semibold tracking-normal text-accent-ink dark:border-zinc-700">

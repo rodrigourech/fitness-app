@@ -5,9 +5,9 @@
 // which exercises were done) but still decides whether a workout is a run.
 import { db, type Workout, type WorkoutExercise, type WorkoutSet } from './db'
 import { decidingReps } from './goal'
-import { progressionAdvice, type ProgressionAdvice } from './progression'
+import { nextWeightAfter, progressionAdvice, type ProgressionAdvice } from './progression'
 import { bestBefore, recordsOf } from './stats'
-import { lowerWeight, nextWeight } from './topset'
+import { nextWeight } from './topset'
 import { repetitionTargets } from './training'
 import { effective, recentTrainingSessions, type TrainingSession } from './workout'
 
@@ -185,7 +185,7 @@ export async function workoutReport(workoutId: string): Promise<WorkoutReport | 
     const targets = { target: we.target_reps ?? defaults.target, minimum: we.min_reps ?? defaults.minimum }
     const advice = progressionAdvice(sessions, targets, eff.isUnilateral, planned, eff.topSet) ?? 'hold'
     const step = eff.weightStep
-    const next = bw ? null : advice === 'hold' ? current : !step ? null : advice === 'increase' ? nextWeight(current, step) : lowerWeight(current, step)
+    const next = bw ? null : nextWeightAfter(advice, current, step)
     const best = await bestBefore(we.exercise_id, w.id, w.started_at)
     const record = work.some((s) => recordsOf(s, best).length > 0)
     if (record) records++
