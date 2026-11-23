@@ -5,14 +5,14 @@ import { consumeItems } from './kitchen'
 
 // Search and favourites under the day in Food (decision Rodrigo 22 November 2026, variant B «Liste mit +»):
 // favourites are the staples added most often in the last 60 days (automatic daily entries do not count), only from
-// snack-like entries: breakfast, snack, dessert and drinks, not from lunch, dinner or cheat meals, so cooking
-// ingredients like rice or chicken stay out (decision Rodrigo 23 November 2026);
+// snack-like entries: breakfast, snack and dessert, not from lunch, dinner, cheat meals or drinks (beer, wine), so
+// cooking ingredients like rice or chicken and alcohol stay out (decision Rodrigo 23 November 2026);
 // «+» adds one unit at once (100 g or 1 piece or serving) with undo, the name opens the amount sheet.
 
 export const FAVOURITE_DAYS = 60
 export const FAVOURITE_COUNT = 6
 /** Categories whose entries count for the favourites (shakes, snacks, fruit, crispbread with cottage cheese) */
-export const FAVOURITE_CATEGORIES: readonly FoodEntry['category'][] = ['breakfast', 'snack', 'dessert', 'drinks']
+export const FAVOURITE_CATEGORIES: readonly FoodEntry['category'][] = ['breakfast', 'snack', 'dessert']
 
 /** Default quantity for one tap: 100 g for products per 100 g, otherwise 1 piece or serving. */
 export function oneUnit(item: Pick<FoodItem, 'basis'>): number {

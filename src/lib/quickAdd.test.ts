@@ -46,7 +46,7 @@ describe('favourites and search (decision 22 November 2026)', () => {
     expect(favourites(entries, [{ ...chicken, deleted_at: '2026-11-22T00:00:00Z' }, skyr], '2026-11-22').map((i) => i.id)).toEqual(['s'])
   })
 
-  it('counts only snack-like entries: breakfast, snack, dessert, drinks (23 November 2026)', () => {
+  it('counts only snack-like entries: breakfast, snack, dessert; not meals, cheat or drinks (23 November 2026)', () => {
     const entries = [
       entry('1', '2026-11-22', ['c', 'r'], 'app', 'lunch'),
       entry('2', '2026-11-22', ['c', 'r'], 'app', 'dinner'),
@@ -54,6 +54,7 @@ describe('favourites and search (decision 22 November 2026)', () => {
       entry('4', '2026-11-22', ['w'], 'app', 'breakfast'),
       entry('5', '2026-11-22', ['s', 'k'], 'app', 'snack'),
       entry('6', '2026-11-21', ['s'], 'app', 'dessert'),
+      entry('7', '2026-11-21', ['r', 'r'], 'app', 'drinks'),
     ]
     const items = ['c', 'r', 'w', 's', 'k'].map((id) => ({ ...chicken, id, name: id }))
     expect(favourites(entries, items, '2026-11-22').map((i) => i.id)).toEqual(['s', 'k', 'w'])
