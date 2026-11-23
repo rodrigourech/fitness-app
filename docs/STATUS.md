@@ -14,6 +14,7 @@ Letzte Aktualisierung 5. November 2026
 
 ## Stand
 
+- 23. November (Nachmittag): Datenauswertung aller 17 Trainings (Fortschritt pro Übung, Sätze pro Muskel); Migration 0060 auf production: Chest-Supported Row Stufe 5 kg statt 10. Weitere kleine Anpassungen (Bizeps-Plan sofort, Chest Press in B 4 Sätze) zur Entscheidung bei Rodrigo
 - 23. November (Nachmittag): Migration 0059 auf production: Push-Up (A) und Close-Grip Push-Up (B) wieder entfernt, Körpergewicht nur am Calisthenics-Tag; Butterfly bleibt gestrichen. Vorgemerkt für 10. Dezember: A Cable Curl statt Preacher Curl, B Cable Curl vor Preacher Curl
 - 23. November (Nachmittag): Migration 0058 auf production: Cable Curl als Alternative zu Preacher Curl (Wunsch Rodrigo; Hinweis: ein Cable Curl in A statt Preacher Curl kommt mit frischerem Bizeps als in B und hebt den Cable-Curl-Verlauf, am 10. Dezember beachten)
 - 23. November (Nachmittag): Migration 0057 auf production, geprüft: Push-Up in Full Body A ans Ende (Wunsch Rodrigo, Pushdown-Verlauf ungestört bis 10. Dezember); Reihenfolge am 10. Dezember neu prüfen
