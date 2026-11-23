@@ -14,6 +14,7 @@ Letzte Aktualisierung 5. November 2026
 
 ## Stand
 
+- 23. November (Nachmittag): Favoriten im Food-Tab nur aus Breakfast, Snack und Dessert (src/lib/quickAdd.ts FAVOURITE_CATEGORIES), 252 Tests
 - 23. November (Nachmittag): Migration 0061 auf production: Full Body A Cable Curl statt Preacher Curl, Full Body B Cable Curl vor Preacher Curl (Bizeps-Plan vom 10. Dezember vorgezogen)
 - 23. November (Nachmittag): Datenauswertung aller 17 Trainings (Fortschritt pro Übung, Sätze pro Muskel); Migration 0060 auf production: Chest-Supported Row Stufe 5 kg statt 10. Weitere kleine Anpassungen (Bizeps-Plan sofort, Chest Press in B 4 Sätze) zur Entscheidung bei Rodrigo
 - 23. November (Nachmittag): Migration 0059 auf production: Push-Up (A) und Close-Grip Push-Up (B) wieder entfernt, Körpergewicht nur am Calisthenics-Tag; Butterfly bleibt gestrichen. Vorgemerkt für 10. Dezember: A Cable Curl statt Preacher Curl, B Cable Curl vor Preacher Curl
