@@ -12,6 +12,8 @@ Stand 5. November 2026.
 - Kauft vor allem bei Denner und Coop, manchmal Migros
 - Etwa 1 L Cola Zero pro Woche
 - Cheat Meals 1 bis 2 Mal pro Woche, zum Beispiel McDonald's oder Döner
+- Im Rührei verwendet er den Hirz Cottage Cheese Nature 1/4 Fett von Coop (Nov 2026); vorher Denner High Protein
+- Vorrat (Kitchen) soll bei jedem Eintrag immer automatisch abgezogen werden (Nov 2026)
 
 ## **Proteinshake**
 
