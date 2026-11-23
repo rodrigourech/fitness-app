@@ -163,10 +163,10 @@ export interface Creatine {
 
 /**
  * Rodrigo's values of 2 November 2026: need 2 400 (Mifflin-St Jeor estimate 2 440, rounded), deficit 400, target 2 000.
- * Creatine 5 g a day from 23 November 2026 (Rodrigo, 23 November 2026); a stored row without the key gets this default.
+ * Protein minimum 140 g (about 1.6 g/kg, decision 23 November 2026). Creatine 5 g a day from 23 November 2026 (Rodrigo, 23 November 2026); a stored row without the key gets this default.
  */
 export const DEFAULT_CREATINE: Creatine = { doseG: 5, since: '2026-11-23' }
-export const DEFAULT_NUTRITION: NutritionTargets = { needKcal: 2400, deficitKcal: 400, proteinG: 160, shake: true, espresso: true, creatine: DEFAULT_CREATINE }
+export const DEFAULT_NUTRITION: NutritionTargets = { needKcal: 2400, deficitKcal: 400, proteinG: 140, shake: true, espresso: true, creatine: DEFAULT_CREATINE }
 
 function parseCreatine(x: unknown): Creatine | null {
   if (x === null) return null
