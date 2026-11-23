@@ -28,7 +28,7 @@ import {
 } from '../lib/food'
 import { MONTHS } from '../lib/forecast'
 import { entryTotal, formatQuantity, itemsLine, matchesItems, parseAmount, perUnitText, quantityTag, scaleItem, stepOf, unitLabel } from '../lib/foodAmount'
-import { getNutrition, saveNutrition, type NutritionTargets } from '../lib/settings'
+import { getNutrition, saveNutrition, type Creatine, type NutritionTargets } from '../lib/settings'
 import { consumeItems } from '../lib/kitchen'
 import { recipeFromEntry, saveRecipe } from '../lib/recipe'
 import RecipesView from './food/RecipesView'
@@ -100,7 +100,7 @@ export default function FoodTab({ userId }: { userId: string }) {
   const dayColumn = (
     <>
       <KcalCard label={`kcal ${day === today ? 'today' : day === addDaysKey(today, -1) ? 'yesterday' : dayTitle(day, today)}`} eaten={totals.kcal} targets={targets} counted={counted} />
-      <ProteinRow eaten={totals.protein} minimum={targets.proteinG} />
+      <ProteinRow eaten={totals.protein} minimum={targets.proteinG} creatine={targets.creatine && day >= targets.creatine.since ? targets.creatine : null} />
       <div className="flex items-center justify-between">
         <button aria-label="Previous day" onClick={() => setDay(addDaysKey(day, -1))} className="rounded-lg px-3 py-1.5 text-lg">‹</button>
         <span className="text-sm font-semibold">{dayTitle(day, today)}</span>
@@ -272,19 +272,38 @@ function KcalCard({ label, eaten, targets, counted }: { label: string; eaten: nu
   )
 }
 
-/** Protein of a day as a minimum to reach (decision 15 November 2026); the bar is full at the minimum. */
-function ProteinRow({ eaten, minimum }: { eaten: number; minimum: number }) {
+function shortDay(day: string): string {
+  const d = new Date(`${day}T12:00:00`)
+  return `${d.getDate()} ${MONTHS[d.getMonth()]}`
+}
+
+/**
+ * Protein of a day as a minimum to reach (decision 15 November 2026); the bar is full at the minimum. From the creatine
+ * start day on a blue dot with the daily dose marks when Rodrigo began taking it (23 November 2026).
+ */
+function ProteinRow({ eaten, minimum, creatine }: { eaten: number; minimum: number; creatine: Creatine | null }) {
   return (
-    <section className="card flex items-center gap-4 px-4 py-3">
-      <div className="min-w-0 flex-1">
-        <div className="text-sm font-semibold text-zinc-600 dark:text-zinc-300">Protein</div>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-emerald-700/15">
-          <div className="h-full rounded-full bg-emerald-600 dark:bg-emerald-400" style={{ width: `${Math.min(100, (eaten / minimum) * 100)}%` }} />
+    <section className="card px-4 py-3">
+      <div className="flex items-center gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-semibold text-zinc-600 dark:text-zinc-300">Protein</div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-emerald-700/15">
+            <div className="h-full rounded-full bg-emerald-600 dark:bg-emerald-400" style={{ width: `${Math.min(100, (eaten / minimum) * 100)}%` }} />
+          </div>
+        </div>
+        <div className="shrink-0 text-2xl font-bold text-emerald-700 tabular-nums dark:text-emerald-300">
+          {eaten}<span className="ml-0.5 text-xs font-normal text-zinc-500"> g</span>
         </div>
       </div>
-      <div className="shrink-0 text-2xl font-bold text-emerald-700 tabular-nums dark:text-emerald-300">
-        {eaten}<span className="ml-0.5 text-xs font-normal text-zinc-500"> g</span>
-      </div>
+      {creatine && (
+        <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-zinc-200 pt-2 text-sm dark:border-zinc-800">
+          <span className="flex items-center gap-2 font-medium text-zinc-700 dark:text-zinc-200">
+            <span className="h-2.5 w-2.5 rounded-full bg-blue-600 dark:bg-blue-400" aria-hidden="true" />
+            Creatine <span className="tabular-nums">{creatine.doseG} g</span>
+          </span>
+          <span className="text-xs text-zinc-500 tabular-nums dark:text-zinc-400">since {shortDay(creatine.since)}</span>
+        </div>
+      )}
     </section>
   )
 }
@@ -367,6 +386,7 @@ function TargetsSheet({ userId, targets, today, onClose }: { userId: string; tar
   const [draft, setDraft] = useState(targets)
   const [need, setNeed] = useState(String(targets.needKcal))
   const [protein, setProtein] = useState(String(targets.proteinG))
+  const [dose, setDose] = useState(String(targets.creatine?.doseG ?? 5))
   const save = (next: NutritionTargets) => {
     setDraft(next)
     void saveNutrition(userId, next).then(() => ensureDailyEntries(userId, today, next))
@@ -432,6 +452,27 @@ function TargetsSheet({ userId, targets, today, onClose }: { userId: string; tar
             {toggle(draft.espresso, (v) => save({ ...draft, espresso: v }), 'Espressos Monday to Friday')}
           </div>
           <p className="pb-2.5 text-xs text-zinc-500 dark:text-zinc-400">Change or delete them on a day that differs. A day with only these entries counts as not filled in.</p>
+        </section>
+        <section className="rounded-xl border border-zinc-200 px-3 dark:border-zinc-700">
+          <div className="pt-2.5 text-[11px] font-semibold tracking-wide text-zinc-500 uppercase">Supplements</div>
+          <div className={row}>
+            <span><span className="block text-sm font-semibold">Creatine</span><span className="block text-xs text-zinc-500">Blue dot under Protein, no kcal</span></span>
+            {toggle(draft.creatine !== null, (v) => save({ ...draft, creatine: v ? (targets.creatine ?? { doseG: 5, since: today }) : null }), 'Creatine')}
+          </div>
+          {draft.creatine && (
+            <>
+              <div className={row}>
+                <span className="text-sm font-semibold">Daily dose</span>
+                {field(dose, setDose, (n) => draft.creatine && save({ ...draft, creatine: { ...draft.creatine, doseG: n } }), 'Creatine dose', 'g')}
+              </div>
+              <div className={row}>
+                <span className="text-sm font-semibold">Taken since</span>
+                <input type="date" aria-label="Creatine since" value={draft.creatine.since}
+                  onChange={(e) => { if (draft.creatine && /^\d{4}-\d{2}-\d{2}$/.test(e.target.value)) save({ ...draft, creatine: { ...draft.creatine, since: e.target.value } }) }}
+                  className="rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-sm tabular-nums dark:border-zinc-700" />
+              </div>
+            </>
+          )}
         </section>
       </div>
     </Sheet>

@@ -46,7 +46,10 @@ describe('food', () => {
   })
 
   it('nutrition targets are set by hand, invalid values fall back', async () => {
-    expect(parseNutrition({ needKcal: 2500.4, deficitKcal: 400, proteinG: 150, shake: false })).toEqual({ needKcal: 2500, deficitKcal: 400, proteinG: 150, shake: false, espresso: true })
+    expect(parseNutrition({ needKcal: 2500.4, deficitKcal: 400, proteinG: 150, shake: false })).toEqual({ needKcal: 2500, deficitKcal: 400, proteinG: 150, shake: false, espresso: true, creatine: { doseG: 5, since: '2026-11-23' } })
+    expect(parseNutrition({ creatine: null }).creatine).toBeNull()
+    expect(parseNutrition({ creatine: { doseG: 3, since: '2026-12-01' } }).creatine).toEqual({ doseG: 3, since: '2026-12-01' })
+    expect(parseNutrition({ creatine: { doseG: -1, since: 'x' } }).creatine).toEqual({ doseG: 5, since: '2026-11-23' })
     expect(parseNutrition({ needKcal: 800, deficitKcal: -5 })).toMatchObject({ needKcal: 2400, deficitKcal: 400 })
     expect(parseNutrition({ kcal: 2000 })).toEqual(DEFAULT_NUTRITION)
     expect(await getNutrition()).toEqual(DEFAULT_NUTRITION)

@@ -151,10 +151,31 @@ export interface NutritionTargets {
   shake: boolean
   /** 2 espressos with milk Monday to Friday at 09:30 */
   espresso: boolean
+  /** Creatine taken daily from a start day on (marker under Protein, no kcal); null = not taken */
+  creatine: Creatine | null
 }
 
-/** Rodrigo's values of 2 November 2026: need 2 400 (Mifflin-St Jeor estimate 2 440, rounded), deficit 400, target 2 000 */
-export const DEFAULT_NUTRITION: NutritionTargets = { needKcal: 2400, deficitKcal: 400, proteinG: 160, shake: true, espresso: true }
+export interface Creatine {
+  doseG: number
+  /** First day taken, YYYY-MM-DD */
+  since: string
+}
+
+/**
+ * Rodrigo's values of 2 November 2026: need 2 400 (Mifflin-St Jeor estimate 2 440, rounded), deficit 400, target 2 000.
+ * Creatine 5 g a day from 23 November 2026 (Rodrigo, 23 November 2026); a stored row without the key gets this default.
+ */
+export const DEFAULT_CREATINE: Creatine = { doseG: 5, since: '2026-11-23' }
+export const DEFAULT_NUTRITION: NutritionTargets = { needKcal: 2400, deficitKcal: 400, proteinG: 160, shake: true, espresso: true, creatine: DEFAULT_CREATINE }
+
+function parseCreatine(x: unknown): Creatine | null {
+  if (x === null) return null
+  if (typeof x !== 'object') return DEFAULT_CREATINE
+  const c = x as Partial<Record<keyof Creatine, unknown>>
+  const doseG = typeof c.doseG === 'number' && Number.isFinite(c.doseG) && c.doseG > 0 && c.doseG <= 50 ? Math.round(c.doseG * 10) / 10 : DEFAULT_CREATINE.doseG
+  const since = typeof c.since === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(c.since) ? c.since : DEFAULT_CREATINE.since
+  return { doseG, since }
+}
 
 export function parseNutrition(value: unknown): NutritionTargets {
   const v = (value ?? {}) as Partial<Record<keyof NutritionTargets, unknown>>
@@ -166,6 +187,7 @@ export function parseNutrition(value: unknown): NutritionTargets {
     proteinG: n(v.proteinG, 40, 300, DEFAULT_NUTRITION.proteinG),
     shake: b(v.shake, DEFAULT_NUTRITION.shake),
     espresso: b(v.espresso, DEFAULT_NUTRITION.espresso),
+    creatine: parseCreatine(v.creatine),
   }
 }
 
