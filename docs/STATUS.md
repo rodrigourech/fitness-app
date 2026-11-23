@@ -14,6 +14,7 @@ Letzte Aktualisierung 5. November 2026
 
 ## Stand
 
+- 23. November (Nachmittag): Migration 0059 auf production: Push-Up (A) und Close-Grip Push-Up (B) wieder entfernt, Körpergewicht nur am Calisthenics-Tag; Butterfly bleibt gestrichen. Vorgemerkt für 10. Dezember: A Cable Curl statt Preacher Curl, B Cable Curl vor Preacher Curl
 - 23. November (Nachmittag): Migration 0058 auf production: Cable Curl als Alternative zu Preacher Curl (Wunsch Rodrigo; Hinweis: ein Cable Curl in A statt Preacher Curl kommt mit frischerem Bizeps als in B und hebt den Cable-Curl-Verlauf, am 10. Dezember beachten)
 - 23. November (Nachmittag): Migration 0057 auf production, geprüft: Push-Up in Full Body A ans Ende (Wunsch Rodrigo, Pushdown-Verlauf ungestört bis 10. Dezember); Reihenfolge am 10. Dezember neu prüfen
 - 23. November (Mittag): Migration 0056 auf production, geprüft: Full Body A ohne Butterfly, Push-Up an Position 6 (3 × 8–15, 90 s); Full Body B mit Close-Grip Push-Up am Ende (2 × 8–15, 60 s); neue Übung Pull Down (Machine) (Technogym Pure Strength, Scheiben, 8–12, Top Set, Warm-up, Stufe 10 kg, Standort offen) als Alternative zu Lat Pulldown in beide Richtungen, 4 Videos vom Lat Pulldown übernommen. Kein App-Code nötig. Offen: Gewichtsstufe Pull Down nach dem ersten Training prüfen, Standort eintragen (Rodrigo), passendes Video für die Pure-Strength-Maschine
