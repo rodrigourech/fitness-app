@@ -8,7 +8,7 @@ import { bodyWeightSeries, todayLocal, type BodyWeightPoint } from '../lib/body'
 import { MONTHS, dayOffset, goalProgress, roughDate, weightForecast, type Forecast } from '../lib/forecast'
 import { loadPlanProgress, type PlanProgressRow, type ProgressStatus } from '../lib/planProgress'
 import { formatMinutes, formatTopSet, workoutReports, type WorkoutReport } from '../lib/report'
-import { DEFAULT_WEEKLY_GOAL, getGoalWeight, getWeeklyGoal, saveGoalWeight, saveWeeklyGoal, type WeeklyGoal } from '../lib/settings'
+import { DEFAULT_WEEKLY_GOAL, getGoalWeight, getNutrition, getWeeklyGoal, saveGoalWeight, saveWeeklyGoal, type WeeklyGoal } from '../lib/settings'
 import { formatDuration, paceSeconds } from '../lib/workout'
 import { ChangeChips, ReportView } from './ReportPage'
 
@@ -98,6 +98,7 @@ function addDays(date: string, days: number): Date {
 export function GoalWeightCard({ userId, className }: { userId: string; className?: string }) {
   const series = useLiveQuery(bodyWeightSeries, [])
   const goal = useLiveQuery(getGoalWeight, [])
+  const creatine = useLiveQuery(async () => (await getNutrition()).creatine, [])
   const [editing, setEditing] = useState(false)
   const [range, setRange] = useState<ChartRange>('3m')
   if (series === undefined || goal === undefined) return null
@@ -165,7 +166,11 @@ export function GoalWeightCard({ userId, className }: { userId: string; classNam
             </button>
           ))}
         </div>
-        <WeightGoalChart series={series} goal={goal} forecast={forecast} today={today} rangeDays={CHART_RANGES.find((r) => r.key === range)!.days} />
+        <WeightGoalChart series={series} goal={goal} forecast={forecast} today={today} rangeDays={CHART_RANGES.find((r) => r.key === range)!.days}
+          marker={creatine ? { x: dayOffset(creatine.since, today), label: 'Creatine' } : null} />
+        {creatine && <p className="mt-1.5 flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+          <span className="inline-block h-3 border-l-2 border-dashed border-blue-600 dark:border-blue-400" aria-hidden="true" />
+          Creatine since {Number(creatine.since.slice(8))} {MONTHS[Number(creatine.since.slice(5, 7)) - 1]} · water +0.5–1 kg at first</p>}
       </div>
     </section>
   )
@@ -202,7 +207,9 @@ function useWidth<T extends HTMLElement>(): [React.RefObject<T | null>, number] 
  * 7-day average, trend of the last 4 weeks up to the goal and the 80 % band to the right edge, clipped at the goal
  * (decisions 1 November 2026). The goal line is the bottom of the chart; month ticks on the axis.
  */
-function WeightGoalChart({ series, goal, forecast, today, rangeDays }: {
+function WeightGoalChart({ series, goal, forecast, today, rangeDays, marker = null }: {
+  /** Start of creatine as a dashed blue line (decision 23 November 2026): explains water weight in the weeks after */
+  marker?: { x: number; label: string } | null
   series: BodyWeightPoint[]
   goal: number | null
   forecast: Forecast | null
@@ -272,6 +279,13 @@ function WeightGoalChart({ series, goal, forecast, today, rangeDays }: {
           ))}
           <polyline fill="none" stroke="var(--viz-s1)" strokeWidth={2.4} strokeLinejoin="round" points={shown.map((p) => `${X(p.x).toFixed(1)},${Y(p.y).toFixed(1)}`).join(' ')} />
           {trend && <polyline fill="none" stroke="var(--viz-s1)" strokeOpacity={0.5} strokeWidth={2} points={trend} />}
+          {marker && marker.x >= x0 && marker.x <= x1 && (
+            <g className="text-blue-600 dark:text-blue-400">
+              <line x1={X(marker.x)} x2={X(marker.x)} y1={pt} y2={axisY} stroke="currentColor" strokeWidth={1.4} strokeDasharray="4 3" />
+              <text x={X(marker.x) + (X(marker.x) > width - pr - 60 ? -4 : 4)} y={pt + 9} fontSize={10} fontWeight={600} fill="currentColor"
+                textAnchor={X(marker.x) > width - pr - 60 ? 'end' : 'start'}>{marker.label}</text>
+            </g>
+          )}
           <circle cx={X(last.x)} cy={Y(last.y)} r={4} fill="var(--viz-s1)" />
           {goal !== null && (
             <g className="text-emerald-700 dark:text-emerald-400">
