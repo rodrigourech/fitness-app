@@ -1,4 +1,4 @@
-import type { Exercise, TemplateSet } from './db'
+import type { Exercise, TemplateSet } from './core/rows.ts'
 
 export const DEFAULT_TARGET_REPS = 10
 export const DEFAULT_MIN_REPS = 7

@@ -1,6 +1,6 @@
 // Body weight series without database access (shared by the app and the Food connector, decision 23 November 2026).
-import type { BodyWeight } from '../db'
-import type { WeighIn } from '../forecast'
+import type { BodyWeight } from './rows.ts'
+import type { WeighIn } from '../forecast.ts'
 
 export interface BodyWeightPoint {
   entry: BodyWeight

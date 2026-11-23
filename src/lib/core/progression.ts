@@ -1,7 +1,7 @@
 // Progression without database access (shared by the app and the Food connector, decision 23 November 2026).
-import type { Workout, WorkoutExercise, WorkoutSet } from '../db'
-import type { RepetitionTargets } from '../training'
-import { lowerWeight, nextWeight, topIndex } from '../topset'
+import type { Workout, WorkoutExercise, WorkoutSet } from './rows.ts'
+import type { RepetitionTargets } from '../training.ts'
+import { lowerWeight, nextWeight, topIndex } from '../topset.ts'
 
 export interface TrainingSession {
   workout: Workout
@@ -80,4 +80,37 @@ export function nextWeightAfter(advice: ProgressionAdvice, current: number, step
   if (advice === null || advice === 'hold') return current
   if (!step) return null
   return advice === 'increase' ? nextWeight(current, step) : lowerWeight(current, step)
+}
+
+/** Timed exercise (Plank): every planned work set held for the goal time of the template (decision 23 November 2026). */
+export function durationReached(sets: WorkoutSet[], goalS: number | null, plannedCount: number): boolean {
+  const work = workSets(sets)
+  return goalS !== null && goalS > 0 && work.length > 0 && work.length >= plannedCount && work.every((s) => (s.duration_s ?? 0) >= goalS)
+}
+
+/**
+ * Recent completed performances of the exact same exercise or variant over plain rows, newest first: the same rules as
+ * recentTrainingSessions in workout.ts (finished, not deleted, exercise not skipped, at least one work set, one per
+ * workout), for callers without IndexedDB such as the Food connector.
+ */
+export function trainingSessionsOf(exerciseId: string, rows: { workouts: Workout[]; wes: WorkoutExercise[]; sets: WorkoutSet[] }, limit = 2, templateId?: string | null): TrainingSession[] {
+  const byWorkout = new Map(rows.workouts.map((w) => [w.id, w]))
+  const candidates = rows.wes
+    .filter((we) => we.exercise_id === exerciseId && we.deleted_at === null && !we.skipped_at)
+    .flatMap((exercise) => {
+      const workout = byWorkout.get(exercise.workout_id)
+      return workout && workout.deleted_at === null && workout.finished_at !== null && (templateId === undefined || workout.template_id === templateId) ? [{ workout, exercise }] : []
+    })
+    .sort((a, b) => b.workout.started_at.localeCompare(a.workout.started_at))
+  const result: TrainingSession[] = []
+  const seen = new Set<string>()
+  for (const c of candidates) {
+    if (seen.has(c.workout.id)) continue
+    const sets = rows.sets.filter((s) => s.workout_exercise_id === c.exercise.id && s.deleted_at === null).sort((a, b) => a.position - b.position)
+    if (!sets.some((s) => s.set_type === 'working')) continue
+    seen.add(c.workout.id)
+    result.push({ ...c, sets })
+    if (result.length === limit) break
+  }
+  return result
 }

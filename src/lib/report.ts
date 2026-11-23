@@ -8,8 +8,11 @@ import { decidingReps } from './goal'
 import { nextWeightAfter, progressionAdvice, type ProgressionAdvice } from './progression'
 import { bestBefore, recordsOf } from './stats'
 import { nextWeight } from './topset'
+import { bestRepsSet, comparingReps, topSetOf, type TopSet } from './core/report'
 import { repetitionTargets } from './training'
 import { effective, recentTrainingSessions, type TrainingSession } from './workout'
+
+export { bestRepsSet, topSetOf, type TopSet } from './core/report'
 
 export interface ReportTotals {
   durationS: number | null
@@ -24,12 +27,6 @@ export interface ReportTotals {
 }
 
 /** Heaviest done work set; on a tie the one with the most reps (the weaker side on one-sided sets). */
-export interface TopSet {
-  weight: number
-  reps: number | null
-  repsLeft: number | null
-  repsRight: number | null
-}
 
 export interface ReportLine {
   exerciseId: string
@@ -106,38 +103,11 @@ async function previousOf(w: Workout): Promise<Workout | null> {
   return list[0] ?? null
 }
 
-/** Reps that count for comparing: reps, or the weaker side of a one-sided set. */
-function repsOf(s: Pick<WorkoutSet, 'reps' | 'reps_left' | 'reps_right'>): number {
-  if (s.reps !== null) return s.reps
-  const sides = [s.reps_left, s.reps_right].filter((r): r is number => r !== null)
-  return sides.length ? Math.min(...sides) : 0
-}
-
-/** Top set of the given work sets: heaviest weight, then most reps; null without a weight above 0. */
-export function topSetOf(sets: Pick<WorkoutSet, 'set_type' | 'weight' | 'reps' | 'reps_left' | 'reps_right'>[]): TopSet | null {
-  let best: (typeof sets)[number] | null = null
-  for (const s of sets) {
-    if (s.set_type !== 'working' || s.weight === null || s.weight <= 0) continue
-    if (!best || s.weight > best.weight! || (s.weight === best.weight && repsOf(s) > repsOf(best))) best = s
-  }
-  return best ? { weight: best.weight!, reps: best.reps, repsLeft: best.reps_left, repsRight: best.reps_right } : null
-}
-
-/** Bodyweight exercise: the work set with the most reps (weaker side for one-sided sets) as a top set with weight 0. */
-export function bestRepsSet(sets: Pick<WorkoutSet, 'set_type' | 'reps' | 'reps_left' | 'reps_right'>[]): TopSet | null {
-  let best: (typeof sets)[number] | null = null
-  for (const s of sets) {
-    if (s.set_type !== 'working' || repsOf(s) <= 0) continue
-    if (!best || repsOf(s) > repsOf(best)) best = s
-  }
-  return best ? { weight: 0, reps: best.reps, repsLeft: best.reps_left, repsRight: best.reps_right } : null
-}
-
 /** Change of the top set against the last time: «+2 reps», «+5 kg», «+5 kg · −1 rep», «=». */
 export function topSetChange(today: TopSet, last: TopSet): { text: string; tone: 'up' | 'down' | 'same' } {
   const kg = Math.round((today.weight - last.weight) * 10) / 10
-  const reps = repsOf({ reps: today.reps, reps_left: today.repsLeft, reps_right: today.repsRight })
-    - repsOf({ reps: last.reps, reps_left: last.repsLeft, reps_right: last.repsRight })
+  const reps = comparingReps({ reps: today.reps, reps_left: today.repsLeft, reps_right: today.repsRight })
+    - comparingReps({ reps: last.reps, reps_left: last.repsLeft, reps_right: last.repsRight })
   const sign = (n: number) => (n > 0 ? '+' : '−') + Math.abs(n)
   const parts = [
     ...(kg !== 0 ? [`${sign(kg)} kg`] : []),

@@ -1,27 +1,10 @@
 import { db, type WorkoutSet } from './db'
 import { repetitionTargets } from './training'
+import { effectiveReps, epley } from './core/stats'
 
 // Analytics definitions from docs/00_handover.md (Epley 1RM, volume) and docs/entscheidungen.md (progression).
 
-/** Reps counted for strength metrics; for one-sided sets the weaker side counts. */
-export function effectiveReps(s: Pick<WorkoutSet, 'reps' | 'reps_left' | 'reps_right'>): number | null {
-  if (s.reps !== null) return s.reps
-  if (s.reps_left !== null && s.reps_right !== null) return Math.min(s.reps_left, s.reps_right)
-  return s.reps_left ?? s.reps_right
-}
-
-/** Estimated one-rep max (Epley): w * (1 + r / 30). */
-export function epley(weight: number | null, reps: number | null): number | null {
-  if (weight === null || reps === null || weight <= 0 || reps <= 0) return null
-  return weight * (1 + reps / 30)
-}
-
-/** Volume of working sets: weight * reps, one-sided sets count both sides. */
-export function volume(sets: WorkoutSet[]): number {
-  return sets
-    .filter((s) => s.set_type === 'working' && s.deleted_at === null && s.weight !== null)
-    .reduce((sum, s) => sum + s.weight! * (s.reps ?? (s.reps_left ?? 0) + (s.reps_right ?? 0)), 0)
-}
+export { effectiveReps, epley, volume } from './core/stats'
 
 export interface Best {
   maxWeight: number

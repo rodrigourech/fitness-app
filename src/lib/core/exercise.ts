@@ -1,6 +1,6 @@
 // Exercise settings without database access (shared by the app and the Food connector, decision 23 November 2026).
-import type { Exercise } from '../db'
-import { exerciseTrainingSettings } from '../training'
+import type { Exercise } from './rows.ts'
+import { exerciseTrainingSettings } from '../training.ts'
 
 /** Display name of an exercise; variants are shown as "Parent – Variant". */
 export function displayName(exercise: Exercise, byId: Map<string, Exercise>): string {
@@ -46,4 +46,19 @@ export function effective(ex: Exercise, byId: Map<string, Exercise>) {
     weightStep: pairStep(ex.weight_step ?? parent?.weight_step ?? null, ex.equipment ?? parent?.equipment ?? null, ex.is_unilateral ?? parent?.is_unilateral ?? false),
     ...exerciseTrainingSettings(ex, byId),
   }
+}
+
+/** Warm-up reps: shown grey as a hint, saved as the lower value when the empty set is checked (decision 19 October 2026). */
+export const WARM_UP_REPS = 6
+export const WARM_UP_HINT = '6–7'
+
+/**
+ * Warm-up of plate-loaded machines (decision 5 November 2026): at the back-off weight for 4–5 easy reps, so after the
+ * warm-up only one plate goes on for the top set and comes off again for the back-off sets. Pin-loaded machines,
+ * dumbbells and the rest keep the warm-up share (50 %) with 6–7 reps.
+ */
+export function warmUpPlan(equipment: string | null, shares: { warmUp: number; backOff: number }): { share: number; reps: number; hint: string } {
+  return equipment === 'plate_loaded'
+    ? { share: shares.backOff / 100, reps: 4, hint: '4–5' }
+    : { share: shares.warmUp / 100, reps: WARM_UP_REPS, hint: WARM_UP_HINT }
 }

@@ -1,7 +1,7 @@
 // Analytics without database access (shared by the app and the Food connector, decision 23 November 2026).
 // Definitions: docs/00_handover.md (section Analytics-Definitionen). Weeks run Monday to Sunday in local time.
-import type { Exercise, TrackingType, Workout, WorkoutSet } from '../db'
-import { displayName } from './exercise'
+import type { Exercise, TrackingType, Workout, WorkoutSet } from './rows.ts'
+import { displayName } from './exercise.ts'
 
 export interface WorkoutInfo {
   id: string

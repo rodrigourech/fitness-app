@@ -1,6 +1,6 @@
-import type { WorkoutSet } from './db'
-import type { RepetitionTargets } from './training'
-import { nextWeight, topIndex } from './topset'
+import type { WorkoutSet } from './core/rows.ts'
+import type { RepetitionTargets } from './training.ts'
+import { nextWeight, topIndex } from './topset.ts'
 
 // Progress towards the next weight step (decision 5 November 2026, design «Progression im Workout», simpler version):
 // the deciding sets are the top set (the sets at the heaviest weight) or, without a top set, every work set. The weight

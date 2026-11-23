@@ -1,9 +1,9 @@
-import { db, displayName, type WorkoutSet } from './db'
+import { db, displayName } from './db'
 import { repetitionTargets } from './training'
 import { effective, recentTrainingSessions } from './workout'
-import { progressionAdvice, workSets } from './core/progression'
+import { durationReached, progressionAdvice, workSets } from './core/progression'
 
-export { belowMinimum, nextWeightAfter, progressionAdvice, workTotals, type ProgressionAdvice, type WorkTotals } from './core/progression'
+export { belowMinimum, durationReached, nextWeightAfter, progressionAdvice, workTotals, type ProgressionAdvice, type WorkTotals } from './core/progression'
 
 export interface ReadyExercise {
   exerciseId: string
@@ -15,11 +15,6 @@ export interface ReadyExercise {
   stage: boolean
 }
 
-/** Timed exercise (Plank): every planned work set held for the goal time of the template (decision 23 November 2026). */
-export function durationReached(sets: WorkoutSet[], goalS: number | null, plannedCount: number): boolean {
-  const work = workSets(sets)
-  return goalS !== null && goalS > 0 && work.length > 0 && work.length >= plannedCount && work.every((s) => (s.duration_s ?? 0) >= goalS)
-}
 
 /**
  * Exercises (variants separately) of the active workouts whose last performance in any workout reached the

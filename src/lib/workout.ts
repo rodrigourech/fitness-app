@@ -8,7 +8,7 @@ import { shareOf, topIndex } from './topset'
 import { repetitionTargets } from './training'
 import { effective } from './core/exercise'
 
-export { effective, isBodyweight, pairStep } from './core/exercise'
+export { effective, isBodyweight, pairStep, warmUpPlan, WARM_UP_HINT, WARM_UP_REPS } from './core/exercise'
 export type { TrainingSession } from './core/progression'
 
 // Workout logging. A workout copies its template at start; later template edits do not affect it.
@@ -359,21 +359,6 @@ export async function switchExercise(we: WorkoutExercise): Promise<void> {
 /** Middle of the rep range, rounded down: the start value of the reps fields. */
 export function midReps(minimum: number, maximum: number): number {
   return Math.floor((minimum + maximum) / 2)
-}
-
-/** Warm-up reps: shown grey as a hint, saved as the lower value when the empty set is checked (decision 19 October 2026). */
-export const WARM_UP_REPS = 6
-export const WARM_UP_HINT = '6–7'
-
-/**
- * Warm-up of plate-loaded machines (decision 5 November 2026): at the back-off weight for 4–5 easy reps, so after the
- * warm-up only one plate goes on for the top set and comes off again for the back-off sets. Pin-loaded machines,
- * dumbbells and the rest keep the warm-up share (50 %) with 6–7 reps.
- */
-export function warmUpPlan(equipment: string | null, shares: { warmUp: number; backOff: number }): { share: number; reps: number; hint: string } {
-  return equipment === 'plate_loaded'
-    ? { share: shares.backOff / 100, reps: 4, hint: '4–5' }
-    : { share: shares.warmUp / 100, reps: WARM_UP_REPS, hint: WARM_UP_HINT }
 }
 
 /** Warm-up set W: weight and reps left empty; the app shows the recommended weight and 6–7 reps in grey. */
