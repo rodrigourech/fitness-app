@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db, type WorkoutSet } from './db'
-import { belowMinimum, progressionAdvice, readyToIncrease, workTotals } from './progression'
+import { belowMinimum, durationReached, progressionAdvice, readyToIncrease, workTotals } from './progression'
 import { importSeedIfNeeded } from './seed'
 import { createTemplate, addTemplateExercise } from './template'
 import { recentTrainingSessions, type TrainingSession } from './workout'
@@ -105,5 +105,19 @@ describe('shared history', () => {
     await db.workout_exercise.update(original.exercise.id, { skipped_at: 'skipped' })
     await db.workout_exercise.update('duplicate-entry', { skipped_at: 'skipped' })
     expect(await recentTrainingSessions(ex.id)).toEqual([])
+  })
+})
+
+describe('bodyweight and timed exercises (23 November 2026)', () => {
+  it('bodyweight sets without kg reach the next stage at Max reps and never ask to reduce', () => {
+    expect(progressionAdvice([session([10, 10, 10], { weight: null })], targets, false, 3)).toBe('increase')
+    expect(progressionAdvice([session([5, 5, 5], { weight: null }), session([5, 5, 5], { weight: null })], targets, false, 3)).toBe('hold')
+  })
+  it('a plank reaches the next stage when every planned set held the goal time', () => {
+    const plank = (secs: number[]) => secs.map((d, i) => set(null, i, { weight: null, duration_s: d }))
+    expect(durationReached(plank([60, 62]), 60, 2)).toBe(true)
+    expect(durationReached(plank([60, 45]), 60, 2)).toBe(false)
+    expect(durationReached(plank([60]), 60, 2)).toBe(false)
+    expect(durationReached(plank([60, 60]), null, 2)).toBe(false)
   })
 })

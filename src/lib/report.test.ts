@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db, type WorkoutSet } from './db'
-import { changeCounts, formatMinutes, formatTopSet, formatVolume, nextTimeSummary, percentChange, topSetChange, topSetOf, workoutReport, workoutReports, type ReportLine } from './report'
+import { bestRepsSet, changeCounts, formatMinutes, formatTopSet, formatVolume, nextTimeSummary, percentChange, topSetChange, topSetOf, workoutReport, workoutReports, type ReportLine } from './report'
 import { importSeedIfNeeded } from './seed'
 import { finishWorkout, startWorkout, toggleSetDone, updateSet } from './workout'
 
@@ -113,5 +113,15 @@ describe('report summaries', () => {
   it('formats a top set', () => {
     expect(formatTopSet({ weight: 4.5, reps: null, repsLeft: 12, repsRight: 11 }, true)).toBe('4.5 × 12/11')
     expect(formatTopSet({ weight: 39, reps: 10, repsLeft: null, repsRight: null }, false)).toBe('39 × 10')
+  })
+})
+
+describe('bodyweight report lines (23 November 2026)', () => {
+  it('takes the set with the most reps and shows reps only', () => {
+    const r = (reps: number) => ({ set_type: 'working' as const, reps, reps_left: null, reps_right: null })
+    const top = bestRepsSet([r(5), r(7), r(6)])!
+    expect(top).toMatchObject({ weight: 0, reps: 7 })
+    expect(formatTopSet(top, false)).toBe('7 reps')
+    expect(bestRepsSet([])).toBeNull()
   })
 })

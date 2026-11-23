@@ -51,6 +51,8 @@ export interface ReportLine {
   repsToGo?: number | null
   /** Hold: Max reps and the next weight step (null without a known step) */
   goal?: { target: number; up: number | null; topSet: boolean } | null
+  /** Bodyweight exercise: top set = most reps, weight 0, progress by stages (decision 23 November 2026) */
+  bodyweight?: boolean
 }
 
 export interface WorkoutReport {
@@ -121,6 +123,16 @@ export function topSetOf(sets: Pick<WorkoutSet, 'set_type' | 'weight' | 'reps' |
   return best ? { weight: best.weight!, reps: best.reps, repsLeft: best.reps_left, repsRight: best.reps_right } : null
 }
 
+/** Bodyweight exercise: the work set with the most reps (weaker side for one-sided sets) as a top set with weight 0. */
+export function bestRepsSet(sets: Pick<WorkoutSet, 'set_type' | 'reps' | 'reps_left' | 'reps_right'>[]): TopSet | null {
+  let best: (typeof sets)[number] | null = null
+  for (const s of sets) {
+    if (s.set_type !== 'working' || repsOf(s) <= 0) continue
+    if (!best || repsOf(s) > repsOf(best)) best = s
+  }
+  return best ? { weight: 0, reps: best.reps, repsLeft: best.reps_left, repsRight: best.reps_right } : null
+}
+
 /** Change of the top set against the last time: «+2 reps», «+5 kg», «+5 kg · −1 rep», «=». */
 export function topSetChange(today: TopSet, last: TopSet): { text: string; tone: 'up' | 'down' | 'same' } {
   const kg = Math.round((today.weight - last.weight) * 10) / 10
@@ -154,12 +166,14 @@ export async function workoutReport(workoutId: string): Promise<WorkoutReport | 
     const eff = effective(ex, byId)
     if (eff.trackingType !== 'weight_reps') continue
     const main = ex.parent_id ? byId.get(ex.parent_id) ?? ex : ex
+    const bw = eff.bodyweight
+    const pick = bw ? bestRepsSet : topSetOf
     const before = await recentTrainingSessions(we.exercise_id, undefined, w.id, 1)
-    const last = before[0] ? topSetOf(before[0].sets) : null
+    const last = before[0] ? pick(before[0].sets) : null
     const mine = parts.sets.filter((s) => s.workout_exercise_id === we.id && s.deleted_at === null).sort((a, b) => a.position - b.position)
     const work = mine.filter((s) => s.set_type === 'working').map((s) => ({ ...s, completed_at: s.completed_at ?? w.finished_at }))
     const current = Math.max(0, ...work.map((s) => s.weight ?? 0))
-    if (we.skipped_at || !work.length || current <= 0) {
+    if (we.skipped_at || !work.length || (bw ? pick(work) === null : current <= 0)) {
       lines.push({ exerciseId: ex.id, name: main.name, status: 'skipped', unilateral: eff.isUnilateral, today: null, last, current: 0, next: null, advice: 'hold', record: false })
       continue
     }
@@ -171,14 +185,14 @@ export async function workoutReport(workoutId: string): Promise<WorkoutReport | 
     const targets = { target: we.target_reps ?? defaults.target, minimum: we.min_reps ?? defaults.minimum }
     const advice = progressionAdvice(sessions, targets, eff.isUnilateral, planned, eff.topSet) ?? 'hold'
     const step = eff.weightStep
-    const next = advice === 'hold' ? current : !step ? null : advice === 'increase' ? nextWeight(current, step) : lowerWeight(current, step)
+    const next = bw ? null : advice === 'hold' ? current : !step ? null : advice === 'increase' ? nextWeight(current, step) : lowerWeight(current, step)
     const best = await bestBefore(we.exercise_id, w.id, w.started_at)
     const record = work.some((s) => recordsOf(s, best).length > 0)
     if (record) records++
     const todayReps = decidingReps(work, eff.topSet, eff.isUnilateral)
     const repsToGo = advice === 'hold' && todayReps !== null ? Math.max(0, targets.target - todayReps) : null
     const goal = advice === 'hold' ? { target: targets.target, up: step ? nextWeight(current, step) : null, topSet: eff.topSet } : null
-    lines.push({ exerciseId: ex.id, name: main.name, status: 'done', unilateral: eff.isUnilateral, today: topSetOf(work), last, current, next, advice, record, repsToGo, goal })
+    lines.push({ exerciseId: ex.id, name: main.name, status: 'done', unilateral: eff.isUnilateral, today: pick(work), last, current, next, advice, record, repsToGo, goal, ...(bw ? { bodyweight: true } : {}) })
   }
   const kind = totals.volume === 0 && totals.distanceKm > 0 ? 'run' : 'strength'
   return { workout: w, name: w.template_name_snapshot ?? 'Workout', kind, totals, previous, lines, records }
@@ -217,7 +231,8 @@ export function formatVolume(kg: number): string {
 /** Top set as «45 × 10» or, one-sided, «4.5 × 12/12». */
 export function formatTopSet(t: TopSet, unilateral: boolean): string {
   const reps = unilateral || t.reps === null ? `${t.repsLeft ?? '–'}/${t.repsRight ?? '–'}` : `${t.reps}`
-  return `${Math.round(t.weight * 10) / 10} × ${reps}`
+  // Bodyweight top set (weight 0): only the reps
+  return t.weight <= 0 ? `${reps} reps` : `${Math.round(t.weight * 10) / 10} × ${reps}`
 }
 
 export interface ChangeCounts {

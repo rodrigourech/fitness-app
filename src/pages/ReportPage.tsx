@@ -123,7 +123,7 @@ export function NextPill({ line }: { line: ReportLine }) {
     // What is still missing for the next step (decision 5 November 2026): «3 reps to ↑ 52», without a top set «all sets 15 for ↑ 22.5»
     const g = line.goal
     if (g && line.repsToGo) {
-      const up = g.up !== null ? kg(g.up) : 'heavier'
+      const up = line.bodyweight ? 'next stage' : g.up !== null ? kg(g.up) : 'heavier'
       return (
         <span className="text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
           {g.topSet ? `${line.repsToGo} ${line.repsToGo === 1 ? 'rep' : 'reps'} to ` : `all sets ${g.target} for `}
@@ -131,10 +131,11 @@ export function NextPill({ line }: { line: ReportLine }) {
         </span>
       )
     }
-    return <span className="text-xs text-zinc-500 tabular-nums dark:text-zinc-400">next {kg(line.current)} kg</span>
+    return <span className="text-xs text-zinc-500 tabular-nums dark:text-zinc-400">{line.bodyweight ? 'same stage' : `next ${kg(line.current)} kg`}</span>
   }
   const up = line.advice === 'increase'
-  const text = line.next === null ? (up ? 'increase' : 'reduce') : `${kg(line.current)} → ${kg(line.next)} kg`
+  // Bodyweight (decision 23 November 2026): the next stage of the movement instead of a weight
+  const text = line.bodyweight ? 'next stage' : line.next === null ? (up ? 'increase' : 'reduce') : `${kg(line.current)} → ${kg(line.next)} kg`
   return <span className={`${base} ${up ? 'bg-emerald-700 text-white dark:bg-emerald-600' : 'bg-blue-600 text-white'}`}>{up ? '↑' : '↓'} {text}</span>
 }
 

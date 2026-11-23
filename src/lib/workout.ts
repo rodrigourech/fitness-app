@@ -265,7 +265,9 @@ function prefilledSets(
           reps: null,
           reps_left: null,
           reps_right: null,
-          duration_s: p.target_duration_s,
+          // A timed hold starts empty the first time (decision 23 November 2026): the template time is the goal for the
+          // next stage (Plank 60 s), not a value to check off unchanged
+          duration_s: eff.trackingType === 'duration' ? null : p.target_duration_s,
           distance_km: p.target_distance_km,
         }
     sets.push({
@@ -579,11 +581,22 @@ export function pairStep(step: number | null, equipment: string | null, unilater
   return step !== null && equipment === 'dumbbell' && !unilateral ? step * 2 : step
 }
 
+/**
+ * Bodyweight exercise (Calisthenics Bonus, decision 23 November 2026): reps without kg. Progress means the next stage
+ * of the movement (band → free, push-up → deficit) instead of more weight.
+ */
+export function isBodyweight(trackingType: string, equipment: string | null): boolean {
+  return trackingType === 'weight_reps' && equipment === 'bodyweight'
+}
+
 /** Effective tracking settings and device settings of an exercise (variants inherit from the parent). */
 export function effective(ex: Exercise, byId: Map<string, Exercise>) {
   const parent = ex.parent_id ? byId.get(ex.parent_id) : undefined
+  const trackingType = ex.tracking_type ?? parent?.tracking_type ?? 'weight_reps'
   return {
-    trackingType: ex.tracking_type ?? parent?.tracking_type ?? 'weight_reps',
+    trackingType,
+    /** Reps without kg (equipment «bodyweight», decision 23 November 2026): no kg column, progression by stages */
+    bodyweight: isBodyweight(trackingType, ex.equipment ?? parent?.equipment ?? null),
     isUnilateral: ex.is_unilateral ?? parent?.is_unilateral ?? false,
     floor: ex.floor ?? parent?.floor ?? null,
     seat: ex.seat ?? parent?.seat ?? null,

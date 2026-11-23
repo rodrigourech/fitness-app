@@ -335,9 +335,9 @@ export default function ExerciseSheet({ exerciseId, onClose }: Props) {
         <Group title="Training">
           <List>
             {weightReps && <Row label="Reps" value={`${eff.minReps}–${eff.targetReps}`} onClick={() => setPage('reps')} />}
-            {weightReps && <SwitchRow label="Warm-up set" checked={eff.warmUp} onChange={(v) => void updateExercise(ex, { warm_up: v })} />}
-            {weightReps && <SwitchRow label="Top set" checked={eff.topSet} onChange={(v) => void updateExercise(ex, { top_set: v })} />}
-            {weightReps && <Row label="Weight step" value={stepKg === null ? 'Not set' : pair ? `${stepKg} kg per dumbbell` : `${stepKg} kg${lbStep !== null ? ` (${lbStep} lb)` : ''}`} muted={stepKg === null} onClick={() => setPage('step')} />}
+            {weightReps && !eff.bodyweight && <SwitchRow label="Warm-up set" checked={eff.warmUp} onChange={(v) => void updateExercise(ex, { warm_up: v })} />}
+            {weightReps && !eff.bodyweight && <SwitchRow label="Top set" checked={eff.topSet} onChange={(v) => void updateExercise(ex, { top_set: v })} />}
+            {weightReps && !eff.bodyweight && <Row label="Weight step" value={stepKg === null ? 'Not set' : pair ? `${stepKg} kg per dumbbell` : `${stepKg} kg${lbStep !== null ? ` (${lbStep} lb)` : ''}`} muted={stepKg === null} onClick={() => setPage('step')} />}
             <Row label="Rest" value={restS ? formatDuration(restS) : 'Off'} muted={!restS} onClick={() => setPage('rest')} />
             <Row
               label="Alternative"
@@ -429,7 +429,7 @@ function Detail({ title, onBack, note, children }: { title: string; onBack: () =
   )
 }
 
-const EQUIPMENT = [['plate_loaded', 'Plate'], ['pin_loaded', 'Pin'], ['dumbbell', 'Dumbbell']] as const
+const EQUIPMENT = [['plate_loaded', 'Plate'], ['pin_loaded', 'Pin'], ['dumbbell', 'Dumbbell'], ['bodyweight', 'Bodyweight']] as const
 
 function chip(active: boolean): string {
   return active ? 'bg-accent text-accent-fg' : 'bg-zinc-100 dark:bg-zinc-800'

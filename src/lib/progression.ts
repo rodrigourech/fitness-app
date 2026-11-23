@@ -9,6 +9,14 @@ export interface ReadyExercise {
   templateName: string
   name: string
   lastDate: string
+  /** Bodyweight or timed exercise: the next stage of the movement instead of more weight (decision 23 November 2026) */
+  stage: boolean
+}
+
+/** Timed exercise (Plank): every planned work set held for the goal time of the template (decision 23 November 2026). */
+export function durationReached(sets: WorkoutSet[], goalS: number | null, plannedCount: number): boolean {
+  const work = workSets(sets)
+  return goalS !== null && goalS > 0 && work.length > 0 && work.length >= plannedCount && work.every((s) => (s.duration_s ?? 0) >= goalS)
 }
 
 export type ProgressionAdvice = 'increase' | 'hold' | 'reduce' | null
@@ -95,7 +103,9 @@ export async function readyToIncrease(): Promise<ReadyExercise[]> {
     if (!live.has(te.template_id) || seen.has(te.exercise_id)) continue
     seen.add(te.exercise_id)
     const ex = byId.get(te.exercise_id)
-    if (!ex || effective(ex, byId).trackingType !== 'weight_reps') continue
+    if (!ex) continue
+    const eff = effective(ex, byId)
+    if (eff.trackingType !== 'weight_reps' && eff.trackingType !== 'duration') continue
     const sessions = await recentTrainingSessions(te.exercise_id)
     const latest = sessions[0]
     if (!latest) continue
@@ -104,13 +114,17 @@ export async function readyToIncrease(): Promise<ReadyExercise[]> {
       ? await db.template_exercise.where('template_id').equals(latest.workout.template_id).filter((row) => row.exercise_id === te.exercise_id && row.deleted_at === null).first()
       : undefined
     const planned = (await db.template_set.where('template_exercise_id').equals((source ?? te).id).toArray()).filter((s) => s.deleted_at === null && s.set_type === 'working')
-    const defaults = repetitionTargets(ex, byId, planned)
-    const targets = { target: latest.exercise.target_reps ?? defaults.target, minimum: latest.exercise.min_reps ?? defaults.minimum }
     const plannedCount = planned.length || workSets(latest.sets).length
-    const eff = effective(ex, byId)
-    if (progressionAdvice(sessions, targets, eff.isUnilateral, plannedCount, eff.topSet) !== 'increase') continue
+    if (eff.trackingType === 'duration') {
+      const goal = planned.reduce<number | null>((m, s) => (s.target_duration_s === null ? m : Math.max(m ?? 0, s.target_duration_s)), null)
+      if (!durationReached(latest.sets, goal, plannedCount)) continue
+    } else {
+      const defaults = repetitionTargets(ex, byId, planned)
+      const targets = { target: latest.exercise.target_reps ?? defaults.target, minimum: latest.exercise.min_reps ?? defaults.minimum }
+      if (progressionAdvice(sessions, targets, eff.isUnilateral, plannedCount, eff.topSet) !== 'increase') continue
+    }
     out.push({ exerciseId: ex.id, templateId: te.template_id, templateName: templates.find((t) => t.id === te.template_id)!.name,
-      name: displayName(ex, byId), lastDate: latest.workout.started_at })
+      name: displayName(ex, byId), lastDate: latest.workout.started_at, stage: eff.bodyweight || eff.trackingType === 'duration' })
   }
   return out.sort((a, b) => a.name.localeCompare(b.name))
 }

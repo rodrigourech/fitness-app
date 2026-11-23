@@ -370,7 +370,7 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
   const { we, exercise, name, variant, topSet, weightStep, sets, previous, repsHint, links, best, advice, targets, switchTo, originalName } = block
   const eff = exercise
     ? effective(exercise, byId)
-    : { trackingType: 'weight_reps', isUnilateral: false, equipment: null as string | null, floor: null, seat: null, footPosition: null, setupNote: null, focusMuscles: [] as string[], focusCue: null, instructions: null, restS: null }
+    : { trackingType: 'weight_reps', bodyweight: false, isUnilateral: false, equipment: null as string | null, floor: null, seat: null, footPosition: null, setupNote: null, focusMuscles: [] as string[], focusCue: null, instructions: null, restS: null }
 
   const [progressOpen, setProgressOpen] = useState(false)
 
@@ -492,12 +492,14 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
   const warmPlan = warmUpPlan(eff.equipment, shares)
   const warmKg = tt === 'weight_reps' ? warmUpWeight(current, warmPlan.share, weightStep) : null
   // The column only appears when it has something to say (warm-up set or top set)
-  const showRec = tt === 'weight_reps' && (sets.some((s) => s.set_type === 'warmup') || recs.some((r) => r !== null))
+  const showRec = tt === 'weight_reps' && !eff.bodyweight && (sets.some((s) => s.set_type === 'warmup') || recs.some((r) => r !== null))
   const cols =
     tt === 'duration'
       ? 'grid-cols-[1.75rem_1fr_6rem_2.75rem]'
       : tt === 'distance_duration'
         ? 'grid-cols-[1.75rem_1fr_3.25rem_4rem_4rem_2.5rem]'
+        : eff.bodyweight
+          ? eff.isUnilateral ? 'grid-cols-[1.75rem_1fr_3.75rem_3.75rem_2.75rem]' : 'grid-cols-[1.75rem_1fr_5rem_2.75rem]'
         : eff.isUnilateral
           ? showRec ? 'grid-cols-[1.75rem_1fr_3rem_3.25rem_2.75rem_2.75rem_2.5rem]' : 'grid-cols-[1.75rem_1fr_3.75rem_3.25rem_3.25rem_2.75rem]'
           : showRec ? 'grid-cols-[1.75rem_1fr_3rem_4rem_3.25rem_2.5rem]' : 'grid-cols-[1.75rem_1fr_4.5rem_3.75rem_2.75rem]'
@@ -541,7 +543,7 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
               <span aria-hidden="true">⇄</span>
             </button>
           )}
-          {tt === 'weight_reps' && <ProgressButton state={progress} onClick={() => setProgressOpen(true)} />}
+          {tt === 'weight_reps' && <ProgressButton state={progress} stage={eff.bodyweight} onClick={() => setProgressOpen(true)} />}
           <InfoButton setup={eff.setupNote} steps={eff.instructions} cue={eff.focusCue} links={links} onEdit={() => onOpen(we.exercise_id)} />
         </span>
       </div>
@@ -564,7 +566,7 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
         )}
         {tt === 'weight_reps' && (
           <>
-            <span className="text-center">kg</span>
+            {!eff.bodyweight && <span className="text-center">kg</span>}
             {/* Max reps for the next weight in the column head (decision 9 November 2026, design E2) */}
             {eff.isUnilateral ? (
               <>
@@ -593,6 +595,7 @@ function ExerciseCard({ block, index, byId, shares, onOpen, open, done, onToggle
               previous={compactPrevious(prev, tt, eff.isUnilateral)}
               hint={warm ? undefined : hintOf(hintWorking[workingNo - 1] ?? hintWorking.at(-1))}
               trackingType={tt}
+              bodyweight={eff.bodyweight}
               unilateral={eff.isUnilateral}
               restSeconds={we.rest_s ?? eff.restS}
               minimum={tt === 'weight_reps' && !warm ? targets.minimum : null}
@@ -718,12 +721,12 @@ type ProgressState = 'up' | 'down' | 'none'
 const roundButton = 'flex h-8 min-w-8 shrink-0 items-center justify-center gap-0.5 rounded-full border px-2 text-sm font-semibold'
 
 /** Progress button (card variant A): opens the progression sheet; green ↑ or indigo ↓ when the weight should change. */
-function ProgressButton({ state, onClick }: { state: ProgressState; onClick: () => void }) {
+function ProgressButton({ state, stage = false, onClick }: { state: ProgressState; stage?: boolean; onClick: () => void }) {
   const tone =
     state === 'up' ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
       : state === 'down' ? 'border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
       : 'border-zinc-300 text-zinc-500 dark:border-zinc-600 dark:text-zinc-400'
-  const label = state === 'up' ? 'Progression, increase weight' : state === 'down' ? 'Progression, check weight' : 'Progression'
+  const label = state === 'up' ? (stage ? 'Progression, next stage' : 'Progression, increase weight') : state === 'down' ? 'Progression, check weight' : 'Progression'
   return (
     <button onClick={onClick} aria-label={label} title={label} className={`${roundButton} ${tone}`}>
       <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -839,6 +842,8 @@ interface SetRowProps {
   mark: boolean
   previous: [string, string]
   trackingType: string
+  /** Bodyweight exercise: reps only, no kg field (decision 23 November 2026) */
+  bodyweight?: boolean
   unilateral: boolean
   restSeconds: number | null
   /** Minimum reps; entered reps below it are marked orange */
@@ -854,7 +859,7 @@ interface SetRowProps {
   hint?: RepsHint
 }
 
-function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, restSeconds, minimum, records, good, warmUp, deciding = false, hint }: SetRowProps) {
+function SetRow({ set, label, rec, mark, previous, trackingType, bodyweight = false, unilateral, restSeconds, minimum, records, good, warmUp, deciding = false, hint }: SetRowProps) {
   const done = set.completed_at !== null
   // Short hint when ✓ is tapped on empty reps without a value from last time (decision 19 November 2026)
   const [needReps, setNeedReps] = useState(false)
@@ -967,11 +972,11 @@ function SetRow({ set, label, rec, mark, previous, trackingType, unilateral, res
       )}
       {trackingType === 'weight_reps' && (
         <>
-          <span className="relative">
+          {!bodyweight && <span className="relative">
             <Field label="Weight kg" inputMode="decimal" value={formatNumber(set.weight)} onCommit={numberCommit('weight', false)} mark={mark} clearOnFocus
               placeholder={warm && rec?.kind === 'warm' ? (rec.estimate ? `≈ ${rec.kg}` : String(rec.kg)) : undefined} />
             {mark && <span aria-hidden="true" className="pointer-events-none absolute top-0 right-1 text-[11px] font-extrabold text-emerald-600">↑</span>}
-          </span>
+          </span>}
           {unilateral ? (
             <>
               <BelowHint show={deciding && belowMinimum(set.reps_left, minimum)}>

@@ -70,7 +70,9 @@ export default function ProgressionSheet({ exerciseId, includeVariants = false, 
   const counting = new Set(decidingIndexes(work, eff.topSet))
   const top = Math.max(0, ...work.filter((_, i) => counting.has(i)).map((s) => s.weight ?? 0))
   const step = eff.weightStep
-  const next = top > 0 && step ? `${formatNumber(nextWeight(top, step))} kg` : 'heavier'
+  // Bodyweight exercises progress by the next stage of the movement, not by kg (decision 23 November 2026)
+  const bw = eff.bodyweight
+  const next = bw ? 'next stage' : top > 0 && step ? `${formatNumber(nextWeight(top, step))} kg` : 'heavier'
   const hit = (s: (typeof work)[number]) => s.done && (s.reps ?? 0) >= targets.target
   const countingSets = work.filter((_, i) => counting.has(i))
   const reached = countingSets.length > 0 && countingSets.every(hit)
@@ -93,7 +95,7 @@ export default function ProgressionSheet({ exerciseId, includeVariants = false, 
   return (
     <Sheet title={title} onClose={onClose}>
       <p className="-mt-2 text-sm text-zinc-500 tabular-nums dark:text-zinc-400">
-        {targets.minimum}–{targets.target} reps{step ? ` · step ${formatNumber(step)} kg` : ''}{unilateral ? ' · weaker side counts' : ''}
+        {targets.minimum}–{targets.target} reps{bw ? ' · bodyweight' : step ? ` · step ${formatNumber(step)} kg` : ''}{unilateral ? ' · weaker side counts' : ''}
       </p>
       {advice === 'reduce' && (
         <p className="mt-3 rounded-lg bg-indigo-50 px-3 py-2 text-sm text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
@@ -101,7 +103,7 @@ export default function ProgressionSheet({ exerciseId, includeVariants = false, 
         </p>
       )}
 
-      {work.length === 0 || top <= 0 ? (
+      {work.length === 0 || (top <= 0 && !bw) ? (
         <p className="mt-4 text-sm text-zinc-500">No weight yet. Log a workout first.</p>
       ) : (
         <div className="mt-4">
@@ -111,16 +113,18 @@ export default function ProgressionSheet({ exerciseId, includeVariants = false, 
             <span className={`rounded-md px-2.5 py-1.5 text-xs font-extrabold tracking-wide ${eff.topSet
               ? 'border border-orange-500 bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300'
               : 'border border-accent bg-accent-soft text-accent-ink'}`}>{eff.topSet ? 'TOP' : 'ALL SETS'}</span>
-            <span className="text-2xl font-extrabold tabular-nums">
-              {formatNumber(top)}<span className="ml-1 text-sm font-medium text-zinc-500 dark:text-zinc-400">kg</span>
-            </span>
+            {bw ? <span className="text-base font-bold text-zinc-600 dark:text-zinc-300">Bodyweight</span> : (
+              <span className="text-2xl font-extrabold tabular-nums">
+                {formatNumber(top)}<span className="ml-1 text-sm font-medium text-zinc-500 dark:text-zinc-400">kg</span>
+              </span>
+            )}
             <span className={`rounded-full px-3 py-1 text-base font-extrabold tabular-nums ${reached && inWorkout ? 'bg-emerald-600 text-white dark:bg-emerald-500' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'}`}>
               {reached && inWorkout ? '✓ ' : '⚑ '}{targets.target} reps{unilateral ? ' each side' : ''}
             </span>
           </div>
           <div className="mt-4 flex items-center justify-between gap-3 border-t border-zinc-200 pt-3 dark:border-zinc-800">
             <span className="text-sm text-zinc-500 dark:text-zinc-400">
-              {raiseToday ? 'Last time at Max · go up today' : reached && inWorkout ? 'Goal reached · next workout' : reached ? 'Last time at Max · go up' : 'Then next weight'}
+              {raiseToday ? (bw ? 'Last time at Max · next stage today' : 'Last time at Max · go up today') : reached && inWorkout ? 'Goal reached · next workout' : reached ? (bw ? 'Last time at Max · next stage' : 'Last time at Max · go up') : bw ? 'Then next stage' : 'Then next weight'}
             </span>
             <span className={`shrink-0 rounded-lg px-3 py-1.5 text-base font-extrabold tabular-nums ${reached || raiseToday ? 'bg-emerald-600 text-white dark:bg-emerald-500' : 'bg-zinc-100 dark:bg-zinc-800'}`}>
               {reached || raiseToday ? `↑ ${next}` : `→ ${next}`}
