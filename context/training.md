@@ -12,6 +12,9 @@ Stand 5. November 2026.
 - Mehr Volumen für Brust und Arme (Nov 2026): Butterfly in Main Day A und Cable Curl in Main Day B je 3 × 8–12, 90 s; Brust und Bizeps damit 9 Sätze pro Woche. Bei Zeitmangel im Training überspringen statt eigener Workouts
 - Reihenfolge nach Stockwerk mit genau einem Wechsel (Nov 2026): A Lat Pulldown, Leg Press, Lateral Raise, Butterfly (unten), dann Incline Chest Press, Chest-Supported Row, Triceps Pushdown V-Grip (seit 9. Nov 2026 wieder Standard, Straight Bar als Alternative), Preacher Curl (oben); B Seated Row, Seated Leg Curl, Lateral Raise (unten), dann Chest Press, Seated Dip, Preacher Curl, Cable Curl (oben). Lateral Raise (Machine) und Butterfly stehen unten
 - Bonus Day vorerst gestrichen und archiviert (Nov 2026), wiederherstellbar
+- Seit 23. Nov 2026 heissen Main Day A und B in der App «Full Body A» und «Full Body B» (Inhalt unverändert, Plan bis 10. Dez eingefroren); vergangene Trainings behalten den alten Namen
+- Optionaler dritter Tag «Calisthenics Bonus» (23. Nov 2026), nur Körpergewicht, etwa 45 Minuten, mindestens 48 h Abstand zu A und B (Samstag, wenn B am Donnerstag, oder Mittwoch, wenn B am Freitag; Start manuell): Pull-Up 4 × 3–6, Dip (Parallel Bars) 3 × 5–10, Inverted Row 3 × 8–12, Deficit Push-Up 3 × 8–15 (Alternative Push-Up), Close-Grip Push-Up 2 × 8–15, Hanging Knee Raise 3 × 8–15, Plank 2 × 30–60 s; 2 Wiederholungen in Reserve, erster Termin Testtag. Progression über Wiederholungen bzw. 60 s Plank, dann nächste Stufe («Next stage»)
+- Kreatin seit 23. Nov 2026 täglich 5 g, morgens in kaltem Wasser (Messlöffel etwa 3 g: ein voller und ein knapp voller)
 
 ## **Vorlieben**
 
