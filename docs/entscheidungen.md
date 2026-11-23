@@ -368,3 +368,10 @@ Food-Tab, Entwürfe K bis M mit Rodrigo abgestimmt.
 - Körpergewicht nur am Calisthenics-Tag (Rodrigo, 23. November 2026): Push-Ups wieder aus Full Body A und B, Butterfly bleibt gestrichen, Brust an A und B 6 Sätze. Für die Planüberprüfung am 10. Dezember vorgemerkt: A Cable Curl statt Preacher Curl, B Cable Curl vor Preacher Curl, keine neue Übung
 - Bizeps-Plan vorgezogen (Rodrigo, 23. November 2026): A Cable Curl statt Preacher Curl, B Cable Curl vor Preacher Curl; kleine Anpassung trotz eingefrorenem Plan, weil der Cable Curl in B am Ende zweimal ausgelassen wurde
 - Favoriten nur aus Snacks (Rodrigo, 23. November 2026): gezählt werden nur Standardlebensmittel aus Einträgen der Kategorien Breakfast, Snack und Dessert, nicht Lunch, Dinner, Cheat und Drinks; Zutaten wie Reis oder Poulet und Alkohol erscheinen nicht mehr. Freie Einträge (Früchte ohne Standardlebensmittel) können keine Favoriten sein
+
+## **23. November 2026 (Food-Connector liest Training)**
+
+- Der bestehende Connector «Fitness Food» erhält Lese-Werkzeuge für Training, Vorlagen, Übungen, Körpergewicht und Ziele (Version 1.4.0); kein zweiter Connector, in claude.ai muss nichts neu eingerichtet werden
+- Training und Körpergewicht nur lesen: Rolle food_connector nur mit SELECT auf die Trainings- und Körpertabellen, nur Zeilen des Owners ohne deleted_at (Migration 0062); Food bleibt mit Vorschau und Bestätigung
+- Die reinen Rechenfunktionen liegen in src/lib/core/ ohne Datenbankbezug und werden von App und Connector gemeinsam verwendet, damit Progression, Empfehlungen, Volumen und Trend überall gleich gerechnet werden
+- Kreatin wird aus nutrition_targets gelesen (dort seit 23. November), keine eigene Einstellung

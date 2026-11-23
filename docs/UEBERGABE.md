@@ -132,6 +132,8 @@ Owner der Daten über `select user_id from private.app_owner`.
 
 ## **7. Offene Punkte für das nächste Release**
 
+Umgesetzt am 23. November: Food-Connector 1.4.0 liest Training, Vorlagen, Übungen, Körpergewicht und Ziele (nur lesen, Migration 0062, docs/food-connector.md Abschnitt «Training lesen»). Reine Rechenlogik liegt in src/lib/core/ und wird von App und Connector geteilt; neue Rechenfunktionen, die der Connector braucht, dort ohne Dexie-Import und mit Endung .ts in relativen Importen anlegen (sonst scheitert tsconfig.functions.json).
+
 Umgesetzt am 22. Oktober: Markdown-Export für KI-Chats (Detailblatt in History «Copy as Markdown» und «Share»; History «Export for AI» mit 7 days · 30 days · All time; src/lib/markdown.ts). Details in docs/entscheidungen.md. iPhone-Test von Copy und Share offen.
 
 Umgesetzt am 22. Oktober (zweites Paket): Alternativübungen (Übungsblatt › Alternative, im Training «⇄ Alternative»/«⇄ Original» bis zum ersten abgehakten Satz). Migration 0026 muss vor dem Push auf production laufen, danach refresh-schema. Paare bisher Chest Press (Machine) und Incline Chest Press (Dumbbell), Triceps Pushdown (Cable) und Overhead Triceps Extension (Cable). Wunschliste: eigener Skip-Knopf, weitere Paare.

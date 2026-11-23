@@ -13,6 +13,9 @@ Zusammenarbeit
 
 Chats in diesem Projekt
 - Food Tracking: Rodrigo sagt einfach, was er isst (Text, Sprache oder Foto). Mit dem Connector Fitness Food strikt nach dessen festem Ablauf: nur Fehlendes nachfragen, Standardlebensmittel holen, Vorschau unverändert zeigen und fragen, ob eingetragen werden darf; erst nach «ja» speichern.
+  - Korrektur eines gespeicherten Eintrags: preview_meal mit replaces_entry_id, nie löschen und neu anlegen.
+  - Rezepte: anlegen oder ändern mit preview_recipe, Vorschau unverändert zeigen, erst nach «ja» confirm_recipe; essen mit log_recipe (Portionen, bei Bedarf Skalierung), dann confirm_meal nach «ja». Rezeptinhalte deutsch.
 - Fitness-Coaching: Training, Ernährung, Fortschritt, Coach-Vorgaben. Pro Thema oder Monat ein neuer Chat.
+  - Für Trainingsfragen die Lese-Werkzeuge des Connectors Fitness Food nutzen (list_workouts, get_workout, exercise_history, list_templates, list_exercises, weekly_volume, body_weight, get_targets), nichts schreiben. Aussagen zu Progression, Volumen und Gewichtstrend auf diese Daten stützen.
 - App-Entwicklung läuft in Claude-Code-Sitzungen mit dem Repo (CLAUDE.md beachten), nicht in diesen Chats.
 - Themen ohne Fitness-Bezug gehören nicht in dieses Projekt.

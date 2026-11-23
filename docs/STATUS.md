@@ -2,7 +2,7 @@
 
 Zentrale Übergabe für alle KI-Agenten und Sitzungen. Zuerst CLAUDE.md lesen (Regeln, Stack, Konventionen), dann docs/UEBERGABE.md (Einstieg für neue Chats, offene Punkte fürs nächste Release), dann diese Datei. Am Ende jeder Sitzung hier nachführen: Stand, offene Punkte, neue Hinweise. Entscheidungen gehören zusätzlich nach docs/entscheidungen.md.
 
-Letzte Aktualisierung 5. November 2026
+Letzte Aktualisierung 23. November 2026
 
 ## Orte
 
@@ -14,6 +14,7 @@ Letzte Aktualisierung 5. November 2026
 
 ## Stand
 
+- 23. November (Abend): Food-Connector 1.4.0 mit acht Lese-Werkzeugen für Training und Körper (list_workouts, get_workout, exercise_history, list_templates, list_exercises, weekly_volume, body_weight, get_targets; functions/training.ts, docs/food-connector.md). Reine Rechenlogik nach src/lib/core/ verschoben (App unverändert, Re-Exporte), damit Connector und App gleich rechnen. Migration 0062 (nur SELECT für food_connector) lokal zweimal getestet. 261 Tests, Build, Probe-Bundle der Function. Offen für Rodrigo: 0062 auf production, `neon deploy`, Projekt-Anweisung (context/projekt-instruktionen.md) in claude.ai, neuer Coaching-Chat zur Abnahme
 - 23. November (Nachmittag): Favoriten im Food-Tab nur aus Breakfast, Snack und Dessert (src/lib/quickAdd.ts FAVOURITE_CATEGORIES), 252 Tests
 - 23. November (Nachmittag): Migration 0061 auf production: Full Body A Cable Curl statt Preacher Curl, Full Body B Cable Curl vor Preacher Curl (Bizeps-Plan vom 10. Dezember vorgezogen)
 - 23. November (Nachmittag): Datenauswertung aller 17 Trainings (Fortschritt pro Übung, Sätze pro Muskel); Migration 0060 auf production: Chest-Supported Row Stufe 5 kg statt 10. Weitere kleine Anpassungen (Bizeps-Plan sofort, Chest Press in B 4 Sätze) zur Entscheidung bei Rodrigo

@@ -1,6 +1,6 @@
 # **Food-Connector**
 
-Stand 1. November 2026. Claude erfasst Mahlzeiten über einen eigenen kleinen MCP-Server (Neon Function `foodmcp`, Code in `functions/foodmcp.ts`). Er darf nur die Tabellen `food_item` und `food_entry` sowie seit Migration 0052 `recipe`, `fridge_item`, `inventory_item` und `inventory_move` lesen und schreiben.
+Stand 23. November 2026. Claude erfasst Mahlzeiten über einen eigenen kleinen MCP-Server (Neon Function `foodmcp`, Code in `functions/foodmcp.ts`). Er darf nur die Tabellen `food_item` und `food_entry` sowie seit Migration 0052 `recipe`, `fridge_item`, `inventory_item` und `inventory_move` lesen und schreiben. Seit Migration 0062 liest er zusätzlich Training, Vorlagen, Übungen, Körpergewicht und einige Einstellungen, ohne Schreibrecht (Abschnitt «Training lesen»).
 
 ## **Ablauf in Claude**
 
@@ -89,3 +89,27 @@ Auftrag Rodrigo vom 22. November 2026. Version 1.2.0 hatte die Rezept-Werkzeuge 
 
 **Für Rodrigo**: im Ordner der App `neon deploy` ausführen (die URL bleibt gleich), danach in claude.ai einen neuen Chat «Food Tracking» starten, damit Claude die neuen Werkzeuge sieht.
 
+
+## **Training lesen (23. November 2026, Version 1.4.0)**
+
+Auftrag Rodrigo vom 23. November 2026. Im Coaching-Chat liest Claude Trainings, Fortschritt und Körpergewicht direkt aus der App, um Progression, Volumen pro Muskel, Stagnation und den Gewichtstrend zu analysieren. Code in `functions/training.ts`, Tests in `functions/training.test.ts`.
+
+| Werkzeug | Inhalt |
+|---|---|
+| `list_workouts` | Trainings im Zeitraum (Standard 28 Tage): Datum, Vorlage, Dauer, Volumen, Arbeitssätze, Warm-up-Sätze, Gym-Auslastung, id |
+| `get_workout` | Ein Training (id oder Datum, Standard das letzte): Übungen in Reihenfolge, Sätze mit kg, Wdh, Dauer, Satztyp W, Top, Back-off, übersprungene Übungen, Alternative statt Original, Notizen |
+| `exercise_history` | Verlauf einer Übung (id oder Name) mit Varianten und Alternativen: jedes Training, bestes Top Set, bestes e1RM (Epley), Progressionsstatus, empfohlenes Gewicht für Top Set, Back-off und Warm-up, fehlende Wiederholungen bis zur Erhöhung |
+| `list_templates` | Aktive Vorlagen mit Übungen, Arbeitssätzen, Bereich, Warm-up, Top Set, Pause, Zielgewicht, Alternative, Kommentar, Standort; archivierte mit Namen, Details mit `include_archived` |
+| `list_exercises` | Übungskatalog mit Muskeln, Gerät, Gewichtsstufe, Standort, Bereich, Top Set, Warm-up, Alternative, Einstellung und Hinweis; Varianten unter der Hauptübung; Filter `query`, `in_plan` |
+| `weekly_volume` | Arbeitssätze pro Muskelgruppe und Woche (primär 1, sekundär 0.5) und Volumen in kg, Standard 8 Wochen |
+| `body_weight` | Einträge im Zeitraum (Standard 90 Tage) mit 7-Tage-Schnitt, Trend pro Woche, Trendwert heute mit 80-%-Band und Prognose zum Zielgewicht |
+| `get_targets` | Zielgewicht, Bedarf, Defizit, Tagesziel, Proteinminimum, Kreatin, automatische Einträge, Warm-up- und Back-off-Anteil, Wochenziel |
+
+- Nur lesen: Die Rolle `food_connector` hat auf `exercise`, `template`, `template_exercise`, `template_set`, `workout`, `workout_exercise`, `workout_set` und `body_weight` nur SELECT; jede Policy erlaubt nur Zeilen des App-Owners ohne `deleted_at`. In `user_setting` sind die Schlüssel `nutrition_targets`, `goal_weight`, `training_shares` und `weekly_goal` lesbar. Ein Schreibversuch scheitert mit «permission denied» (lokal auf Postgres 16 geprüft). Fotos bleiben ausser Reichweite
+- Gleiche Rechnung wie in der App: Die reinen Funktionen liegen seit diesem Auftrag in `src/lib/core/` (Progression, Top Set, Sätze pro Muskel, Volumen, 7-Tage-Schnitt, Einstellungen, Zeilentypen) ohne Dexie; App und Connector importieren dieselben Module. Die bisherigen Module exportieren sie unverändert weiter. esbuild bündelt sie bei `neon deploy` mit (geprüft, ohne Dexie, 111 kB)
+- Progressionsstatus wie «Ready to increase» in Home: die zwei letzten Trainings genau dieser Übung oder Variante in irgendeinem Workout, Bereich aus dem Snapshot des letzten Trainings, sonst aus der Vorlage; geplante Arbeitssätze aus der Vorlage des letzten Trainings, sonst aus dem aktiven Plan. Empfehlung wie im Report (eine Stufe hoch oder runter, ohne Stufe «schwerer»), Back-off und Warm-up mit den Anteilen aus den Training settings
+- Zeit: Datum und Wochen (Montag bis Sonntag) in Zürcher Zeit, unabhängig von der Zeitzone der Function; Gewicht in kg wie in der App
+- Sätze pro Muskelgruppe nach der Definition in docs/00_handover.md (Abschnitt Analytics-Definitionen); die App zeigt diese Zählung derzeit nicht als eigene Ansicht
+- Kreatin steht seit 23. November in `nutrition_targets` (Feld creatine), deshalb keine eigene Einstellung
+
+**Für Rodrigo**: Migration 0062 im Neon SQL Editor ausführen, danach im Ordner der App `neon deploy` (die URL bleibt gleich). In claude.ai die Projekt-Anweisung aus context/projekt-instruktionen.md übernehmen und einen neuen Coaching-Chat starten, damit Claude die neuen Werkzeuge sieht.
