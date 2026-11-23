@@ -4,24 +4,28 @@ import { addDaysKey, amountText, categoryAt, localDay, mealPrepDrafts, saveFoodE
 import { consumeItems } from './kitchen'
 
 // Search and favourites under the day in Food (decision Rodrigo 22 November 2026, variant B «Liste mit +»):
-// favourites are the staples added most often in the last 60 days (automatic daily entries do not count);
+// favourites are the staples added most often in the last 60 days (automatic daily entries do not count), only from
+// snack-like entries: breakfast, snack, dessert and drinks, not from lunch, dinner or cheat meals, so cooking
+// ingredients like rice or chicken stay out (decision Rodrigo 23 November 2026);
 // «+» adds one unit at once (100 g or 1 piece or serving) with undo, the name opens the amount sheet.
 
 export const FAVOURITE_DAYS = 60
 export const FAVOURITE_COUNT = 6
+/** Categories whose entries count for the favourites (shakes, snacks, fruit, crispbread with cottage cheese) */
+export const FAVOURITE_CATEGORIES: readonly FoodEntry['category'][] = ['breakfast', 'snack', 'dessert', 'drinks']
 
 /** Default quantity for one tap: 100 g for products per 100 g, otherwise 1 piece or serving. */
 export function oneUnit(item: Pick<FoodItem, 'basis'>): number {
   return item.basis === '100g' ? 100 : 1
 }
 
-/** The staples used most often in entries of the last days, most used first (ties by name). */
+/** The staples used most often in snack-like entries of the last days, most used first (ties by name). */
 export function favourites(entries: FoodEntry[], items: FoodItem[], today: string, n = FAVOURITE_COUNT, days = FAVOURITE_DAYS): FoodItem[] {
   const from = addDaysKey(today, -days)
   const live = new Map(items.filter((i) => i.deleted_at === null).map((i) => [i.id, i]))
   const count = new Map<string, number>()
   for (const e of entries) {
-    if (e.deleted_at !== null || e.source === 'auto') continue
+    if (e.deleted_at !== null || e.source === 'auto' || !FAVOURITE_CATEGORIES.includes(e.category)) continue
     const day = localDay(e.eaten_at)
     if (day < from || day > today) continue
     for (const id of new Set(e.items.map((i) => i.food_item_id).filter((id): id is string => !!id && live.has(id)))) {

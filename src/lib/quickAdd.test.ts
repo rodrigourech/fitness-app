@@ -8,8 +8,8 @@ import { saveRows } from './sync'
 const sync = { user_id: 'u', created_at: '2026-11-01T00:00:00Z', updated_at: '2026-11-01T00:00:00Z', deleted_at: null }
 const item = (id: string, name: string, basis: FoodItem['basis'] = '100g', store: string | null = null): FoodItem =>
   ({ ...sync, id, name, store, basis, kcal: 100, protein_g: 10, piece_g: null, package_g: null, note: null })
-const entry = (id: string, day: string, ids: string[], source: FoodEntry['source'] = 'app'): FoodEntry => ({
-  ...sync, id, eaten_at: `${day}T11:00:00Z`, category: 'lunch', title: 't', detail: null, kcal: 1, protein_g: 1, portions_cooked: null, portions_eaten: null, source,
+const entry = (id: string, day: string, ids: string[], source: FoodEntry['source'] = 'app', category: FoodEntry['category'] = 'snack'): FoodEntry => ({
+  ...sync, id, eaten_at: `${day}T11:00:00Z`, category, title: 't', detail: null, kcal: 1, protein_g: 1, portions_cooked: null, portions_eaten: null, source,
   items: ids.map((f) => ({ name: f, food_item_id: f, amount: '100 g', kcal: 1, protein_g: 1, source: 'staple' as const })),
 })
 const photo = (id: string, recipe: string, cover: boolean, created: string): FoodPhoto =>
@@ -44,6 +44,19 @@ describe('favourites and search (decision 22 November 2026)', () => {
     expect(favourites(entries, [chicken, skyr, shake, egg], '2026-11-22').map((i) => i.id)).toEqual(['c', 's', 'e'])
     expect(favourites(entries, [chicken, skyr, shake, egg], '2026-11-22', 1).map((i) => i.id)).toEqual(['c'])
     expect(favourites(entries, [{ ...chicken, deleted_at: '2026-11-22T00:00:00Z' }, skyr], '2026-11-22').map((i) => i.id)).toEqual(['s'])
+  })
+
+  it('counts only snack-like entries: breakfast, snack, dessert, drinks (23 November 2026)', () => {
+    const entries = [
+      entry('1', '2026-11-22', ['c', 'r'], 'app', 'lunch'),
+      entry('2', '2026-11-22', ['c', 'r'], 'app', 'dinner'),
+      entry('3', '2026-11-22', ['c'], 'app', 'cheat'),
+      entry('4', '2026-11-22', ['w'], 'app', 'breakfast'),
+      entry('5', '2026-11-22', ['s', 'k'], 'app', 'snack'),
+      entry('6', '2026-11-21', ['s'], 'app', 'dessert'),
+    ]
+    const items = ['c', 'r', 'w', 's', 'k'].map((id) => ({ ...chicken, id, name: id }))
+    expect(favourites(entries, items, '2026-11-22').map((i) => i.id)).toEqual(['s', 'k', 'w'])
   })
 
   it('search needs every word and also looks at the store; recipes by name', () => {
