@@ -14,6 +14,7 @@ Stand 5. November 2026.
 - Bonus Day vorerst gestrichen und archiviert (Nov 2026), wiederherstellbar
 - Seit 23. Nov 2026: Butterfly aus Full Body A gestrichen (mag er nicht; nur einmal versucht, nie als Satz erfasst), ohne Ersatz. Tatsächliches Brustvolumen: von Anfang an 6 harte Sätze pro Woche (3 pro Training; laut Rodrigo immer 3 Sätze, in den Daten bis 15. Okt 4 erfasst, weil das Warm-up vor Einführung der Satztypen als Arbeitssatz zählte); Warm-up-Sätze zählen nicht. Körpergewichtsübungen (Push-Ups usw.) nur am Calisthenics-Tag, nicht an A und B (Entscheid Rodrigo 23. Nov 2026, möglichst wenig verändern); Push-up-Griffe bestellt
 - Ist die Preacher-Curl-Maschine besetzt, macht er Cable Curl (Alternative seit 23. Nov 2026, Wunsch Rodrigo); der Verlauf zählt beim Cable Curl
+- Cable Curl seit 26. Nov 2026 mit Top Set und Back-off (27 kg, dann 23 kg), so wie er ihn ohnehin macht
 - Spürt beim Chest Press ein Ziehen unter dem Schlüsselbein (26. Nov 2026); nach dem Training dehnen (Doorway Pec Stretch, Pec Minor Stretch, je 2 × 30 s pro Seite), Videos und Hinweis bei der Übung in der App
 - Chest-Supported Row: Gewichtsstufe 5 kg statt 10 (Scheiben an einer Stelle, 23. Nov 2026)
 - Pull Down (Machine) (Technogym Pure Strength, Scheiben, zwei Hebelarme, Gewicht als Summe) als Alternative zu Lat Pulldown, den er nicht mag (23. Nov 2026); 8–12, Top Set, Stufe 10 kg nach dem ersten Training prüfen

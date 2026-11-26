@@ -15,6 +15,7 @@ Letzte Aktualisierung 23. November 2026
 ## Stand
 
 - 23. November (Abend): Food-Connector 1.4.0 mit acht Lese-Werkzeugen für Training und Körper (list_workouts, get_workout, exercise_history, list_templates, list_exercises, weekly_volume, body_weight, get_targets; functions/training.ts, docs/food-connector.md). Reine Rechenlogik nach src/lib/core/ verschoben (App unverändert, Re-Exporte), damit Connector und App gleich rechnen. Migration 0062 (nur SELECT für food_connector) lokal zweimal getestet. 261 Tests, Build, Probe-Bundle der Function. 0062 am 23. November 15:58 auf production ausgeführt und geprüft, Projekt-Anweisung in claude.ai nachgeführt (beides durch Claude). Offen für Rodrigo: `neon deploy` im App-Ordner (Terminal auf dem Laptop, für Claude gesperrt), danach Abnahme im neuen Coaching-Chat
+- 26. November: Migration 0064 auf production: Cable Curl mit Top Set (Wunsch Rodrigo, entspricht seinem Muster 27 × 8, dann 23 kg)
 - 26. November: Migration 0063 auf production, geprüft: Chest Press (Machine) mit zwei Dehnvideos (fester Titel, nach den bestehenden Videos) und Dehnzeile in der Notiz. Anzeige in der App «YouTube · Dehnen – …»
 - 23. November (Nachmittag): Favoriten im Food-Tab nur aus Breakfast, Snack und Dessert (src/lib/quickAdd.ts FAVOURITE_CATEGORIES), 252 Tests
 - 23. November (Nachmittag): Migration 0061 auf production: Full Body A Cable Curl statt Preacher Curl, Full Body B Cable Curl vor Preacher Curl (Bizeps-Plan vom 10. Dezember vorgezogen)
