@@ -26,7 +26,7 @@ const DAY = 86_400_000
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/
 
-export const TRAINING_INSTRUCTIONS = `Training data (read only): list_workouts, get_workout, exercise_history, list_templates, list_exercises, weekly_volume, body_weight and get_targets read the app's data for analyses (progression, volume per muscle, stagnation, weight trend). They never write; training, templates and body weight are changed only in the app. Values (progression status, recommended weight, sets per muscle, 7-day average, trend and forecast) are computed on the server exactly as in the app; do not recompute them, explain them. For questions about a single exercise use exercise_history; for the plan use list_templates.`
+export const TRAINING_INSTRUCTIONS = `Training data (read only): list_workouts, get_workout, exercise_history, list_templates, list_exercises, weekly_volume, body_weight and get_targets read the app's data for analyses (progression, volume per muscle, stagnation, weight trend). They never write; workouts and body weight are changed only in the app, templates and exercises through the plan tools below. Values (progression status, recommended weight, sets per muscle, 7-day average, trend and forecast) are computed on the server exactly as in the app; do not recompute them, explain them. For questions about a single exercise use exercise_history; for the plan use list_templates.`
 
 // --- loading ---------------------------------------------------------------------------------------
 
@@ -320,7 +320,7 @@ export const TRAINING_TOOLS = [
 
 export const TRAINING_TOOL_NAMES: ReadonlySet<string> = new Set(TRAINING_TOOLS.map((t) => t.name))
 
-function findExercise(d: TrainingData, query: string): Exercise {
+export function findExercise(d: TrainingData, query: string): Exercise {
   const byId = byIdOf(d)
   if (UUID.test(query)) {
     const ex = byId.get(query)

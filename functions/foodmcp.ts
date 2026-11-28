@@ -6,7 +6,9 @@
 // - The database role behind FOOD_DATABASE_URL may only read and write food_item, food_entry and (migration 0052)
 //   recipe, fridge_item, inventory_item and inventory_move. Since migration 0062 it may also read (only SELECT, no write)
 //   exercises, templates, workouts, sets, body weight and some settings for the read-only training tools
-//   (functions/training.ts). Photos stay out of reach.
+//   (functions/training.ts). Since migration 0065 it may insert and update (never delete) templates, their exercises and
+//   sets, exercises and exercise videos for the plan tools (functions/plan.ts); workouts, sets and body weight stay read
+//   only. Photos stay out of reach.
 // - A meal is stored only in two steps: preview_meal computes the values (staples on the server, never by Claude)
 //   and returns a signed preview; confirm_meal stores exactly that preview after the user said yes.
 //
@@ -17,7 +19,10 @@
 //   adjust_stock. Logging a recipe or a fridge portion goes through the same preview and confirm_meal.
 //   Training, read only (decision 23 November 2026, version 1.4.0): list_workouts, get_workout, exercise_history,
 //   list_templates, list_exercises, weekly_volume, body_weight, get_targets.
+//   Plan changes (Änderungsauftrag 27 November 2026, version 1.5.0): preview_template, confirm_template,
+//   preview_archive_template, confirm_archive_template, preview_exercise, confirm_exercise.
 
+import { callPlanTool, PLAN_INSTRUCTIONS, PLAN_TOOL_NAMES, PLAN_TOOLS, type PlanToken } from './plan.ts'
 import { callTrainingTool, TRAINING_INSTRUCTIONS, TRAINING_TOOL_NAMES, TRAINING_TOOLS } from './training.ts'
 
 export interface FoodEnv {
@@ -50,7 +55,8 @@ Correcting a stored meal: preview_meal with replaces_entry_id (id from get_day);
 Recipes (contents in German, the app UI stays English): list_recipes and get_recipe show the saved recipes. A new or changed recipe: preview_recipe (staples by id, other ingredients with kcal and protein for the whole amount and source estimate or label; steps reference ingredients as {i1}, {i2} in the given order), show the text unchanged, confirm_recipe after «ja». The server computes the values per portion.
 Eating a recipe: log_recipe with recipe_id, portions_eaten (default 1) and optionally scale (e.g. 1.2 for 20 % more of everything), category and eaten_at; show the preview unchanged, confirm_meal after «ja». Cooking several portions: log_recipe with portions_cooked and one schedule element per portion (day and meal, or «fridge» when not planned yet). Fridge portions count only when eaten: list_fridge, then eat_from_fridge (preview, confirm_meal). delete_recipe, delete_staple and discard_fridge_item only after the user confirmed in the chat.
 Stock (kitchen): for a purchase (receipt, product photo or text) map the products to staples (new products: add_staple first), ignore non-food, then preview_stock_add, show the preview and confirm_stock_add after «ja». Saving a meal takes the staples off the stock automatically (oldest first) and reports what is left; cooking a recipe takes them once for all portions. adjust_stock corrects an amount or marks an item used up or discarded (after confirmation).
-${TRAINING_INSTRUCTIONS}`
+${TRAINING_INSTRUCTIONS}
+${PLAN_INSTRUCTIONS}`
 
 // --- helpers ------------------------------------------------------------------------------------
 
@@ -753,6 +759,7 @@ export const TOOLS = [
 export async function callTool(name: string, args: Args, ctx: { sql: Sql; user: string; key: string; now: Date }): Promise<{ text: string; data?: unknown }> {
   const { sql, user, key, now } = ctx
   if (TRAINING_TOOL_NAMES.has(name)) return callTrainingTool(name, args, { sql, user, now })
+  if (PLAN_TOOL_NAMES.has(name)) return callPlanTool(name, args, { sql, user, now, sign: (p) => signToken(key, p), verify: (t) => verifyToken<PlanToken>(key, t) })
   switch (name) {
     case 'list_staples': {
       const list = await staples(sql, user)
@@ -1024,13 +1031,13 @@ async function answer(msg: RpcRequest, env: FoodEnv, sql: Sql, now: Date): Promi
       return rpc(msg.id, {
         protocolVersion: typeof msg.params?.protocolVersion === 'string' ? msg.params.protocolVersion : '2025-06-18',
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: 'fitness-food', version: '1.4.0' },
+        serverInfo: { name: 'fitness-food', version: '1.5.0' },
         instructions: INSTRUCTIONS,
       })
     case 'ping':
       return rpc(msg.id, {})
     case 'tools/list':
-      return rpc(msg.id, { tools: [...TOOLS, ...TRAINING_TOOLS] })
+      return rpc(msg.id, { tools: [...TOOLS, ...TRAINING_TOOLS, ...PLAN_TOOLS] })
     case 'tools/call': {
       const name = String(msg.params?.name ?? '')
       try {
